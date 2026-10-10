@@ -239,6 +239,14 @@
     $$(".lib").forEach((r) => (r.hidden = b.dataset.v !== "all" && r.dataset.kind !== b.dataset.v));
   });
 
+  // ---- Diagrams chips (IMP-008) ----
+  const dia = $("#f-dia");
+  if (dia) dia.addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    $$("button", dia).forEach((x) => x.classList.toggle("on", x === b));
+    $$(".dia").forEach((r) => (r.hidden = b.dataset.v !== "all" && r.dataset.type !== b.dataset.v));
+  });
+
   // ---- Shared board/list machinery ----
   function board(opts) {
     const { items, key, st, draw } = opts;
@@ -502,7 +510,7 @@
   if (oi) {
     const apply = (v) => {
       $$("button", oi).forEach((b) => b.classList.toggle("on", b.dataset.v === v));
-      $$("details.oi").forEach((d) => (d.hidden = !(v === "all" || d.dataset.kind === v || (v === "names" && /^(name|term)$/.test(d.dataset.kind)) || (v === "potential" && d.dataset.status !== "Open"))));
+      $$("details.oi").forEach((d) => (d.hidden = !(v === "all" || d.dataset.kind === v || (v === "names" && /^(name|term)$/.test(d.dataset.kind)) || (v === "potential" && d.dataset.status !== "Open") || (v === "priority" && /^(Critical|High)$/.test(d.dataset.priority)))));
       $$(".oi-group").forEach((g) => {   // hide empty topics; the count shows what the filter leaves
         const n = $$("details.oi", g).filter((d) => !d.hidden).length;
         g.hidden = !n; $(".oi-n", g).textContent = n;

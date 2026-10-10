@@ -104,6 +104,8 @@ def render(text, breaks=False, sections=True):
     exts = ["tables", "sane_lists", "fenced_code"] + (["nl2br"] if breaks else [])
     body = markdown.markdown(fix_lists(clean(text)), extensions=exts)
     body = body.replace("<table>", '<div class="tbl"><table>').replace("</table>", "</table></div>")
+    # ![what it shows](asset:MANTIS-AST-001) in a page shows that registered diagram (MANTIS-IMP-008)
+    body = re.sub(r'src="asset:(MANTIS-AST-\d+)"', lambda m: f'src="{asset_src(m.group(1))}" class="asset-img"', body)
     if not sections:
         return body
     parts = [p for p in re.split(r"(?=<h2)", body) if p.strip()]
@@ -148,6 +150,7 @@ def prio_pill(p):
 NAV = (("home", "index.html", "Home"), ("today", "today.html", "Today"), ("roadmap", "roadmap.html", "Roadmap"), ("topics", "topics.html", "Topics"),
        ("work", "work.html", "Epics & stories"), ("people", "people.html", "People"), ("review", "review.html", "Open items"))
 NAV_MORE = (("graph", "graph.html", "Graph"), ("library", "library.html", "Library"), ("decisions", "decisions.html", "Decisions"),
+            ("diagrams", "diagrams.html", "Diagrams"),
             ("health", "health.html", "Health"), ("backlog", "backlog.html", "Mantis backlog"))
 
 
@@ -752,6 +755,38 @@ def page_decisions(built):
     return shell("Decisions", body, active="decisions", built=built)
 
 
+ASSETS = []   # registered knowledge assets, from map/assets.json (MANTIS-IMP-008)
+
+
+def asset_src(aid):
+    a = next((x for x in ASSETS if x["id"] == aid), None)
+    return f"/diagrams/{Path(a['file']).name}" if a and a.get("file") else ""
+
+
+def page_diagrams(built):
+    """Registered knowledge assets (MANTIS-IMP-008): diagrams worth reusing, with what each shows."""
+    clean = lambda v: re.sub(r"\s*(?:Source: )?\(?MANTIS-[A-Z]+-\d+(?:, (?:page|slide) \d+)?\)?[.;,]?", "", v).strip()
+    tiles = []
+    for a in sorted(ASSETS, key=lambda x: (x["type"], x["title"].lower())):
+        if a["status"] == "Superseded" or not asset_src(a["id"]):
+            continue
+        src = asset_src(a["id"])
+        where = ", ".join(esc(GRAPH.get("titles", {}).get(d, "")) for d in a["docs"] if GRAPH.get("titles", {}).get(d))
+        used = len(a.get("referenced_by", []))
+        meta = (f'<p class="muted small">From: {where}</p>' if where else "") + (f'<p class="muted small">Used on {used} page{"s" if used != 1 else ""}.</p>' if used else "")
+        tiles.append(f'<article class="tile dia" data-type="{esc(a["type"])}"><a class="dia-img" href="{esc(src)}" target="_blank" rel="noopener" title="Open full size">'
+                     f'<img src="{esc(src)}" alt="{esc(a["title"])}" loading="lazy"></a>'
+                     f'<div class="dia-body"><span class="tag">{esc(a["type"].replace("-", " ").capitalize() or "Diagram")}</span><h3>{esc(a["title"])}</h3>'
+                     f'<p>{esc(clean(a["description"]))}</p>'
+                     f'{meta}</div></article>')
+    types = sorted({a["type"] for a in ASSETS if a["type"]})
+    chips = "".join(f'<button data-v="{esc(t)}">{esc(t.replace("-", " ").capitalize())}</button>' for t in types)
+    body = f"""<div class="page-h"><div><h1>Diagrams</h1><p class="lead">Diagrams and other visuals from the sources that are worth reusing, each with what it shows. Pages reuse one of these before anyone draws a new diagram.</p></div></div>
+{f'<div class="toolbar"><div class="chips" id="f-dia"><button data-v="all" class="on">All</button>{chips}</div></div>' if len(types) > 1 else ""}
+<div class="dia-grid">{"".join(tiles) or '<p class="empty">No diagrams registered yet.</p>'}</div>"""
+    return shell("Diagrams", body, active="diagrams", built=built)
+
+
 def page_today(built):
     """The owner's task list. A static shell; app.js loads and saves the tasks through tools/serve.py."""
     est = "".join(f'<option value="{v}">{l}</option>' for v, l in (("0", "Time?"), ("15", "15 min"), ("30", "30 min"), ("60", "1 hour"),
@@ -799,6 +834,10 @@ def page_health(built):
     return shell("Health", body, active="health", built=built)
 
 
+PRIO_RANK = {"Critical": 0, "High": 1, "": 2, "Medium": 3, "Low": 4}
+PRIO_CLS = {"Critical": "s-ref pr-critical", "High": "s-ref", "Medium": "s-none", "Low": "s-none"}
+
+
 def page_review(features, built):
     names = {f["slug"]: f["title"] for f in features}
     groups = {}
@@ -839,8 +878,9 @@ def page_review(features, built):
         more = f'<span class="tag oi-where" title="{esc(", ".join(tops[3:]))}">+{len(tops) - 3} more</span>' if len(tops) > 3 else ""
         where = (f'<span class="oi-tags">{"".join(f"<span class=\"tag oi-where\">{esc(x)}</span>" for x in tops[:3])}{more}</span>') if flat else ""
         anchor = f'id="{esc(o["id"])}" ' if flat else ""   # only the one-list copy carries the id, so links land once
-        return (f'<details class="bl oi" {anchor}data-qid="{esc(o["id"])}" data-kind="{o["kind"]}" data-status="{esc(o["status"])}"><summary>'
+        return (f'<details class="bl oi" {anchor}data-qid="{esc(o["id"])}" data-kind="{o["kind"]}" data-status="{esc(o["status"])}" data-priority="{esc(o.get("priority", ""))}"><summary>'
                 f'<span class="bl-id">{esc(o["id"].replace("MANTIS-", ""))}</span><span class="oi-main"><span class="row-t">{esc(re.sub(r" ?[(]MANTIS-[A-Z]+-[0-9]+(?:[,;] ?MANTIS-[A-Z]+-[0-9]+)*[)]", "", o["topic"]))}</span>{where}</span>'
+                f'{pill(o["priority"] + " priority", PRIO_CLS[o["priority"]] + " plain") if o.get("priority") else ""}'
                 f'{pill(o["status"], cls.get(o["status"], "s-none") + " plain") if o["status"] != "Open" else ""}<span class="muted small oi-date">{esc(o["raised"])}</span></summary>'
                 f'<div class="doc">{context(o)}'
                 f'{"<p class=oi-named><b>Named in:</b></p><ul>" + docs + "</ul>" if docs else ""}'
@@ -854,13 +894,15 @@ def page_review(features, built):
     secs = "".join(f'<details class="grp-box oi-group" data-group="{esc(s)}"><summary><h2>{esc(names.get(s, "Not linked to a roadmap topic"))} '
                    f'<span class="muted oi-n">{len(groups[s])}</span></h2></summary><div class="panel-box">{"".join(row(o) for o in groups[s])}</div></details>' for s in order)
     uniq = sorted(OPEN, key=lambda o: (o.get("raised", ""), o["id"]), reverse=True)
+    uniq.sort(key=lambda o: PRIO_RANK[o.get("priority", "")])   # MANTIS-IMP-001: Critical and High first, newest first within each
     flat = f'<section class="oi-flat" id="oi-flat"><div class="panel-box">{"".join(row(o, flat=True) for o in uniq)}</div></section>'
     n_gap = sum(1 for o in OPEN if o["kind"] == "gap")
     n_pot = sum(1 for o in OPEN if o["status"] != "Open")
-    body = f"""<div class="page-h"><div><h1>Open items</h1><p class="lead">{len(OPEN)} questions Mantis is tracking, newest first. Open one to answer it; answer several, then submit them together.</p></div></div>
+    n_top = sum(1 for o in OPEN if o.get("priority") in ("Critical", "High"))
+    body = f"""<div class="page-h"><div><h1>Open items</h1><p class="lead">{len(OPEN)} questions Mantis is tracking, {"highest priority first, then " if n_top else ""}newest first. Open one to answer it; answer several, then submit them together.</p></div></div>
 <div class="answers-strip oi-banner nocopy" hidden><b>Your submitted answers are waiting to be recorded.</b> {job_btn("process-answers", "Process answers", cls="btn")}</div>
 {f'<div class="oi-banner nocopy"><b>{n_pot} question{"s have" if n_pot != 1 else " has"} a likely answer.</b> Confirm or correct {"them" if n_pot != 1 else "it"} in a minute. <button type="button" class="btn" data-goto-filter="potential">Show {"them" if n_pot != 1 else "it"}</button></div>' if n_pot else ""}
-<div class="toolbar"><div class="chips" id="f-oi"><button data-v="all" class="on">All</button><button data-v="potential">Waiting for your decision · {n_pot}</button><button data-v="gap">Gaps</button><button data-v="conflict">Conflicts</button><button data-v="names">Names and terms</button></div>
+<div class="toolbar"><div class="chips" id="f-oi"><button data-v="all" class="on">All</button><button data-v="potential">Waiting for your decision · {n_pot}</button>{f'<button data-v="priority">High priority · {n_top}</button>' if n_top else ""}<button data-v="gap">Gaps</button><button data-v="conflict">Conflicts</button><button data-v="names">Names and terms</button></div>
 <div class="seg" id="oi-view" aria-label="Layout"><button data-v="flat" class="on">One list</button><button data-v="topic">By topic</button></div></div>
 <div class="oi-topics-bar nocopy" id="oi-topics-bar" hidden><span class="muted small" id="oi-topics-n"></span><button type="button" class="mini" id="oi-expand">Expand all</button></div>
 {flat if OPEN else '<p class="empty">Nothing open.</p>'}<div id="oi-topics" hidden>{secs}</div>
@@ -900,6 +942,8 @@ def build():
         GRAPH.update(json.loads((mp / "entities.json").read_text(encoding="utf-8")))
         nodes = json.loads((mp / "graph.json").read_text(encoding="utf-8"))["nodes"]
         GRAPH["titles"] = {n["id"]: n.get("title", "") for n in nodes if n["type"] == "document"}
+    if (mp / "assets.json").exists():
+        ASSETS[:] = json.loads((mp / "assets.json").read_text(encoding="utf-8")).get("assets", [])
     if (mp / "open-items.json").exists():
         OPEN[:] = json.loads((mp / "open-items.json").read_text(encoding="utf-8"))
     features, later, work, epics_by_id = load()
@@ -911,12 +955,13 @@ def build():
     BADGES["review"] = sum(1 for o in OPEN if o["status"] != "Open")
     BADGES["health"] = sum(1 for i in (json.loads(hp.read_text(encoding="utf-8"))["items"] if hp.exists() else []) if i["level"] == "warn")
     items = library_items(features, work)
-    tmp = Path(tempfile.mkdtemp(prefix="mantis-site-"))  # outside OneDrive, unique per build
-    (tmp / "features").mkdir()
-    (tmp / "pages").mkdir()
-    (tmp / "topics").mkdir()
-    shutil.copytree(Path(__file__).resolve().parent / "site_assets", tmp / "assets")
-    w = lambda rel, s: (tmp / rel).write_text(s, encoding="utf-8")
+    # Pages are built in memory; only files whose content changed are written (MANTIS-IMP-016).
+    out = {}
+    assets = Path(__file__).resolve().parent / "site_assets"
+    for p in assets.rglob("*"):
+        if p.is_file():
+            out["assets/" + p.relative_to(assets).as_posix()] = p.read_bytes()
+    w = lambda rel, s: out.__setitem__(rel, s.encode("utf-8"))
     w("index.html", page_home(features, later, work, items, built))
     w("roadmap.html", page_roadmap(features, later, built))
     w("work.html", page_work(work, features, built))
@@ -929,6 +974,11 @@ def build():
     w("today.html", page_today(built))
     w("people.html", page_people(built))
     w("decisions.html", page_decisions(built))
+    for a in ASSETS:   # copy each registered image once; pages point at /diagrams/<file>
+        f = M / "knowledge" / "assets" / a.get("file", "")
+        if a.get("file") and f.is_file():
+            out[f"diagrams/{f.name}"] = f.read_bytes()
+    w("diagrams.html", page_diagrams(built))
     for t in TOPICS:
         w(f"topics/{t['slug']}.html", page_topic(t, TOPICS, built))
     bl = backlog()
@@ -941,30 +991,46 @@ def build():
     for it in items:
         if it.get("md"):
             w(it["href"], page_single(it, built))
-    w("version.txt", str(datetime.now().timestamp()))
-    # Copy over the old site rather than swapping folders: OneDrive or the server may hold a lock.
-    # Two builds can overlap (the server rebuilds on save while a session runs build_map.py):
-    # retry briefly when the other one holds a file, instead of failing.
+    # Write only what changed. The "Built" stamp in the footer is ignored when comparing, so a
+    # rebuild that changes nothing writes nothing and open tabs do not reload. Two builds can
+    # overlap (the server rebuilds on save while a session runs build_map.py): a file held by the
+    # other build or the browser is retried briefly, then left for the next build.
     import time
-    for attempt in range(8):
+    stamp = re.compile(rb"Built [^<]*?\.</span></footer>")
+    written = 0
+    for rel, data in out.items():
+        p = SITE / rel
         try:
-            shutil.copytree(tmp, SITE, dirs_exist_ok=True)
-            break
-        except (PermissionError, shutil.Error):
-            if attempt == 7:
-                raise
-            time.sleep(0.5)
-    fresh = {p.relative_to(tmp) for p in tmp.rglob("*")}
-    for p in sorted(SITE.rglob("*"), reverse=True):
-        if p.relative_to(SITE) not in fresh:
+            if p.exists() and stamp.sub(b"", p.read_bytes()) == stamp.sub(b"", data):
+                continue
+        except OSError:
+            pass
+        p.parent.mkdir(parents=True, exist_ok=True)
+        for attempt in range(8):
+            try:
+                p.write_bytes(data)
+                written += 1
+                break
+            except PermissionError:
+                if attempt == 7:
+                    raise
+                time.sleep(0.5)
+    removed = 0
+    if SITE.exists():
+        for p in sorted(SITE.rglob("*"), reverse=True):
+            rel = p.relative_to(SITE).as_posix()
+            if rel == "version.txt" or rel in out or (p.is_dir() and any(k.startswith(rel + "/") for k in out)):
+                continue
             try:
                 p.rmdir() if p.is_dir() else p.unlink()
+                removed += 1
             except OSError:
                 pass   # held by the other build or the browser; the next build removes it
-    shutil.rmtree(tmp, ignore_errors=True)
-    leaks = [p.relative_to(SITE).as_posix() for p in SITE.rglob("*.html") if p.name not in ("backlog.html", "review.html", "health.html")
-             and re.search(r"\b(?:DOC|GAP|ASM|CFL|DEC)-\d", re.sub(r"(?s)<template.*?</template>", "", p.read_text(encoding="utf-8")))]
-    print(f"Site: {len(features)} topics, {len(work)} epics and stories, {len(items)} library items -> {SITE}"
+    if written or removed or not (SITE / "version.txt").exists():
+        (SITE / "version.txt").write_text(str(datetime.now().timestamp()), encoding="utf-8")
+    leaks = [rel for rel, data in out.items() if rel.endswith(".html") and Path(rel).name not in ("backlog.html", "review.html", "health.html")
+             and re.search(r"\b(?:DOC|GAP|ASM|CFL|DEC|AST)-\d", re.sub(r"(?s)<template.*?</template>", "", data.decode("utf-8")))]
+    print(f"Site: {len(features)} topics, {len(work)} epics and stories, {len(items)} library items -> {SITE} ({written} file(s) changed)"
           + (f"  WARNING, IDs left in: {leaks}" if leaks else ""))
 
 

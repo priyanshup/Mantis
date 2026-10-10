@@ -12,6 +12,10 @@ mantis/knowledge/topics/ (any other subject). It has two parts:
 A digest links to a card when its id is in `source_documents` or one of its topic tags is in
 the card's `match_topics`. So a new digest reaches its cards with no manual step, and a card
 says how many sources its summary has not caught up with yet.
+
+A card that grows past 60 sources or 20 KB of generated text is split (MANTIS-IMP-017): new,
+narrower cards name it in `parent:`. The parent then lists its children and only the sources
+none of them covers. `map/cards.md` lists cards past the limit with the tags to split on.
 """
 import re
 from collections import Counter
@@ -56,21 +60,56 @@ def link(cards, docs, summaries):
         auto = {d for d, f in docs.items() if match & set(f.get("topics", []))}
         linked = sorted((set(covered) | auto) - exclude, reverse=True)
         c.update(covered=covered, linked=linked, new=[d for d in linked if d not in covered])
+    # Narrower cards (MANTIS-IMP-017): a card with `parent: <slug>` takes over its sources from
+    # that parent. The parent lists its children and only the sources none of them covers, and
+    # is not flagged stale for sources a child covers.
+    by_slug = {c["slug"]: c for c in cards}
+    for c in cards:
+        c["children"] = [k for k in cards if k["fm"].get("parent") == c["slug"]]
+        c["delegated"] = sorted({d for k in c["children"] for d in k["linked"]} & set(c["linked"]), reverse=True)
+        c["shown"] = [d for d in c["linked"] if d not in c["delegated"]]
+        c["new"] = [d for d in c["new"] if d not in c["delegated"]]
+        if c["fm"].get("parent") and c["fm"]["parent"] not in by_slug:
+            print(f"Cards: {c['slug']} names parent '{c['fm']['parent']}', which has no card.")
     return cards
 
 
-def block(c, docs, summaries, gaps, entities, is_open):
-    rows = ["## Sources (auto)", "",
-            f"{len(c['linked'])} source(s). The summary above covers {len(c['covered'])}"
-            + (f"; {len(c['new'])} newer one(s) are marked new and not yet reflected in it." if c["new"] else "."), ""]
-    if c["linked"]:
+SPLIT_SOURCES, SPLIT_BYTES = 60, 20000  # IMP-017 trigger: a card past either is no longer cheap to read
+
+
+def too_large(cards, docs):
+    """Cards past the split trigger, each with the tags its own sources share most: candidate narrower cards."""
+    out = []
+    for c in cards:
+        size = c.get("gen_size", 0)
+        if len(c.get("shown", c["linked"])) <= SPLIT_SOURCES and size <= SPLIT_BYTES:
+            continue
+        own = set(c["fm"].get("match_topics", []))
+        tags = Counter(t for d in c.get("shown", c["linked"]) for t in docs[d].get("topics", []) if t not in own)
+        out.append({"slug": c["slug"], "title": c["title"], "sources": len(c.get("shown", c["linked"])), "bytes": size,
+                    "tags": [(t, n) for t, n in tags.most_common(6) if n >= 3]})
+    return out
+
+
+def block(c, docs, summaries, gaps, entities, is_open, assets=()):
+    shown = c.get("shown", c["linked"])
+    rows = []
+    if c.get("children"):
+        rows += ["## Narrower cards (auto)", "",
+                 f"{len(c['delegated'])} of this subject's sources sit on a narrower card and are listed there, not below.", ""]
+        rows += [f"- {k['title']} ({k['folder']}/{k['path'].stem}.md): {len(k['linked'])} source(s)" for k in c["children"]]
+        rows.append("")
+    rows += ["## Sources (auto)", "",
+             f"{len(shown)} source(s). The summary above covers {len([d for d in c['covered'] if d in shown])}"
+             + (f"; {len(c['new'])} newer one(s) are marked new and not yet reflected in it." if c["new"] else "."), ""]
+    if shown:
         rows += ["| Doc | Added | Title | In short |", "|---|---|---|---|"]
-        for d in c["linked"]:
+        for d in shown:
             f = docs[d]
             added = f.get("generated_on", "")[:10] + (" (new)" if d in c["new"] else "")
             title = f.get("original_title", "").replace("|", "/")
             rows.append(f"| {d} | {added} | {title} | {first_sentence(summaries.get(d, '')).replace('|', '/')} |")
-    open_ids = set(c["fm"].get("gaps", [])) | {g for d in c["linked"] for r in docs[d].get("gaps_referenced", []) for g in ID_RE.findall(r)}
+    open_ids = set(c["fm"].get("gaps", [])) | {g for d in shown for r in docs[d].get("gaps_referenced", []) for g in ID_RE.findall(r)}
     open_rows = sorted((g for g in open_ids if g in gaps and is_open(gaps[g]["status"])), key=lambda g: -int(g.rsplit("-", 1)[1]))
     rows += ["", "## Open questions (auto)", ""]
     if open_rows:
@@ -83,20 +122,27 @@ def block(c, docs, summaries, gaps, entities, is_open):
     named = Counter()
     for e in entities:
         if e["type"] in ("person", "system", "team", "organisation", "distributor"):
-            n = len(set(e["docs"]) & set(c["linked"]))
+            n = len(set(e["docs"]) & set(shown))
             if n:
                 named[(e["name"], e["type"])] = n
+    # Diagrams and other knowledge assets from this card's sources (MANTIS-IMP-008): reuse before drawing.
+    mine = [a for a in assets if set(a["docs"]) & set(shown) and a["status"] != "Superseded"]
+    if mine:
+        rows += ["", "## Diagrams (auto)", "", "| ID | Type | Shows |", "|---|---|---|"]
+        rows += [f"| {a['id']} | {a['type'] or '-'} | {a['title'].replace('|', '/')} |" for a in mine]
     if named:
         rows += ["", "## People and systems (auto)", "",
                  ", ".join(f"{n} ({t}, {k})" for (n, t), k in named.most_common(14)) + "."]
     return "\n".join(rows) + "\n"
 
 
-def write(cards, docs, summaries, gaps, entities, is_open):
+def write(cards, docs, summaries, gaps, entities, is_open, assets=()):
     """Rewrite each card's generated part. Returns the number of files changed."""
     changed = 0
     for c in cards:
-        new = c["curated"].rstrip() + "\n\n" + MARK + "\n\n" + block(c, docs, summaries, gaps, entities, is_open)
+        gen = block(c, docs, summaries, gaps, entities, is_open, assets)
+        c["gen_size"] = len(gen.encode("utf-8"))
+        new = c["curated"].rstrip() + "\n\n" + MARK + "\n\n" + gen
         if new != c["old"]:
             c["path"].write_text(new, encoding="utf-8")
             changed += 1

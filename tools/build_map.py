@@ -34,6 +34,7 @@ M = ROOT / "mantis"
 OUT = M / "knowledge" / "map"
 ID_RE = re.compile(r"MANTIS-(?:DOC|GAP|ASM|CFL|DEC)-\d+")
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import textcache   # unchanged files are not reopened (MANTIS-IMP-016)
 
 
 def front_matter(text):
@@ -55,7 +56,7 @@ def registers(folder, prefix):
     """Read registers/<folder>/<ID>.md (one entry per file) into {id: {topic, status, docs}}."""
     out = {}
     for p in sorted((M / "knowledge" / "registers" / folder).glob(prefix + "*.md")):
-        for blk in re.split(r"(?m)^### ", p.read_text(encoding="utf-8"))[1:]:
+        for blk in re.split(r"(?m)^### ", textcache.read(p))[1:]:
             rid = blk.split("\n", 1)[0].strip().split()[0]
             if not rid.startswith(prefix):
                 continue
@@ -67,11 +68,16 @@ def registers(folder, prefix):
                 "status": field("Status").split("(")[0].strip(),
                 "status_raw": field("Status"),
                 "raised": (field("Date raised") or field("Date") or "")[:10],
+                "priority": next((p for p in PRIORITIES if field("Priority").lower().startswith(p.lower())), ""),
                 "detail": [[k.strip(), " ".join(v.split())[:1500]] for k, v in re.findall(r"(?ms)^- \*\*(.+?):\*\*\s*(.*?)(?=^- \*\*|\Z)", blk)
-                           if k.split(" (")[0].strip() not in ("Topic", "Status", "Date raised", "Digests affected", "Digests referencing it", "Promoted to") and v.strip()],
+                           if k.split(" (")[0].strip() not in ("Topic", "Status", "Priority", "Date raised", "Digests affected", "Digests referencing it", "Promoted to") and v.strip()],
                 "docs": sorted(set(ID_RE.findall(field("Digests affected") or field("Documents") or blk)) - {rid}),
             }
     return dict(sorted(out.items()))
+
+
+PRIORITIES = ("Critical", "High", "Medium", "Low")   # MANTIS-IMP-001; blank = not triaged yet
+PRIO_RANK = {"Critical": 0, "High": 1, "": 2, "Medium": 3, "Low": 4}   # untriaged sits above Medium and Low
 
 
 def short(i):
@@ -84,7 +90,7 @@ def is_open(status):
 
 docs, summaries = {}, {}
 for p in sorted((M / "02_digests").glob("MANTIS-DOC-*.md")):
-    _text = p.read_text(encoding="utf-8")
+    _text = textcache.read(p)
     docs[p.stem] = front_matter(_text)
     _m = re.search(r"(?ms)^## Summary\s*\n(.*?)(?=^## |\Z)", _text)
     summaries[p.stem] = _m.group(1).strip() if _m else ""
@@ -215,24 +221,56 @@ topics = [{"slug": c["slug"], "title": c["title"], "type": "topic", "kind": "top
            "match": c["fm"].get("match_topics", [])} for c in all_cards if c["folder"] == "topics"]
 topics.sort(key=lambda x: x["title"].lower())
 (OUT / "topics.json").write_text(json.dumps(topics, indent=1), encoding="utf-8")
+# Entity graph (tools/kgraph.py): writes entities.json, entities.md, entity-graph.md, entity-candidates.md
+import kgraph
+kg = kgraph.build(docs, features + topics)
+
+# Knowledge assets (tools/assets.py, MANTIS-IMP-008): pull images out of new sources, read the
+# asset register, and note which digests and pages use each asset.
+import assets as assets_mod
+try:
+    _n = assets_mod.scan(quiet=True)
+    if _n:
+        print(f"Assets: {_n} source file(s) scanned for images")
+    _tiers = defaultdict(int)
+    for _g in assets_mod.groups():
+        _tiers[_g["tier"]] += 1
+except Exception as e:   # pypdf or Pillow missing: the register still works
+    print(f"Assets: scan skipped ({e})")
+    _tiers = {}
+_texts = {f"02_digests/{p.stem}.md": textcache.read(p) for p in (M / "02_digests").glob("MANTIS-DOC-*.md")}
+_texts.update({p.relative_to(M).as_posix(): p.read_text(encoding="utf-8") for p in OUTP.rglob("*.md")})
+asset_list = assets_mod.referenced_by(assets_mod.registry(), _texts)
+rows = ["# Knowledge assets", "", "Generated from `registers/assets/`. Reuse one before drawing a new diagram",
+        "(docs/rules/OUTPUTS_GUIDE.md). Full entry: `python tools/entry.py show <ID>`; candidates: `python tools/assets.py review`.",
+        f"{len(asset_list)} registered; {_tiers.get('candidate', 0)} candidate(s) waiting; {_tiers.get('decorative', 0)} decorative and {_tiers.get('ignored', 0)} ignored image(s) left out.", "",
+        "id | type | title | sources | used by", "---|---|---|---|---"]
+rows += [" | ".join([a["id"], a["type"] or "-", a["title"][:90], ",".join(short(d) for d in a["docs"]), str(len(a["referenced_by"]))]) for a in asset_list]
+(OUT / "assets.md").write_text("\n".join(rows) + "\n", encoding="utf-8")
+(OUT / "assets.json").write_text(json.dumps({"assets": asset_list, "tiers": dict(_tiers)}, indent=1, ensure_ascii=False), encoding="utf-8")
+
+_c = cards_mod.write(all_cards, docs, summaries, gaps, kg["entities"], is_open, asset_list)
+if _c:
+    print(f"Cards: {_c} regenerated")
+
 suggest = cards_mod.uncovered_tags(all_cards, docs)
 rows = ["# Cards", "", "Generated. Read a subject's card before any digest: `mantis/knowledge/features/<slug>.md` or",
-        "`mantis/knowledge/topics/<slug>.md`. new = linked sources the curated summary does not cover yet.", "",
-        "card | kind | sources | new | match tags", "---|---|---|---|---"]
+        "`mantis/knowledge/topics/<slug>.md`. new = linked sources the curated summary does not cover yet;",
+        "sources = those listed on the card itself (a parent lists only what its narrower cards do not); KB = size of the generated part.", "",
+        "card | kind | parent | sources | new | KB | match tags", "---|---|---|---|---|---|---"]
 for c in sorted(all_cards, key=lambda c: (c["folder"], c["slug"])):
-    rows.append(f"{c['slug']} | {c['folder'][:-1]} | {len(c['linked'])} | {len(c['new'])} | {', '.join(c['fm'].get('match_topics', []))}")
+    rows.append(f"{c['slug']} | {c['folder'][:-1]} | {c['fm'].get('parent', '') or '-'} | {len(c['shown'])} | {len(c['new'])} | "
+                f"{c.get('gen_size', 0) / 1024:.1f} | {', '.join(c['fm'].get('match_topics', []))}")
 linked_any = {d for c in all_cards for d in c["linked"]}
 rows += ["", f"{len(linked_any)} of {len(docs)} documents are linked to at least one card.",
          "", "## Suggested new cards (tags on 3+ documents that no card links)", ""]
 rows += [f"- {t}: {n} documents" for t, n in suggest[:20]] or ["None."]
+# MANTIS-IMP-017: a card past 60 sources or 20 KB of generated text is split into narrower cards
+# (new cards with `parent: <slug>` and more specific match tags).
+rows += ["", f"## Cards to split (over {cards_mod.SPLIT_SOURCES} sources or {cards_mod.SPLIT_BYTES // 1000} KB)", ""]
+rows += [f"- {x['slug']}: {x['sources']} sources, {x['bytes'] / 1024:.0f} KB. Tags its sources share: "
+         + (", ".join(f"{t} ({n})" for t, n in x["tags"]) or "none on 3+ sources") for x in cards_mod.too_large(all_cards, docs)] or ["None."]
 (OUT / "cards.md").write_text("\n".join(rows) + "\n", encoding="utf-8")
-
-# Entity graph (tools/kgraph.py): writes entities.json, entities.md, entity-graph.md, entity-candidates.md
-import kgraph
-kg = kgraph.build(docs, features + topics)
-_c = cards_mod.write(all_cards, docs, summaries, gaps, kg["entities"], is_open)
-if _c:
-    print(f"Cards: {_c} regenerated")
 
 # open-items.json: every open or potentially resolved entry, for the site's Open items page (IMP-007)
 doc_feats = defaultdict(set)
@@ -247,9 +285,10 @@ for kind, reg in (("gap", gaps), ("assumption", asms), ("conflict", cfls)):
             fs = sorted({card_gaps[rid]} if rid in card_gaps else set().union(*[doc_feats[d] for d in r["docs"]]) if r["docs"] else set())
             st = r.get("status_raw") or r["status"] or "Open"
             open_items.append({"id": rid, "kind": kind, "status": "Potential resolution" if st.lower().startswith("potential") else st.split()[0],
-                               "status_full": st, "topic": r["topic"], "raised": r["raised"], "detail": r.get("detail", []),
+                               "status_full": st, "topic": r["topic"], "raised": r["raised"], "detail": r.get("detail", []), "priority": r["priority"],
                                "features": fs, "docs": [{"id": d, "title": docs.get(d, {}).get("original_title", "")} for d in r["docs"]]})
 open_items.sort(key=lambda x: (x["raised"], x["id"]), reverse=True)
+open_items.sort(key=lambda x: PRIO_RANK[x.get("priority", "")])   # stable: newest first within each priority
 # Name questions for the owner (answered on the Open items page): possible duplicate names, and
 # frequently named things the sources never explain. IDs are stable hashes of the names.
 import hashlib
@@ -273,11 +312,12 @@ for e in kg["entities"]:
 rows = ["# Registers (compact)", "",
         "Generated. One line per open or potentially resolved entry. Full text:",
         "`python tools/entry.py show <ID>`. One file per entry in `mantis/knowledge/registers/`.", "",
-        "id | status | topic | docs"]
+        "Sorted by priority (Critical, High, not set, Medium, Low), then ID.", "",
+        "id | priority | status | topic | docs"]
 for reg in (gaps, asms, cfls):
-    for rid, r in reg.items():
+    for rid, r in sorted(reg.items(), key=lambda kv: PRIO_RANK[kv[1]["priority"]]):
         if is_open(r["status"]):
-            rows.append(" | ".join([rid, r["status"], r["topic"][:110], ",".join(short(x) for x in r["docs"])]))
+            rows.append(" | ".join([rid, r["priority"] or "-", r["status"], r["topic"][:110], ",".join(short(x) for x in r["docs"])]))
 (OUT / "registers.md").write_text("\n".join(rows) + "\n", encoding="utf-8")
 
 # graph.json
@@ -304,6 +344,7 @@ for f in sorted(OUT.iterdir()): print(f"{f.name}: {f.stat().st_size} bytes")
 
 import entry
 problems = entry.check()
+textcache.prune()
 if problems:
     print(f"\nLint: {len(problems)} problem(s). Run `python tools/entry.py check` for the list.")
 

@@ -88,6 +88,10 @@ def report():
     sugg = re.findall(r"(?m)^- (\S+): (\d+) documents$", cards_md)
     if sugg:
         add("todo", "Cards", "Tags on 3+ documents with no card: " + ", ".join(f"{t} ({n})" for t, n in sugg[:8]) + ". Consider a topic card.")
+    split = re.search(r"(?ms)^## Cards to split.*?\n\n(.*?)(?=^## |\Z)", cards_md)
+    for line in (split.group(1).strip().splitlines() if split else []):
+        if line.startswith("- "):
+            add("todo", "Cards", f"Too large to read cheaply, split into narrower cards (`parent:` in their front matter): {line[2:]}")
     m = re.search(r"(\d+) of (\d+) documents are linked", cards_md)
     if m and m.group(1) != m.group(2):
         add("info", "Cards", f"{int(m.group(2)) - int(m.group(1))} document(s) are linked to no card (see map/cards.md).")
@@ -116,6 +120,12 @@ def report():
     if isinstance(ents, dict) and ents.get("candidates"):
         add("todo", "Names", f"{len(ents['candidates'])} possible duplicate names are waiting for the owner (Open items page).")
 
+    assets = load("assets.json")
+    tiers = assets.get("tiers", {}) if isinstance(assets, dict) else {}
+    if tiers.get("candidate"):
+        add("info", "Diagrams", f"{tiers['candidate']} image(s) from the sources wait for a look ({tiers.get('registered', 0)} registered so far). "
+                                "`python tools/assets.py review` lists them, largest first.")
+
     big = sorted(((p.stat().st_size, p.stem) for p in (M / "02_digests").glob("MANTIS-DOC-*.md") if p.stat().st_size > 16000), reverse=True)
     if big:
         add("info", "Digests", f"{len(big)} digest(s) over 16 KB (largest {big[0][1]}, {big[0][0] // 1024} KB); read their summary with peek.py first.")
@@ -124,8 +134,7 @@ def report():
         import classify
         docs = classify.corpus()
         w = json.loads(classify.CONFIG.read_text(encoding="utf-8"))
-        pairs = sorted(((classify.score(classify.fingerprint(a), b, w["weights"]), x, y)
-                        for (x, a), (y, b) in combinations(docs.items(), 2)), reverse=True)
+        pairs = classify.pair_scores(docs, w["weights"], floor=min(0.5, w["version"] - 0.05))
         near = [p for p in pairs if p[0] >= 0.5]
         if near:
             add("info", "Duplicates", "Near-duplicate digests (same card covers them): " + ", ".join(f"{x[-4:]}~{y[-4:]} ({s:.2f})" for s, x, y in near[:6]) + ".")

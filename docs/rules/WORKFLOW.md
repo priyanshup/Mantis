@@ -45,7 +45,8 @@ allowed, the rules win. On how to do it, this checklist wins: registers are writ
 6. **Assumptions, gaps, conflicts.** Decide which applies (rules: Assumptions vs. Knowledge
    Gaps). Claim IDs, write the entries to a scratch file in the register's format, then
    `python tools/entry.py add gap <file>` (or `asm`, `cfl`). Stop and report live for a new
-   conflict or an assumption below Moderate evidence (rules: Batch Processing).
+   conflict or an assumption below Moderate evidence (rules: Batch Processing). Add a
+   Priority line only when the sources make the stakes clear (rules: Priority).
 7. **Cross-check.** Read only the open items step 2 listed: `python tools/entry.py show <ID>`.
    Strong or Moderate evidence: `python tools/entry.py status <ID> "Potential Resolution (<date>: <evidence>)"`.
    Weak: report only. Only the owner closes, confirms or resolves (rules: Potential Resolution).
@@ -56,6 +57,12 @@ allowed, the rules win. On how to do it, this checklist wins: registers are writ
    relation the document states between two entities (cited), a type for a new important
    entity, and an alias the source confirms. Never merge names on a guess.
 9. **Inbox.** Move the original out of `00_inbox/`.
+10. **Diagrams.** After `build_map.py`, run `python tools/assets.py review --doc <ID>` and open
+   each candidate image. Register a clear diagram, screenshot or reference table:
+   `assets.py new <hash>` prints a pre-filled entry; claim an ID (`entry.py next ast`), fill
+   in the title, type and a cited description, then `entry.py add ast`. Ignore the rest with
+   `assets.py ignore <hash> "why"`. Ask the owner only when it is unclear whether an image is
+   worth keeping.
 
 ## End of batch
 

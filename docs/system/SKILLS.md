@@ -66,6 +66,8 @@ http://localhost:8000 pages at 1440 and 1024 px in light and dark.
 | `tools/classify.py` | Scores a new document against all digests: new, new version, or ambiguous (ask); `--calibrate` re-checks the cut-offs | Python 3, no packages |
 | `tools/index_gen.py` | Generates the index entries from digests and registers; called by `build_map.py` | Python 3, no packages |
 | `tools/peek.py` | Prints a digest's header and Summary only | Python 3, no packages |
+| `tools/assets.py` | Knowledge assets: pulls images out of sources (run by `build_map.py`), sorts out decorative ones, lists candidates to `review`, pre-fills register entries (`new`), `ignore`s the rest | `pip install pypdf pillow` |
+| `tools/textcache.py` | Keeps the text of unchanged files between rebuilds, so a rebuild opens only what changed | Python 3, no packages |
 | `tools/build_site.py` | Turns the Markdown into the read-only site in `%LOCALAPPDATA%/Mantis/site` | `pip install markdown` |
 | `tools/serve.py` | Serves the site at http://localhost:8000 and rebuilds on save | Python 3; started by VS Code or `Open Mantis.cmd` |
 

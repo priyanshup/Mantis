@@ -1,8 +1,9 @@
 """Read and write Mantis registers: one file per entry (stdlib only).
 
-    python tools/entry.py next doc|gap|asm|cfl|dec [N]   claim the next N IDs (safe across sessions)
-    python tools/entry.py add  doc|gap|asm|cfl|dec FILE   add entries from FILE ('-' = stdin), one file each
+    python tools/entry.py next doc|gap|asm|cfl|dec|ast [N]   claim the next N IDs (safe across sessions)
+    python tools/entry.py add  doc|gap|asm|cfl|dec|ast FILE   add entries from FILE ('-' = stdin), one file each
     python tools/entry.py status ID "New status text"     replace an entry's Status line
+    python tools/entry.py priority ID Level ["why"]       set Critical|High|Medium|Low (or none) on a gap, assumption or conflict
     python tools/entry.py note ID "Label" "Text"          append "- **Label (date):** Text" to an entry
     python tools/entry.py show ID [ID ...]                print entries
     python tools/entry.py check                           lint registers, digests and sources
@@ -31,6 +32,7 @@ KINDS = {  # kind: (ID prefix, digits, folder)
     "asm": ("MANTIS-ASM-", 3, "assumptions"),
     "cfl": ("MANTIS-CFL-", 3, "conflicts"),
     "dec": ("MANTIS-DEC-", 3, "decisions"),
+    "ast": ("MANTIS-AST-", 3, "assets"),   # knowledge assets: diagrams and visuals (MANTIS-IMP-008)
 }
 STATUS_RE = re.compile(r"(?m)^- \*\*Status:\*\*.*(?:\n {2,}\S.*)*")
 
@@ -145,6 +147,32 @@ def cmd_status(rid, new_status):
     locked(change)
 
 
+PRIORITIES = ("Critical", "High", "Medium", "Low")
+PRIORITY_RE = re.compile(r"(?m)^- \*\*Priority:\*\*.*\n?")
+
+
+def cmd_priority(rid, level, why=""):
+    """Set or replace an entry's Priority line (MANTIS-IMP-001); 'none' removes it."""
+    level = level.capitalize()
+    if level not in PRIORITIES + ("None",):
+        sys.exit(f"Priority must be one of {', '.join(PRIORITIES)} or none.")
+    if kind_of(rid) not in ("gap", "asm", "cfl"):
+        sys.exit("Priority applies to gaps, assumptions and conflicts.")
+
+    def change():
+        p, text = read(rid)
+        text = PRIORITY_RE.sub("", text)
+        if level != "None":
+            line = f"- **Priority:** {level}" + (f" ({' '.join(why.split())}, {time.strftime('%Y-%m-%d')})" if why else "") + "\n"
+            m = re.search(r"(?m)^- \*\*Topic:\*\*.*\n(?: {2,}\S.*\n)*", text)
+            at = m.end() if m else text.find("\n", text.find("### ")) + 1
+            text = text[:at] + ("" if text[at - 1:at] == "\n" else "\n") + line + text[at:]
+        p.write_text(text, encoding="utf-8")
+        print(f"{rid}: priority {level.lower() if level == 'None' else level}")
+
+    locked(change)
+
+
 def cmd_note(rid, label, text):
     def append():
         p, body = read(rid)
@@ -163,12 +191,14 @@ def cmd_show(ids):
 
 def check():
     """Return a list of problems. Used by build_map.py as well."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import textcache
     problems = []
     for kind, (prefix, _, name) in KINDS.items():
         for p in sorted(folder(kind).glob("*.md")):
             if p.name == "README.md":
                 continue
-            heads = [rid for rid, _, _ in blocks(p.read_text(encoding="utf-8"))]
+            heads = [rid for rid, _, _ in blocks(textcache.read(p))]
             if heads != [p.stem]:
                 problems.append(f"registers/{name}/{p.name}: expected one entry '### {p.stem}', found {heads or 'none'}")
     digests = {p.stem for p in DIGESTS.glob("MANTIS-DOC-*.md")}
@@ -180,7 +210,7 @@ def check():
     problems += [f"{d}: source folder has no digest" for d in sorted(sources - digests)]
     known = {r for kind in ("gap", "asm", "cfl") for r in ids_in(kind)}
     for p in sorted(DIGESTS.glob("MANTIS-DOC-*.md")):
-        head = p.read_text(encoding="utf-8").split("\n---", 2)[0]
+        head = textcache.read(p).split("\n---", 2)[0]
         for rid in sorted(set(re.findall(r"MANTIS-(?:GAP|ASM|CFL)-\d+", head)) - known):
             problems.append(f"{p.stem}: front matter cites {rid}, which is not in any register")
     return problems
@@ -196,6 +226,8 @@ if __name__ == "__main__":
         cmd_add(a[1], a[2])
     elif a[0] == "status" and len(a) == 3:
         cmd_status(a[1], a[2])
+    elif a[0] == "priority" and len(a) in (3, 4):
+        cmd_priority(a[1], a[2], a[3] if len(a) == 4 else "")
     elif a[0] == "note" and len(a) == 4:
         cmd_note(a[1], a[2], a[3])
     elif a[0] == "show" and len(a) > 1:

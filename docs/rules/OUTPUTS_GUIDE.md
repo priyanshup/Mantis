@@ -38,7 +38,11 @@ An epic request means the epic. Write user stories only when the owner asks for 
 2. **Brief.** Fill `mantis/TEMPLATES/brief.md` and show it to the owner. Write only once
    it is approved. Small edits to an existing page skip this step.
 3. **Draft** from the right template in `mantis/TEMPLATES/`, applying the PM skills in
-   `.claude/skills/` (see `docs/system/SKILLS.md`).
+   `.claude/skills/` (see `docs/system/SKILLS.md`). When a picture would help the reader,
+   first check the card's "Diagrams" section (or `map/assets.md`): its description says what
+   each one shows. Reuse one when it serves the reader with `![what it shows](asset:<ID>)`;
+   the site shows the image. Draw a new diagram only when none fits, or the owner asks for a
+   new one (for example a simpler version for executives).
 4. **Self-check** (below), then run the `humanizer` skill (`docs/rules/WRITING_STYLE.md`).
 5. **Save** it where the site picks it up (table below), with the template's front matter
    and `status: draft`, then run `python tools/build_map.py`. The owner reads and copies it

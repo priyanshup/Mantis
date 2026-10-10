@@ -72,8 +72,59 @@ def score(fp, fm, w):
                  w["entities"] * jac(ents(fp["entities"]), ents(fm.get("key_entities", []))), 3)
 
 
+def prep(fm):
+    """A digest's comparable sets, computed once instead of once per pair."""
+    title = fm.get("original_title", "")
+    return (title.strip().lower(), words(title), set(fm.get("topics", [])), ents(fm.get("key_entities", [])))
+
+
+def score_prep(a, b, w):
+    t = 1.0 if a[0] == b[0] else jac(a[1], b[1])
+    return round(w["title"] * t + w["topics"] * jac(a[2], b[2]) + w["entities"] * jac(a[3], b[3]), 3)
+
+
+def pair_scores(docs, w, floor=0.4):
+    """[(score, a, b)] for every digest pair scoring at least `floor`, highest first (MANTIS-IMP-016).
+
+    Scores are cached outside OneDrive with a hash of each digest's title, topics and entities;
+    only pairs that involve a changed digest are scored again. Changing the weights or the
+    entity aliases empties the cache."""
+    import hashlib, os, tempfile
+    from itertools import combinations
+    h = lambda o: hashlib.sha1(json.dumps(o, sort_keys=True, default=sorted).encode("utf-8")).hexdigest()[:16]
+    cdir = (Path(os.environ["LOCALAPPDATA"]) / "Mantis") if os.environ.get("LOCALAPPDATA") else Path(tempfile.gettempdir()) / "Mantis"
+    cfile = cdir / "pairscores.json"
+    setting = h([w, sorted(ALIAS.items()), floor])
+    try:
+        cache = json.loads(cfile.read_text(encoding="utf-8"))
+        if cache.get("setting") != setting:
+            raise ValueError
+    except (OSError, ValueError):
+        cache = {"setting": setting, "docs": {}, "pairs": []}
+    pre = {d: prep(fm) for d, fm in docs.items()}
+    stamp = {d: h(fingerprint(fm)) for d, fm in docs.items()}
+    same = {d for d in docs if cache["docs"].get(d) == stamp[d]}
+    pairs = [p for p in cache["pairs"] if p[1] in same and p[2] in same]
+    ids = sorted(docs)
+    for x, y in combinations(ids, 2):
+        if x in same and y in same:
+            continue
+        s = score_prep(pre[x], pre[y], w)
+        if s >= floor:
+            pairs.append([s, x, y])
+    pairs.sort(reverse=True)
+    try:
+        cdir.mkdir(parents=True, exist_ok=True)
+        cfile.write_text(json.dumps({"setting": setting, "docs": stamp, "pairs": pairs}), encoding="utf-8")
+    except OSError:
+        pass
+    return [tuple(p) for p in pairs]
+
+
 def corpus():
-    return {p.stem: front(p.read_text(encoding="utf-8")) for p in sorted((M / "02_digests").glob("MANTIS-DOC-*.md"))}
+    sys.path.insert(0, str(Path(__file__).parent))
+    import textcache
+    return {p.stem: front(textcache.read(p)) for p in sorted((M / "02_digests").glob("MANTIS-DOC-*.md"))}
 
 
 def fingerprint(fm):

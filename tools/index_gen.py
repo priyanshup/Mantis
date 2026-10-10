@@ -52,11 +52,12 @@ def notes_of(text):
 
 def build(docs, gaps, asms, cfls):
     """docs: {doc_id: front matter}. Returns the number of entries rewritten."""
+    import textcache
     DOCS.mkdir(parents=True, exist_ok=True)
     changed = 0
     for did, fm in docs.items():
         p = DOCS / f"{did}.md"
-        old = p.read_text(encoding="utf-8") if p.exists() else ""
+        old = textcache.read(p) if p.exists() else ""
         if old and MARK not in old:  # hand-written entry not yet migrated: never overwrite it
             print(f"Index: {did} is hand-written; run `python tools/index_gen.py --migrate` first.")
             continue

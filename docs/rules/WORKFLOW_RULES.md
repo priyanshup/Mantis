@@ -169,6 +169,25 @@ independently each time new evidence appears; the same item can accumulate
 multiple pieces of evidence at different strengths over its lifetime (e.g. a
 `Moderate` finding followed later by a `Strong` one).
 
+## Priority
+
+`Priority` (`Critical` / `High` / `Medium` / `Low`) says how much an open
+Assumption, Conflict or Knowledge Gap matters, so the owner knows what to ask
+about first. Evidence Strength says how sure we are; Priority says what it
+costs to be wrong. It is optional: an entry without it is "not triaged yet",
+never Medium by default.
+
+- **Critical**: blocks a decision, a release or a page the owner must publish now.
+- **High**: affects scope, requirements or a date on a roadmap feature.
+- **Medium**: changes detail on a page, not its direction.
+- **Low**: nice to know.
+
+Set it with `python tools/entry.py priority <ID> <Level> "<why>"` when the
+reason is clear from the sources or the owner says so; otherwise leave it out.
+A guess at priority is an assumption like any other. The Open items page and
+`map/registers.md` list Critical and High first, then untriaged, then Medium
+and Low.
+
 ## Evidence Source Types
 
 Beyond `Evidence Strength` (Strong/Moderate/Weak, above), which measures how

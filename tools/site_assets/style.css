@@ -742,6 +742,7 @@ body { background: radial-gradient(900px 560px at -8% -12%, var(--glow-a), trans
 .s-none { --si: var(--si-none); --c: var(--none); } .s-disc { --si: var(--si-disc); --c: var(--disc); } .s-ref { --si: var(--si-ref); --c: var(--ref); }
 .s-build { --si: var(--si-build); --c: var(--build); } .s-done { --si: var(--si-done); --c: var(--done); }
 .pill.s-none, .pill.s-disc, .pill.s-ref, .pill.s-build, .pill.s-done { padding: 3px 11px 3px 8px; font-size: 12.5px; box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 30%, transparent); }
+.pill.pr-critical { font-weight: 700; box-shadow: inset 0 0 0 1.5px currentColor; }  /* MANTIS-IMP-001: Critical is stronger than High; the label carries the meaning too */
 .pill.s-none::before, .pill.s-disc::before, .pill.s-ref::before, .pill.s-build::before, .pill.s-done::before {
   width: 13px; height: 13px; border-radius: 0; background: currentColor; -webkit-mask: var(--si) center / contain no-repeat; mask: var(--si) center / contain no-repeat; }
 .stat { background: linear-gradient(155deg, color-mix(in srgb, var(--c) 17%, transparent), transparent 72%), var(--g-surface); box-shadow: inset 0 3px 0 var(--c), var(--g-hi), var(--shadow); }
@@ -1012,3 +1013,13 @@ body { background: radial-gradient(900px 560px at -8% -12%, var(--glow-a), trans
 .today-main .grp-box > summary h2 { font-size: 15px; font-weight: 600; color: var(--ink-2); }
 .today-main .grp-box { margin: 0; }
 .today-main .t-add-more input#t-contact { flex: 1 1 90px; min-width: 0; }
+
+/* Diagrams page (MANTIS-IMP-008) */
+.dia-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px; }
+.dia { display: flex; flex-direction: column; padding: 0; overflow: hidden; margin: 0; }
+.dia-img { display: block; background: #fff; border-bottom: 1px solid var(--line, rgba(0,0,0,.08)); }
+.dia-img img { display: block; width: 100%; height: 220px; object-fit: contain; padding: 10px; box-sizing: border-box; }
+.dia-body { padding: 14px 16px 16px; }
+.dia-body h3 { font-size: 16px; line-height: 1.35; margin: 8px 0 6px; }
+.dia-body p { margin: 0 0 8px; font-size: 14px; line-height: 1.5; }
+.doc img.asset-img { max-width: 100%; height: auto; background: #fff; border-radius: 8px; }

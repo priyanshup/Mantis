@@ -19,7 +19,8 @@ FOLDERS = [
     "00_inbox", "01_sources", "02_digests", "03_archive/answers", "03_archive/edits",
     "knowledge/features", "knowledge/topics", "knowledge/map",
     "knowledge/registers/documents", "knowledge/registers/gaps", "knowledge/registers/assumptions",
-    "knowledge/registers/conflicts", "knowledge/registers/decisions",
+    "knowledge/registers/conflicts", "knowledge/registers/decisions", "knowledge/registers/assets",
+    "knowledge/assets/files",
     "outputs/confluence", "outputs/epics", "outputs/user-stories", "outputs/knowledge-docs",
     "tasks", "jobs", "config",
 ]
