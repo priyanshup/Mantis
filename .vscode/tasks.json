@@ -1,0 +1,21 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Mantis site",
+      "detail": "Serves the read-only Mantis site at http://localhost:8000 and rebuilds it when Markdown changes",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "tools/serve.py"
+      ],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated",
+        "close": false
+      }
+    }
+  ]
+}

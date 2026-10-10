@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/tools/session_start.py\" 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Starting the Mantis site and checking the inbox"
+          }
+        ]
+      }
+    ]
+  }
+}

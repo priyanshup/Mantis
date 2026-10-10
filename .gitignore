@@ -1,0 +1,34 @@
+# Mantis engine repo (MANTIS-IMP-036): an allow-list. Everything is ignored unless named below,
+# so knowledge can never be added by accident. tools/leakcheck.py runs before every commit as a
+# second guard. Knowledge, local settings and company history stay on this machine only.
+/*
+!/.gitignore
+!/.gitattributes
+!/CLAUDE.md
+!/AGENTS.md
+!/README.md
+!/Open Mantis.cmd
+
+!/.claude/
+/.claude/*
+!/.claude/settings.json
+!/.claude/skills/
+
+!/.vscode/
+/.vscode/*
+!/.vscode/tasks.json
+
+!/tools/
+/tools/**/__pycache__/
+
+!/docs/
+/docs/*
+!/docs/README.md
+!/docs/rules/
+!/docs/system/
+/docs/system/ARCHITECTURE_DECISIONS.md
+
+!/mantis/
+/mantis/*
+!/mantis/README.md
+!/mantis/TEMPLATES/

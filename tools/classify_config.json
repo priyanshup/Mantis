@@ -1,0 +1,10 @@
+{
+ "_note": "Cut-offs for tools/classify.py (MANTIS-IMP-005). Calibrate with `python tools/classify.py --calibrate`: set `new` below the typical closest-neighbour score of distinct documents and `version` below the score of known version pairs (listed in mantis/config/settings.json). Re-run as the corpus grows. Weights must add to 1.",
+ "weights": {
+  "title": 0.4,
+  "topics": 0.3,
+  "entities": 0.3
+ },
+ "new": 0.25,
+ "version": 0.7
+}
