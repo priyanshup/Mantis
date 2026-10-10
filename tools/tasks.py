@@ -2,7 +2,7 @@
 
     python tools/tasks.py list                          today's open tasks, carry-overs and reminders
     python tools/tasks.py add "Title" [--due D] [--remind D] [--day D] [--contact NAME] [--priority high|medium|low] [--estimate MIN] [--note TEXT]
-    python tools/tasks.py suggest FILE                  set today's brief suggestions from a JSON list (see docs/rules/WORKFLOW.md)
+    python tools/tasks.py suggest FILE                  set today's brief suggestions from a JSON list (see docs/rules/workflow/day.md)
     python tools/tasks.py context                       compact input for writing today's suggestions
 
 Dates are YYYY-MM-DD. --day plans it for that date (default: today; "backlog" for no date).
@@ -95,6 +95,8 @@ def cmd_context():
             print(f"  Before you go ({k}): {t}" + (f" (due {dd})" if dd else ""))
         for k, dd, t in sc["within"]:
             print(f"  While away {dd} ({k}): {t}")
+    import readiness   # launch reviews due, and features heading into build without evidence (MANTIS-IMP-074 to 076)
+    readiness.main(["due"])
     undated = [x for x in open_ if not x["due"]]
     if undated:
         print("Undated open tasks (if a source states a date for one, save it: python tools/deadlines.py add TASK_ID YYYY-MM-DD \"why\"):")

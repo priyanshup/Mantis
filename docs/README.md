@@ -7,7 +7,8 @@ How Mantis works. Three groups, by the question each answers.
 | File | Read it when |
 |---|---|
 | `PROJECT_VISION.md` | Always: the purpose and the rules that never change. |
-| `WORKFLOW.md` | Ingesting, processing answers or edits from the site, the daily brief. A one-page checklist. |
+| `WORKFLOW.md` | Index of the workflow: which file in `workflow/` to read for each task, and the rules for every task. |
+| `workflow/` | One file per task: `ingest.md`, `answers.md`, `edits.md`, `day.md` (daily brief, people, meeting briefs, time away). |
 | `WORKFLOW_RULES.md` | A checklist step points to a rule (confidence, conflicts, assumptions). Open only the section named. |
 | `OUTPUTS_GUIDE.md` | Writing anything for a reader: feature pages, epics, stories, answers. |
 | `WRITING_STYLE.md` | Checking tone and wording before handing text over. |

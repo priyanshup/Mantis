@@ -8,7 +8,7 @@ regenerated or was always temporary; archive what was knowledge; let the owner d
 | Kind | Examples | What happens to it |
 |---|---|---|
 | **Knowledge** (the source of truth) | `mantis/01_sources/`, `02_digests/`, `knowledge/` cards and registers, `outputs/`, `tasks/`, `docs/` | Never deleted automatically. Replaced versions go to `mantis/03_archive/`. |
-| **Generated** (rebuilt from knowledge) | `mantis/knowledge/map/`, card text below the GENERATED marker, `registers/documents/` entries (except their Notes), the website | Never edited by hand. Rebuilt by `python tools/build_map.py`; safe to delete and rebuild. |
+| **Generated** (rebuilt from knowledge) | `mantis/knowledge/map/`, card text below the GENERATED marker, `registers/documents/` entries (except their Notes), the website, the search index (`%LOCALAPPDATA%\Mantis\search.db`, refreshed by every rebuild; `python tools/search.py rebuild` starts it again) | Never edited by hand. Rebuilt by `python tools/build_map.py`; safe to delete and rebuild. |
 | **Temporary** | `__pycache__/`, editor and OS temp files, `00_inbox/.extracted/` copies whose original is gone, old site builds in `%TEMP%`, project backups beyond the newest five | Removed by `tools/maintain.py`. |
 
 ## What runs, and when
@@ -21,6 +21,7 @@ regenerated or was always temporary; archive what was knowledge; let the owner d
 | After processing | Answer and edit files leave the inbox for `03_archive/answers/` and `03_archive/edits/`. | WORKFLOW steps |
 | Every job | Job records beyond the newest 60 are removed (`mantis/jobs/`). | `tools/jobs.py` |
 | Before a big change | A whole-project zip in `%LOCALAPPDATA%\Mantis\backups` (outside OneDrive). | Claude, by hand; housekeeping keeps the newest five |
+| Before and after changing rules, prompts, the classifier, the verifier or the model | The evaluation set (`mantis/eval/cases.json`, local): `python tools/evaluate.py run --label "<what changed>"` (add `--verify` when the verifier is affected), then `python tools/evaluate.py compare`. A change that loses a passing case is not kept. | Claude, by hand (MANTIS-IMP-077) |
 
 ## Archive retention
 

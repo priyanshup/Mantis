@@ -28,13 +28,27 @@ ALLOWED_TOOLS = ["Read", "Glob", "Grep", "Edit", "Write", "Bash(python *)", "Bas
 UNATTENDED = """You are running unattended, started by the owner from a button on the Mantis site, as the job
 described below. Do only this job, then stop. Ignore session-start suggestions about other work
 (for example the daily brief) unless the job is that work. Never ask a question: nobody can answer.
-Follow CLAUDE.md and docs/rules/WORKFLOW.md exactly. Wherever a rule says to stop and ask the
+Follow CLAUDE.md, docs/rules/WORKFLOW.md (a short index) and the workflow file named below exactly. Wherever a rule says to stop and ask the
 owner (an ambiguous classification, a new conflict, a new assumption below Moderate evidence, an
 edit to an existing digest, anything you are unsure about), do not guess and do not do that step:
 leave the item where it is and list it at the end under a line starting "NEEDS YOU:" with one
 plain sentence each. Run `python tools/build_map.py` after changing anything. Finish with a short
 plain summary for the owner (what you did, item by item), at most 8 lines, no Mantis IDs or
-paths, then the NEEDS YOU lines if any."""
+paths, then the NEEDS YOU lines if any.
+Work in as few steps as you can: every step re-reads everything so far. Read many things with one
+command (`entry.py show` takes several IDs; `answers.py check --all` shows every waiting answer
+with its entry), and write registers in one batch (`entry.py apply FILE`, `entities.py apply FILE`)
+instead of one call per change. Do not reread a file you already have."""
+
+# The workflow file each job needs (MANTIS-IMP-058); jobs not listed need only the index.
+RULES = {"process-inbox": "docs/rules/workflow/ingest.md, docs/rules/workflow/answers.md and docs/rules/workflow/edits.md",
+         "process-answers": "docs/rules/workflow/answers.md", "refresh-card": "docs/rules/workflow/ingest.md ('End of batch')",
+         "daily-brief": "docs/rules/workflow/day.md", "meeting-brief": "docs/rules/workflow/day.md",
+         "status-update": "docs/rules/workflow/day.md", "handover": "docs/rules/workflow/day.md",
+         "ask-deep": "docs/rules/workflow/questions.md"}
+# Headless jobs get only the tools they use: no connectors, no skill list. Their fixed context drops from about
+# 29k to 11k tokens per turn; CLAUDE.md and the project rules still load (measured 2026-10-10, MANTIS-IMP-057).
+JOB_TOOLS = "Bash,Read,Edit,Write,Glob,Grep"
 
 JOBS = {
     "rebuild": {"label": "Rebuild the site and cards", "kind": "free"},
@@ -44,15 +58,17 @@ JOBS = {
         "WORKFLOW 'Owner answers from the site'), page edits (edit-*.md, 'Owner edits from the site'), then "
         "files to ingest (everything else, the ingest checklist; exports of our own pages per 'Exports of our "
         "own pages'). Then refresh the curated summary of every card that now shows new sources, cited, and "
-        "add their IDs to source_documents. If the inbox is empty, say so and stop.")},
+        "add their IDs to source_documents, and check each refreshed card's claims with `python tools/support.py check --card <slug>`. Finally run `python tools/changes.py behind` and update every page, epic and story it lists, per the workflow file (only the parts the changed card sections touch; set `updated`), then rebuild. If the inbox is empty, say so and stop.")},
     "process-answers": {"label": "Process your answers", "kind": "claude", "prompt": (
         "Job: process only the owner's answers waiting in mantis/00_inbox/answers-*.md, per WORKFLOW 'Owner "
-        "answers from the site'. Update any card an answer changes. Leave other inbox files alone.")},
+        "answers from the site'. Update any card an answer changes. Finally run `python tools/changes.py behind` and update every page, epic and story it lists, per the workflow file (only the parts the changed card sections touch; set `updated`), then rebuild. Leave other inbox files alone.")},
     "refresh-card": {"label": "Refresh card summary", "kind": "claude", "arg": "card", "prompt": (
         "Job: refresh the curated summary of the card '{arg}' (mantis/knowledge/features/{arg}.md or "
-        "mantis/knowledge/topics/{arg}.md). Read the card; for each source it marks as new, read its summary "
-        "with tools/peek.py, fold what matters into the curated part above the GENERATED marker, cited, and "
-        "add the IDs to source_documents. Change nothing else.")},
+        "mantis/knowledge/topics/{arg}.md). First run `python tools/contradictions.py context --card {arg}`: "
+        "where a new source disagrees with the summary, record an unconfirmed conflict (the tool prints how) "
+        "and keep the summary's claim. Fold everything else that matters into the curated part above the "
+        "GENERATED marker, cited, and add the IDs to source_documents. Then run `python tools/support.py check --card {arg}` "
+        "and handle what it finds per the workflow file. Finally run `python tools/changes.py behind` and update every page, epic and story it lists, per the workflow file (only the parts the changed card sections touch; set `updated`), then rebuild. Change nothing else.")},
     "daily-brief": {"label": "Prepare today's brief", "kind": "claude", "prompt": (
         "Job: prepare today's daily brief per WORKFLOW 'Daily brief and the owner's tasks': run "
         "`python tools/tasks.py context`, write up to 5 suggestions and save them with "
@@ -68,6 +84,13 @@ JOBS = {
         "Job: prepare the handover for '{arg}' for the owner's next away period, per WORKFLOW 'Away "
         "planner and handover': run `python tools/away.py gather \"{arg}\"`, write the handover and save it "
         "with `python tools/away.py save <file>`.")},
+    # One step (MANTIS-IMP-085): code picks the passages and calls the model once, in-process; no agent, no prompt here
+    "ask": {"label": "Ask Mantis", "kind": "claude", "arg": "question"},
+    "ask-deep": {"label": "Ask Mantis (dig deeper)", "kind": "claude", "arg": "question", "prompt": (
+        "Job: answer the owner's question \"{arg}\" from the knowledge base, per the workflow file: gather with "
+        "`python tools/ask.py gather`, open the exact sections the answer rests on, write the answer JSON and save it "
+        "with `python tools/ask.py save <file>` (fix or drop any point whose quote is not found). Change no knowledge. "
+        "End with the answer in two or three sentences.")},
 }
 
 _lock = threading.Lock()
@@ -158,7 +181,10 @@ def submit(jtype, arg=""):
     if jtype not in JOBS:
         raise ValueError("unknown job")
     spec = JOBS[jtype]
-    arg = re.sub(r"[^\w .,'&()-]", "", str(arg or ""))[:80].strip()
+    if jtype in ("ask", "ask-deep"):   # a question keeps its punctuation and length; double quotes stay out (it sits inside the prompt)
+        arg = re.sub(r"[^\w .,'&()?:;%/+-]", "", str(arg or ""))[:300].strip()
+    else:
+        arg = re.sub(r"[^\w .,'&()-]", "", str(arg or ""))[:80].strip()
     if spec.get("arg") and not arg:
         raise ValueError("this job needs a " + spec["arg"])
     if spec["kind"] == "claude":
@@ -215,6 +241,15 @@ def run(job, on_done=None):
             p = tasks_store.SUGGEST
             p.write_text(json.dumps({"date": date.today().isoformat(), "items": [], "skipped": True}, indent=1), encoding="utf-8")
             job.update(state="done", summary="Today's brief is skipped. It comes back tomorrow.")
+        elif job["type"] == "ask":
+            sys.path.insert(0, str(ROOT / "tools"))
+            import ask
+            r = ask.answer(job.get("arg", ""))
+            u = r["usage"] or {}
+            job.update(state="done", summary=r["summary"][:3000], turns=1 if u else 0)
+            if u:
+                job["usage"] = {"turns": 1, "input": u["input"], "output": u["output"], "cache_read": u["cache_read"],
+                                "cache_write": u["cache_write"], "cost_usd": u["cost_usd"], "seconds": u["wall"], "model": u["model"]}
         else:
             _run_agent(job)
     except subprocess.TimeoutExpired:
@@ -230,8 +265,18 @@ def run(job, on_done=None):
 def _run_agent(job):
     spec = JOBS[job["type"]]
     prompt = spec["prompt"].replace("{arg}", job.get("arg", ""))
+    if job["type"] in RULES:
+        prompt += f"\n\nThe workflow file for this job: {RULES[job['type']]}."
     cmd = agent_command() + ["-p", prompt, "--output-format", "json", "--permission-mode", "acceptEdits",
-                             "--append-system-prompt", UNATTENDED, "--allowedTools", *ALLOWED_TOOLS]
+                             "--append-system-prompt", UNATTENDED, "--allowedTools", *ALLOWED_TOOLS,
+                             "--tools", JOB_TOOLS, "--strict-mcp-config", "--disable-slash-commands"]
+    try:   # optional, per job type, in local settings: {"job_models": {"daily-brief": "sonnet"}}; default is unchanged
+        import local_config
+        model = local_config.load().get("job_models", {}).get(job["type"])
+        if model:
+            cmd += ["--model", model]
+    except Exception:
+        pass
     if os.environ.get("MANTIS_AGENT_CMD"):   # another tool: pass the prompt only
         cmd = agent_command() + [UNATTENDED + "\n\n" + prompt]
     r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
@@ -241,6 +286,11 @@ def _run_agent(job):
     try:
         out = json.loads(text)
         text, turns, err = out.get("result", "") or "", out.get("num_turns", 0), bool(out.get("is_error"))
+        u = out.get("usage") or {}
+        job["usage"] = {"turns": turns, "input": u.get("input_tokens", 0), "output": u.get("output_tokens", 0),   # MANTIS-IMP-056
+                        "cache_read": u.get("cache_read_input_tokens", 0), "cache_write": u.get("cache_creation_input_tokens", 0),
+                        "cost_usd": round(out.get("total_cost_usd", 0) or 0, 4), "seconds": round((out.get("duration_ms", 0) or 0) / 1000),
+                        "model": ",".join((out.get("modelUsage") or {}).keys())}
     except ValueError:
         text = text or r.stderr.strip()
     needs = [re.sub(r"^NEEDS YOU:\s*", "", l).strip() for l in text.splitlines() if l.strip().upper().startswith("NEEDS YOU")]

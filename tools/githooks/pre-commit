@@ -1,3 +1,4 @@
 #!/bin/sh
-# Mantis engine repo: block any commit that carries knowledge (MANTIS-IMP-036).
+# Mantis engine repo: block any commit that carries knowledge (MANTIS-IMP-036) or breaks the engine (MANTIS-IMP-061).
 python tools/leakcheck.py --staged || { echo "Commit blocked by tools/leakcheck.py: remove the lines above from the staged files."; exit 1; }
+python tools/selftest.py --quick || { echo "Commit blocked by tools/selftest.py: fix the failures above first."; exit 1; }

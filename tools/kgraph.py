@@ -5,7 +5,6 @@ Called by build_map.py. Reads the `key_entities` of every digest, the entity reg
 the feature list, then writes:
     map/entities.json        the graph, read by tools/graph.py and the site
     map/entities.md          canonical entity -> documents (replaces the raw-name index)
-    map/entity-graph.md      one line per entity: type, aliases, features, relations, neighbours
     map/entity-candidates.md possible duplicates for the owner to confirm (never merged here)
 Merging: names equal after folding case, punctuation and a plural "s" merge automatically;
 any other merge needs an alias row in the register.
@@ -149,20 +148,6 @@ def write(graph, docs):
         rows.append(f"{e['name']}{al}: " + " ".join(short(d) for d in e["docs"]))
     (OUT / "entities.md").write_text("\n".join(rows) + "\n", encoding="utf-8")
 
-    rows = ["# Entity graph", "", "Generated. Entities in two or more documents. Format: name [type] | docs | "
-            "features | relations | most linked entities (shared documents).", ""]
-    for e in es:
-        if len(e["docs"]) < 2 and not e["relations"]:
-            continue
-        parts = [f"{e['name']} [{e['type']}]", f"{len(e['docs'])} docs"]
-        if e["features"]:
-            parts.append("features: " + ", ".join(f["slug"] for f in e["features"][:5]))
-        if e["relations"]:
-            parts.append("rel: " + "; ".join(f"{r['rel']} {r['to']}" if r["dir"] == "out" else f"{r['to']} {r['rel']} it" for r in e["relations"]))
-        if e["neighbours"]:
-            parts.append("linked: " + ", ".join(f"{n}({w})" for n, w in e["neighbours"][:6]))
-        rows.append(" | ".join(parts))
-    (OUT / "entity-graph.md").write_text("\n".join(rows) + "\n", encoding="utf-8")
 
     rows = ["# Possible duplicate entities", "", "Generated. Each pair might be one thing under two names. Nothing "
             "is merged until the owner confirms; then add an alias row to `mantis/knowledge/entity_register.md`.", ""]

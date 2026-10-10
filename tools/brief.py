@@ -9,7 +9,7 @@
 Code gathers the facts (no AI): the person's role, briefing style and notes; open follow-ups with
 them (raise and wait, with age and how often raised); card steps waiting on them; the owner's own
 steps on the cards they share; tasks naming them; decisions and card changes since the last brief;
-open questions on shared cards; dates in the next two weeks. Claude then writes short bullets.
+open questions on shared cards and the questions they can answer anywhere; dates in the next two weeks. Claude then writes short bullets.
 
 Brief JSON (save):
   {"for": "Sam Lee", "kind": "meeting", "title": "1-1 with Sam",
@@ -129,6 +129,12 @@ def gather(who):
         done_recent = [f for f in followups.for_person(a["name"], include_done=True) if f["status"] == "done" and f["done_at"] >= since]
         for f in done_recent:
             print(f"  Closed since last brief: {f['topic']}")
+    # Questions this person can answer (MANTIS-IMP-046), whatever card they sit on
+    asked = [o for o in _json(K / "map" / "open-items.json", []) if (o.get("ask") or {}).get("name") in names]
+    for o in sorted(asked, key=lambda o: o["ask"]["how"] != "named"):
+        print(f"QUESTION THEY CAN ANSWER ({'named in a note' if o['ask']['how'] == 'named' else 'suggested: ' + o['ask']['why'].lower()}) "
+              f"[{o['status']}] on {', '.join(o['features']) or 'no card'}: {o['topic'][:170]}")
+    asked_ids = {o["id"] for o in asked}
     mine = [s for s in steps.load() if not s["done"] and people.is_owner(s["who"]) and s["card"] in shared_cards]
     for s in mine:
         print(f"OWNER'S OWN STEP (card {s['card']}): {s['step']} - {s['status'] or 'open'}" + (f", due {s['due']}" if s["due"] else ""))
@@ -137,7 +143,7 @@ def gather(who):
         print("\nNo cards shared with them; the owner's followed cards follow (status picture for a 1-1).")
     if shared_cards:
         print("\nSHARED CARDS: " + "; ".join(card_lines(sorted(c for c in shared_cards if c))))
-        for o in open_items(sorted(shared_cards), names[0] if names else None):
+        for o in [x for x in open_items(sorted(shared_cards), names[0] if names else None) if x["id"] not in asked_ids]:
             print(f"  OPEN QUESTION [{o['status']}] on {', '.join(o['features'])}: {o['topic'][:170]}")
     for d, txt in decisions_since(since):
         print(f"DECISION {d}: {txt}")
@@ -159,16 +165,20 @@ def gather_status(days=7):
     print("\nCARDS:")
     for line in card_lines(focus):
         print("  " + line)
-    print("\nNEW SOURCES IN THE WINDOW:")
-    for d in sorted((ROOT / "mantis" / "02_digests").glob("MANTIS-DOC-*.md")):
-        head = d.read_text(encoding="utf-8")[:1500]
-        g = (re.search(r"(?m)^generated_on:\s*(\S+)", head) or [None, ""])[1]
-        if g >= since:
-            t = (re.search(r'(?m)^original_title:\s*"?(.+?)"?\s*$', head) or [None, d.stem])[1]
-            tops = (re.search(r"(?m)^topics:\s*\[(.*)\]", head) or [None, ""])[1]
-            print(f"  {g} {t} [{tops[:80]}]")
-    for d, txt in decisions_since(since):
-        print(f"DECISION {d}: {txt}")
+    # What changed comes from What's new (map/changes.json, MANTIS-IMP-066): one source for both, so they never disagree
+    ch = _json(K / "map" / "changes.json", {})
+    titles = {c["slug"]: c["title"] for c in _json(K / "map" / "features.json", []) + _json(K / "map" / "topics.json", [])}
+    mine = {titles[s] for s in focus if s in titles}
+    label = {"source": "NEW SOURCE", "question": "NEW QUESTION", "assumption": "NEW ASSUMPTION", "answer": "ANSWERED",
+             "likely": "LIKELY ANSWER", "closed": "CLOSED", "possible": "POSSIBLE CONFLICT", "conflict": "NEW CONFLICT",
+             "decision": "DECISION", "stage": "STAGE CHANGED", "page": "UPDATED", "jira": "MOVED TO JIRA", "diagram": "NEW DIAGRAM"}
+    events = [e for e in ch.get("events", []) if e["date"] >= since and e["kind"] in label]
+    answered = {e["title"] for e in events if e["kind"] == "answer"}
+    events = [e for e in events if not (e["kind"] == "closed" and e["title"] in answered)]   # one line per answered question
+    print(f"\nCHANGES IN THE WINDOW ({len(events)}; cards you follow first; summary refreshes left out):")
+    for e in sorted(events, key=lambda e: (e.get("card") not in mine and e["title"] not in mine, e["date"])):
+        print(f"  {e['date']} {label[e['kind']]}: {e['title']}" + (f" ({e['detail'][:120]})" if e.get("detail") else "")
+              + (f" [{e['card']}]" if e.get("card") and e["card"] != e["title"] else ""))
     for st in steps.load():
         m = re.search(r"(\d{4}-\d{2}-\d{2})", st["status"])
         if st["done"] and m and m.group(1) >= since:
@@ -187,8 +197,13 @@ def gather_status(days=7):
     away = schedule.next_away(today)
     if away:
         print(f"OWNER AWAY {away['start']} to {away['end']}, cover {', '.join(away['cover']) or 'not set'}.")
+    import readiness   # outcomes, not only delivery (MANTIS-IMP-076)
+    for r in readiness.scan():
+        if r["slug"] in focus and r["state"] in ("reviewed", "reviewed-no-data", "review-overdue", "measuring", "live-no-review"):
+            print(f"OUTCOME ({r['slug']}): {readiness.STATES[r['state']][0]}: {r['why']}")
     print("\nWrite a short status update as JSON (format in tools/brief.py) with \"for\": \"Weekly status\", \"kind\": \"status\" and sections "
-          "'Done this week', 'In progress', 'Blocked or at risk', 'Decisions needed', 'Next week'. One line per bullet, plain words, "
+          "'Done this week', 'In progress', 'Blocked or at risk', 'Decisions needed', 'Outcomes' (only if OUTCOME lines exist; "
+          "never call a feature a success without a measured result), 'Next week'. One line per bullet, plain words, "
           "no internal IDs; detail and source in words. Save with: python tools/brief.py save <file>")
 
 

@@ -30,7 +30,7 @@ def days_since(s):
 
 
 def cleanup():
-    removed = []
+    removed = [f"diagram candidate image ({n})" for n in range(prune_asset_files())]
     for p in list(ROOT.rglob("__pycache__")):
         shutil.rmtree(p, ignore_errors=True)
         removed.append(p.relative_to(ROOT).as_posix())
@@ -69,6 +69,16 @@ def load(name):
     return json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
 
 
+def prune_asset_files():
+    """Weekly: image files of unregistered candidates go; they are extracted again when needed (MANTIS-IMP-067)."""
+    try:
+        sys.path.insert(0, str(Path(__file__).parent))
+        import assets
+        return assets.prune_files()
+    except Exception:
+        return 0
+
+
 def report():
     sys.path.insert(0, str(Path(__file__).parent))
     import entry
@@ -80,14 +90,36 @@ def report():
         missing = sorted({m.group(0) for l in lint for m in [re.search(r"MANTIS-(?:GAP|ASM|CFL)-\d+", l)] if m})
         add("warn", "Registers", f"{len(lint)} register problem(s)" + (f"; digests cite entries that do not exist: {', '.join(missing)}" if missing else "") + ". Run `python tools/entry.py check`.")
 
-    cards = load("features.json") + load("topics.json")
-    stale = [c for c in cards if c.get("new_docs")]
-    for c in stale:
-        add("todo", "Cards", f"{c['title']}: {len(c['new_docs'])} new source(s) since its summary was written. Refresh the summary.")
+    # Citations that resolve to nothing, and card claims the verifier found unsupported (MANTIS-IMP-078, 079)
+    import citations, support
+    cf = citations.scan()
+    errs, warns = [f for f in cf if f["level"] == "error"], [f for f in cf if f["level"] == "warning"]
+    if errs:
+        add("warn", "Citations", f"{len(errs)} citation(s) resolve to nothing: " + "; ".join(f"{f['where']} line {f['line']}: {f['msg']}" for f in errs[:3])
+            + ". Run `python tools/citations.py`; fix the citation, never the source.")
+    if warns:
+        add("info", "Citations", f"{len(warns)} citation warning(s): a source not linked to its card, or a business rule with no source. Run `python tools/citations.py`.")
+    sf = support.findings()
+    # Two different checks, reported apart: does the cited source support the claim (claim verification), and does
+    # another source dispute it (counterevidence: searched only among the card's sources and the closest, MANTIS-IMP-082)
+    bad = [v for v in sf if v["verdict"] in ("contradicted", "unsupported")]
+    soft = [v for v in sf if v["verdict"] in ("partially supported", "indeterminate")]
+    disputed = [v for v in sf if v["counterevidence"]]
+    if bad:
+        add("warn", "Claims", f"{len(bad)} card claim(s) not supported by their own cited source: "
+            + "; ".join(f"{v['card']}: \"{v['claim'][:70]}\" ({v['verdict']})" for v in bad[:3])
+            + ". Run `python tools/support.py report`. The card keeps its claim until you decide.")
+    if disputed:
+        add("warn", "Counterevidence", f"{len(disputed)} card claim(s) another source qualifies or disputes: "
+            + "; ".join(f"{v['card']}: \"{v['claim'][:70]}\"" for v in disputed[:3])
+            + ". Searched only among the card's sources and the closest ones, so a clean result is not proof. Run `python tools/support.py report`.")
+    if soft:
+        add("info", "Claims", f"{len(soft)} card claim(s) only partly supported (often a view stated as fact, or a dropped hedge) or too thin to judge. "
+            "These verdicts vary between runs; treat them as prompts to reread. Run `python tools/support.py report`.")
+
+    # Owner actions (summaries to refresh, suggested cards, drafts, questions and names waiting) are on Home's
+    # "Needs attention" list; this report keeps what is about Mantis itself (MANTIS-IMP-069).
     cards_md = (MAP / "cards.md").read_text(encoding="utf-8") if (MAP / "cards.md").exists() else ""
-    sugg = re.findall(r"(?m)^- (\S+): (\d+) documents$", cards_md)
-    if sugg:
-        add("todo", "Cards", "Tags on 3+ documents with no card: " + ", ".join(f"{t} ({n})" for t, n in sugg[:8]) + ". Consider a topic card.")
     split = re.search(r"(?ms)^## Cards to split.*?\n\n(.*?)(?=^## |\Z)", cards_md)
     for line in (split.group(1).strip().splitlines() if split else []):
         if line.startswith("- "):
@@ -101,24 +133,6 @@ def report():
         age = (time.time() - p.stat().st_mtime) / 86400
         kind = "answers" if p.name.startswith("answers-") else "edit" if p.name.startswith("edit-") else "file to ingest"
         add("warn" if age > 7 else "todo", "Inbox", f"{p.name} ({kind}) waiting {age:.0f} day(s).")
-
-    work = load("work.json")
-    for x in (work.get("epics", []) + work.get("stories", [])) if isinstance(work, dict) else []:
-        d = days_since(x.get("updated", ""))
-        if x.get("status") in ("draft", "review") and d is not None and d > 14:
-            add("todo", "Outputs", f"{x['kind'].capitalize()} '{x['title']}' has been {x['status']} for {d} days.")
-
-    opened = load("open-items.json")
-    waiting = [o for o in opened if o["status"] != "Open"]
-    if waiting:
-        add("todo", "Open items", f"{len(waiting)} item(s) have a potential resolution waiting for the owner's decision.")
-    old = [o for o in opened if (days_since(o.get("raised", "")) or 0) > 60]
-    if old:
-        add("info", "Open items", f"{len(old)} open item(s) are more than 60 days old; worth the monthly review.")
-
-    ents = load("entities.json")
-    if isinstance(ents, dict) and ents.get("candidates"):
-        add("todo", "Names", f"{len(ents['candidates'])} possible duplicate names are waiting for the owner (Open items page).")
 
     assets = load("assets.json")
     tiers = assets.get("tiers", {}) if isinstance(assets, dict) else {}

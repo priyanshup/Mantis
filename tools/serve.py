@@ -31,7 +31,7 @@ URL = f"http://localhost:{PORT}/"
 PIDFILE = (Path(os.environ["LOCALAPPDATA"]) / "Mantis" if os.environ.get("LOCALAPPDATA") else ROOT) / "serve.pid"
 SITE = Path(os.environ["LOCALAPPDATA"]) / "Mantis" / "site" if os.environ.get("LOCALAPPDATA") else ROOT / "site"
 WATCH = [ROOT / "mantis" / "knowledge", ROOT / "mantis" / "outputs", ROOT / "mantis" / "02_digests", ROOT / "tools"]
-FILES = [ROOT / "docs" / "project" / "IMPROVEMENT_BACKLOG.md"]
+FILES = [ROOT / "docs" / "project" / "IMPROVEMENT_BACKLOG.md", ROOT / "docs" / "project" / "IMPROVEMENT_DONE.md"]
 
 
 def stamp():
@@ -66,7 +66,10 @@ def watch():
 INBOX = ROOT / "mantis" / "00_inbox"
 ANSWER_ID = re.compile(r"^(?:MANTIS-(?:GAP|ASM|CFL)-\d{3}|NAME-[0-9a-f]{8}|TERM-[0-9a-f]{8})$")
 VERDICTS = {"answers": "Answers it", "partly": "Partly answers it", "someone": "Someone else must answer",
+            "later": "Not decided yet",                                                          # MANTIS-IMP-049
+            "real": "Yes, they conflict", "changed": "The plan changed", "notconflict": "Not a conflict",   # MANTIS-IMP-047
             "same": "Same thing", "different": "Different things"}
+COMPLETE = ("same", "different", "real", "changed", "notconflict", "later")   # need no text or name
 
 
 def pending_answers():
@@ -83,8 +86,8 @@ def save_answers(items):
     for it in items[:200]:
         rid, verdict = str(it.get("id", "")), str(it.get("verdict", ""))
         text, who = str(it.get("answer", "")).strip()[:5000], str(it.get("who", "")).strip()[:200]
-        # "Same thing" / "Different things" are complete on their own; other verdicts need text or a name.
-        if not ANSWER_ID.match(rid) or verdict not in VERDICTS or not (text or who or verdict in ("same", "different")):
+        # Choices such as "Same thing" or "Not decided yet" are complete on their own; others need text or a name.
+        if not ANSWER_ID.match(rid) or verdict not in VERDICTS or not (text or who or verdict in COMPLETE):
             continue
         topic = " ".join(str(it.get("topic", "")).split())[:300]
         body = "\n".join("  " + line for line in text.splitlines()) or "  (no text)"
@@ -97,7 +100,7 @@ def save_answers(items):
     (INBOX / name).write_text(
         "# Owner answers from the Open items page\n\n"
         f"Submitted {time.strftime('%Y-%m-%d %H:%M')} through http://localhost:8000/review.html. Mantis processes this\n"
-        "file per docs/rules/WORKFLOW.md, \"Owner answers from the site\", then moves it to 03_archive/answers/.\n\n"
+        "file per docs/rules/workflow/answers.md, then moves it to 03_archive/answers/.\n\n"
         + "\n".join(rows), encoding="utf-8")
     return len(rows), name
 
@@ -247,13 +250,18 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
                 body = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", "0")), 10_000)).decode("utf-8"))
                 rel = str(body.get("path", ""))
                 target = (ROOT / rel).resolve()
-                if not rel.startswith("mantis/outputs/confluence/") or not rel.endswith(".md") or OUTPUTS not in target.parents or not target.exists():
-                    raise ValueError("only pages under mantis/outputs/confluence/ can be marked as copied")
+                if not rel.startswith(("mantis/outputs/confluence/", "mantis/outputs/epics/", "mantis/outputs/user-stories/"))                         or not rel.endswith(".md") or OUTPUTS not in target.parents or not target.exists():
+                    raise ValueError("only pages, epics and stories under mantis/outputs/ can be marked as copied")
                 import edit_common
-                _, _, md = edit_common.split(target.read_text(encoding="utf-8"))
+                text = target.read_text(encoding="utf-8")
+                front, _, md = edit_common.split(text)
+                rec = {"date": time.strftime("%Y-%m-%d"), "body": md}
+                if not rel.startswith("mantis/outputs/confluence/"):   # Jira (MANTIS-IMP-045): remember each field
+                    t = re.search(r'(?m)^title:\s*"?(.*?)"?\s*$', front)
+                    rec["fields"] = edit_common.jira_fields(md, t.group(1) if t else target.stem)
                 snap = OUTPUTS / ".published" / (str(target.relative_to(OUTPUTS)) + ".json")
                 snap.parent.mkdir(parents=True, exist_ok=True)
-                snap.write_text(json.dumps({"date": time.strftime("%Y-%m-%d"), "body": md}, ensure_ascii=False, indent=1), encoding="utf-8")
+                snap.write_text(json.dumps(rec, ensure_ascii=False, indent=1), encoding="utf-8")
                 threading.Thread(target=rebuild, daemon=True).start()
                 return self.reply(200, {"ok": True, "date": time.strftime("%Y-%m-%d")})
             except (ValueError, OSError) as e:

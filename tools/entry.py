@@ -5,6 +5,7 @@
     python tools/entry.py status ID "New status text"     replace an entry's Status line
     python tools/entry.py priority ID Level ["why"]       set Critical|High|Medium|Low (or none) on a gap, assumption or conflict
     python tools/entry.py note ID "Label" "Text"          append "- **Label (date):** Text" to an entry
+    python tools/entry.py apply [--dry-run] FILE          many notes, statuses and priorities at once (format: entry.py apply --help-format)
     python tools/entry.py show ID [ID ...]                print entries
     python tools/entry.py check                           lint registers, digests and sources
 
@@ -159,18 +160,21 @@ def cmd_priority(rid, level, why=""):
     if kind_of(rid) not in ("gap", "asm", "cfl"):
         sys.exit("Priority applies to gaps, assumptions and conflicts.")
 
-    def change():
-        p, text = read(rid)
-        text = PRIORITY_RE.sub("", text)
-        if level != "None":
-            line = f"- **Priority:** {level}" + (f" ({' '.join(why.split())}, {time.strftime('%Y-%m-%d')})" if why else "") + "\n"
-            m = re.search(r"(?m)^- \*\*Topic:\*\*.*\n(?: {2,}\S.*\n)*", text)
-            at = m.end() if m else text.find("\n", text.find("### ")) + 1
-            text = text[:at] + ("" if text[at - 1:at] == "\n" else "\n") + line + text[at:]
-        p.write_text(text, encoding="utf-8")
-        print(f"{rid}: priority {level.lower() if level == 'None' else level}")
+    locked(lambda: set_priority(rid, level, why))
 
-    locked(change)
+
+def set_priority(rid, level, why=""):
+    """Write the Priority line; the caller holds the lock."""
+    level = level.capitalize()
+    p, text = read(rid)
+    text = PRIORITY_RE.sub("", text)
+    if level != "None":
+        line = f"- **Priority:** {level}" + (f" ({' '.join(why.split())}, {time.strftime('%Y-%m-%d')})" if why else "") + "\n"
+        m = re.search(r"(?m)^- \*\*Topic:\*\*.*\n(?: {2,}\S.*\n)*", text)
+        at = m.end() if m else text.find("\n", text.find("### ")) + 1
+        text = text[:at] + ("" if text[at - 1:at] == "\n" else "\n") + line + text[at:]
+    p.write_text(text, encoding="utf-8")
+    print(f"{rid}: priority {level.lower() if level == 'None' else level}")
 
 
 def cmd_note(rid, label, text):
@@ -181,6 +185,75 @@ def cmd_note(rid, label, text):
         print(f"{rid}: added {label}")
 
     locked(append)
+
+
+APPLY_HELP = """Batch file for `entry.py apply` (MANTIS-IMP-057): one block per entry, all checked before any is written.
+
+## MANTIS-GAP-NNN   (the entry ID)
+note Resolution: Source: Owner answer via the Open items page, 2026-10-10. The roles ...
+  (indented lines continue the note above)
+status: Closed (2026-10-10 by the owner: ...)
+priority: High: optional reason
+"""
+
+
+def cmd_apply(src, dry=False):
+    """Apply many notes, status changes and priorities in one call, under one lock."""
+    text = sys.stdin.read() if src == "-" else Path(src).read_text(encoding="utf-8")
+    plan, cur, problems = [], None, []
+    for n, line in enumerate(text.splitlines(), 1):
+        if not line.strip() or line.lstrip().startswith("<!--"):
+            continue
+        m = re.match(r"^##\s+(MANTIS-(?:GAP|ASM|CFL|DEC|AST)-\d+)\s*$", line)
+        if m:
+            cur = m.group(1)
+            if not path_of(cur).exists():
+                problems.append(f"line {n}: {cur} is not in the register")
+            continue
+        if line.startswith((" ", "\t")) and plan and plan[-1][1] == "note":
+            plan[-1][3] += " " + line.strip()
+            continue
+        if cur is None:
+            problems.append(f"line {n}: no '## <ID>' line before it")
+            continue
+        m = re.match(r"^note\s+([^:]{1,60}):\s*(.+)$", line)
+        if m:
+            plan.append([cur, "note", m.group(1).strip(), m.group(2).strip()])
+            continue
+        m = re.match(r"^status:\s*(.+)$", line)
+        if m:
+            plan.append([cur, "status", "", m.group(1).strip()])
+            continue
+        m = re.match(r"^priority:\s*(\w+)(?::\s*(.*))?$", line)
+        if m and m.group(1).capitalize() in PRIORITIES + ("None",):
+            plan.append([cur, "priority", m.group(1), (m.group(2) or "").strip()])
+            continue
+        problems.append(f"line {n}: not understood: {line[:80]}")
+    if problems or not plan:
+        sys.exit("Nothing written.\n" + "\n".join(problems or ["The file has no changes."]) + "\n\n" + APPLY_HELP)
+    if dry:
+        for rid, op, a, b in plan:
+            print(f"{rid}: {op} {a + ': ' if a else ''}{b[:110]}")
+        print(f"Dry run: {len(plan)} change(s) to {len({p[0] for p in plan})} entr(ies). Nothing written.")
+        return
+
+    def write_all():
+        for rid, op, a, b in plan:
+            p, body = read(rid)
+            if op == "note":
+                line = f"- **{a} ({time.strftime('%Y-%m-%d')}):** {' '.join(b.split())}"
+                body = body.rstrip("\n") + "\n" + line + "\n"
+            elif op == "status":
+                m = STATUS_RE.search(body)
+                if not m:
+                    sys.exit(f"{rid} has no '- **Status:**' line; stopped after the changes before it.")
+                body = body[:m.start()] + f"- **Status:** {b}" + body[m.end():]
+            p.write_text(body, encoding="utf-8")
+            if op == "priority":   # reuses the single-entry logic, already under this lock
+                set_priority(rid, a, b)
+
+    locked(write_all)
+    print(f"Applied {len(plan)} change(s) to {len({p[0] for p in plan})} entr(ies): " + ", ".join(sorted({p[0] for p in plan})))
 
 
 def cmd_show(ids):
@@ -218,6 +291,8 @@ def check():
 
 if __name__ == "__main__":
     a = sys.argv[1:]
+    if a[:2] == ["apply", "--help-format"]:
+        sys.exit(APPLY_HELP)
     if not a or a[0] in ("-h", "--help"):
         sys.exit(__doc__)
     if a[0] == "next" and len(a) in (2, 3) and a[1] in KINDS:
@@ -226,6 +301,8 @@ if __name__ == "__main__":
         cmd_add(a[1], a[2])
     elif a[0] == "status" and len(a) == 3:
         cmd_status(a[1], a[2])
+    elif a[0] == "apply" and len(a) in (2, 3):
+        cmd_apply(a[1] if a[1] != "--dry-run" else a[2], dry="--dry-run" in a)
     elif a[0] == "priority" and len(a) in (3, 4):
         cmd_priority(a[1], a[2], a[3] if len(a) == 4 else "")
     elif a[0] == "note" and len(a) == 4:

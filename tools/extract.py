@@ -103,6 +103,14 @@ def main(paths):
         dest = OUT / (p.stem + ".md")
         dest.write_text(f"<!-- Extracted from {p.name} by tools/extract.py -->\n\n" + text.strip() + "\n", encoding="utf-8")
         print(f"{p.name}: {p.stat().st_size:,} bytes -> {dest.relative_to(ROOT).as_posix()} {dest.stat().st_size:,} bytes")
+        try:   # speech-to-text mistakes the glossary knows about (MANTIS-IMP-051)
+            sys.path.insert(0, str(Path(__file__).parent))
+            import mishear
+            note = mishear.report(text)
+            if note:
+                print("  " + note)
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

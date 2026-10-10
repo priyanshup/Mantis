@@ -29,7 +29,7 @@ repo: rules in `docs/rules/OUTPUTS_GUIDE.md`, `docs/rules/WORKFLOW.md` and `docs
 | `pm-epics-stories` | Epics, stories, acceptance criteria | Team format (reference in `CLAUDE.local.md`), INVEST, Given/When/Then |
 | `pm-edge-cases` | Boundary scenarios | Example mapping plus Mantis checklist |
 | `pm-plain-writing` | Clear, non-repetitive writing | GOV.UK clear language |
-| `apple-design` | Site UI: hierarchy, materials, type, motion, accessibility | Apple WWDC talks, from github.com/emilkowalski/skills |
+| `apple-motion` | Site motion: springs, gestures, interruptible transitions (renamed from a second `apple-design` on 2026-10-10 so it no longer shadows the user-level HIG reviewer) | Apple WWDC talks, from github.com/emilkowalski/skills |
 | `emil-design-eng` | Site UI review (Before/After/Why table), animation rules | Emil Kowalski, same repository |
 | `break-ui` | Stress-testing site screens with worst-case data | Same repository (with `CATALOG.md`) |
 | `review-animations` | Reviewing site motion | Same repository (with `STANDARDS.md`) |
@@ -44,32 +44,17 @@ http://localhost:8000 pages at 1440 and 1024 px in light and dark.
 | Skill | Why | Where from |
 |---|---|---|
 | `humanizer` | Removes AI writing patterns before anything is handed over (`docs/rules/WRITING_STYLE.md`) | https://github.com/blader/humanizer, into `~/.claude/skills/humanizer/` |
-| `apple-design` | Optional. UI and design reviews; not needed for PM documents | Already in `~/.claude/skills/` on the current machine; source not recorded |
+| `apple-design` | Optional. UI and design reviews against Apple's Human Interface Guidelines; not needed for PM documents | Already in `~/.claude/skills/` on the current machine; source not recorded |
 
 ## Tools
 
-| Tool | Why | Setup |
-|---|---|---|
-| Quor (MCP server) | Removed on 2026-10-09 (AD-015): its compress-every-read instruction clashed with keeping citations, and it indexes code only. To restore, put its entry back in `.mcp.json` (`python -m quor.mcp.launcher`). | Not registered |
-| `tools/build_map.py` | Rebuilds the map, lints registers, rebuilds the site; run after every ingest or edit | Python 3 |
-| `tools/entry.py` | Claims IDs and reads or writes register entries without opening the big files | Python 3, no packages |
-| `tools/graph.py` | Queries the entity graph: one entity, a path between two, top lists, duplicate candidates | Python 3, no packages |
-| `tools/kgraph.py` | Builds the entity graph from digests and `entity_register.md`; called by `build_map.py` | Python 3, no packages |
-| `tools/session_start.py` | Session-start hook: starts the site and reports answers or files waiting in the inbox | Python 3; set in `.claude/settings.json` |
-| `tools/apply_edits.py` | Applies pages, epics and stories the owner edited on the site; refuses if the file changed since | Python 3, no packages |
-| `tools/edit_common.py` | Defines the editable body of an output file and its fingerprint; used by the site and `apply_edits.py` | Python 3, no packages |
-| `tools/cards.py` | Links digests to cards by topic tags and rewrites each card's generated part; called by `build_map.py` | Python 3, no packages |
-| `tools/extract.py` | Converts inbox files (Confluence Word export, HTML, DOCX, PDF) to Markdown before reading | `pip install markdownify python-docx pypdf` |
-| `tools/maintain.py` | Weekly safe cleanup and the health report (`map/health.md`, the site's Health page) | Python 3; run by the session-start hook |
-| `tools/tasks.py` | The owner's task list from chat: `add` tasks and reminders, `list`, `context` and `suggest` for the daily brief | Python 3, no packages |
-| `tools/tasks_store.py` | Task storage, validation and the daily rollover; used by `serve.py` and `tasks.py` | Python 3, no packages |
-| `tools/classify.py` | Scores a new document against all digests: new, new version, or ambiguous (ask); `--calibrate` re-checks the cut-offs | Python 3, no packages |
-| `tools/index_gen.py` | Generates the index entries from digests and registers; called by `build_map.py` | Python 3, no packages |
-| `tools/peek.py` | Prints a digest's header and Summary only | Python 3, no packages |
-| `tools/assets.py` | Knowledge assets: pulls images out of sources (run by `build_map.py`), sorts out decorative ones, lists candidates to `review`, pre-fills register entries (`new`), `ignore`s the rest | `pip install pypdf pillow` |
-| `tools/textcache.py` | Keeps the text of unchanged files between rebuilds, so a rebuild opens only what changed | Python 3, no packages |
-| `tools/build_site.py` | Turns the Markdown into the read-only site in `%LOCALAPPDATA%/Mantis/site` | `pip install markdown` |
-| `tools/serve.py` | Serves the site at http://localhost:8000 and rebuilds on save | Python 3; started by VS Code or `Open Mantis.cmd` |
+Every Mantis command and module, what it does and which packages it needs: `tools/README.md`. That
+list is written by `python tools/toollist.py` from each tool's own help text, so it cannot drift;
+`python tools/selftest.py` fails when it is out of date.
+
+Removed: the Quor MCP server (2026-10-09, AD-015). Its compress-every-read instruction clashed with
+keeping citations, and it indexes code only. To restore it, put its entry back in `.mcp.json`
+(`python -m quor.mcp.launcher`).
 
 ## Adding a skill later
 

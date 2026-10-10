@@ -1,8 +1,8 @@
 # Mantis
 
 The owner's personal assistant and knowledge repository. The repo is the source of truth, not
-any chat. Rules: `docs/rules/PROJECT_VISION.md`. Ingesting: `docs/rules/WORKFLOW.md` (a one-page
-checklist). Writing for a reader: `docs/rules/OUTPUTS_GUIDE.md`. Tools and setup:
+any chat. Rules: `docs/rules/PROJECT_VISION.md`. Workflow: `docs/rules/WORKFLOW.md`, a short
+index that names the one file in `docs/rules/workflow/` to read for each task. Writing for a reader: `docs/rules/OUTPUTS_GUIDE.md`. Tools and setup:
 `docs/system/SKILLS.md`. Where things live: `README.md`, then the README in each folder.
 Cleanup and what goes where: `docs/system/MAINTENANCE.md`.
 
@@ -34,16 +34,17 @@ Cleanup and what goes where: `docs/system/MAINTENANCE.md`.
 
 ## The owner's day
 
-- "I'm meeting X, what should I discuss?": a meeting brief (`docs/rules/WORKFLOW.md`, "Meeting briefs").
+- "I'm meeting X, what should I discuss?": a meeting brief (`docs/rules/workflow/day.md`, "Meeting briefs").
 - "Follow up with X on Y": `python tools/followups.py add`. Time away and handovers: "Away planner and handover".
+- A question about the product or the work ("what is the target for…?"): a sourced answer (`docs/rules/workflow/questions.md`).
 - Buttons on the site run the same work in the background (`tools/jobs.py`); results are on the Health page.
 
 ## Session start
 
 The hook starts the site, runs weekly housekeeping, asks for the daily brief once a day, and
 reports what waits in `mantis/00_inbox/`: answers (`answers-*.md`), page edits (`edit-*.md`) and
-files to ingest. Tell the owner, then handle them as `docs/rules/WORKFLOW.md` says before other work. The
-owner's tasks and reminders go through `python tools/tasks.py` (docs/rules/WORKFLOW.md, "Daily brief").
+files to ingest. Tell the owner, then handle them as `docs/rules/workflow/answers.md`, `edits.md` or `ingest.md` says before other work. The
+owner's tasks and reminders go through `python tools/tasks.py` (docs/rules/workflow/day.md, "Daily brief").
 
 ## The site
 

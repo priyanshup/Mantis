@@ -1,4 +1,9 @@
 {
+  "skillOverrides": {
+    "apple-motion": "user-invocable-only",
+    "break-ui": "user-invocable-only",
+    "review-animations": "user-invocable-only"
+  },
   "hooks": {
     "SessionStart": [
       {

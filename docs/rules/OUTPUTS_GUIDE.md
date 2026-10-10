@@ -30,6 +30,14 @@ makes a page long and boring.
 An epic request means the epic. Write user stories only when the owner asks for them
 (owner instruction, 2026-10-09). Offer the next piece in one line at most.
 
+## Problem first, measured, in proportion
+
+A page or brief starts from the problem and ends with how success will be measured
+(`pm-feature-framing`, `pm-success-metrics`), as deep as the decision needs: a routine edit needs
+neither; approved or mandatory work records its constraint, outcome and how it is validated or
+proven; a new initiative gets the full framing. When the evidence for a request is weak, say so
+and recommend discovery rather than writing a build-ready spec.
+
 ## Steps for every page, epic or story
 
 1. **Find.** Read the subject's card (`mantis/knowledge/map/cards.md` lists them): its
@@ -41,7 +49,11 @@ An epic request means the epic. Write user stories only when the owner asks for 
    `.claude/skills/` (see `docs/system/SKILLS.md`). When a picture would help the reader,
    first check the card's "Diagrams" section (or `map/assets.md`): its description says what
    each one shows. Reuse one when it serves the reader with `![what it shows](asset:<ID>)`;
-   the site shows the image. Draw a new diagram only when none fits, or the owner asks for a
+   the site shows the image. If none fits, triage the card's image candidates:
+   `python tools/assets.py sheet --card <slug>` makes contact sheets (four per image); open them,
+   ignore the rest in one call (`assets.py ignore h1,h2 "why"`), and register only the keepers
+   (`assets.py new <hash>`, opening that one image full size to write its cited description,
+   then `entry.py add ast`). Draw a new diagram only when nothing fits, or the owner asks for a
    new one (for example a simpler version for executives).
 4. **Self-check** (below), then run the `humanizer` skill (`docs/rules/WRITING_STYLE.md`).
 5. **Save** it where the site picks it up (table below), with the template's front matter
@@ -49,9 +61,14 @@ An epic request means the epic. Write user stories only when the owner asks for 
    from the site (http://localhost:8000). Do not write HTML by hand. Set `status: review`
    when it is ready for the owner, `in-jira` once it is in Jira, `done` when finished.
 
-## Updating a page already in Confluence
+## Updating a page already in Confluence or Jira
 
-The owner pastes changes into Confluence by hand, so a full rewrite costs them the most.
+The owner pastes changes into Confluence and Jira by hand, so a full rewrite costs them the most.
+The site tracks what was last pasted: a Confluence page shows the sections that changed since
+"I copied this to Confluence"; an epic or story shows the Jira fields that changed (Summary,
+Description, Acceptance criteria) since "I updated Jira", naming the labelled parts inside them.
+Keep the bold labels (**Problem statement**, **Acceptance criteria**) stable so that tracking
+can name them.
 
 - Change only what the update needs. Keep the page's existing section order unless the owner
   asks for a restructure.

@@ -64,6 +64,10 @@ Numbered list, MVP or Later on each. Acceptance criteria live in the epic, not h
 | Metric | Primary or guardrail | Baseline | Target | By when | Data source |
 |---|---|---|---|---|---|
 
+Mark a target that no source gives as Proposed, with its reason. Decision rule: what result
+makes us scale, iterate, hold, investigate or roll back. For mandatory work, replace the table
+with the obligation, how it is accepted and the evidence of completion.
+
 ## Assumptions and risks
 *Source:*
 

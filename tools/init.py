@@ -30,7 +30,7 @@ FILES = {
 
 Shared register for the knowledge graph. It names the canonical form of an entity, its type and
 the other names sources use for it. `tools/build_map.py` reads it; the graph itself is generated
-(`map/graph.json`, `map/entity-graph.md`).
+(`map/entities.json`, `map/entities.md`).
 
 Rules:
 - Names that differ only in case, punctuation or a plural "s" merge automatically.

@@ -91,7 +91,7 @@ def too_large(cards, docs):
     return out
 
 
-def block(c, docs, summaries, gaps, entities, is_open, assets=()):
+def block(c, docs, summaries, gaps, entities, is_open, assets=(), deferred=None):
     shown = c.get("shown", c["linked"])
     rows = []
     if c.get("children"):
@@ -125,6 +125,15 @@ def block(c, docs, summaries, gaps, entities, is_open, assets=()):
             n = len(set(e["docs"]) & set(shown))
             if n:
                 named[(e["name"], e["type"])] = n
+    # Questions the owner parked as "not decided yet" (MANTIS-IMP-049), with when they will be decided
+    later = sorted((rid for rid, r in (deferred or {}).items() if set(r["docs"]) & set(shown) or rid in c["fm"].get("gaps", [])),
+                   key=lambda g: -int(g.rsplit("-", 1)[1]))
+    if later:
+        rows += ["", "## Decided later (auto)", "", "| ID | Question | When |", "|---|---|---|"]
+        for rid in later:
+            r = deferred[rid]
+            m = re.search(r"revisit(?: when)?:\s*([^;)]+)", r["status_raw"], re.I)
+            rows.append(f"| {rid} | {r['topic'][:160].replace('|', '/')} | {(m.group(1).strip() if m else 'not stated').replace('|', '/')} |")
     # Diagrams and other knowledge assets from this card's sources (MANTIS-IMP-008): reuse before drawing.
     mine = [a for a in assets if set(a["docs"]) & set(shown) and a["status"] != "Superseded"]
     if mine:
@@ -136,11 +145,11 @@ def block(c, docs, summaries, gaps, entities, is_open, assets=()):
     return "\n".join(rows) + "\n"
 
 
-def write(cards, docs, summaries, gaps, entities, is_open, assets=()):
+def write(cards, docs, summaries, gaps, entities, is_open, assets=(), deferred=None):
     """Rewrite each card's generated part. Returns the number of files changed."""
     changed = 0
     for c in cards:
-        gen = block(c, docs, summaries, gaps, entities, is_open, assets)
+        gen = block(c, docs, summaries, gaps, entities, is_open, assets, deferred)
         c["gen_size"] = len(gen.encode("utf-8"))
         new = c["curated"].rstrip() + "\n\n" + MARK + "\n\n" + gen
         if new != c["old"]:

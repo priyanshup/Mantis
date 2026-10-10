@@ -18,22 +18,15 @@ sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent.parent
 M = ROOT / "mantis"
 CONFIG = Path(__file__).with_name("classify_config.json")
-RECURRING = re.compile(r"(weekly|daily|monthly|sync|stand-?up|retro|meeting with)", re.I)
+RECURRING = re.compile(r"\b(weekly|daily|monthly|sync|stand-?up|retro|meeting with)\b", re.I)
 STOP = {"the", "a", "an", "and", "or", "of", "for", "to", "in", "on", "with", "by", "from", "page", "pasted",
         "transcript", "summary", "untitled", "notes", "meeting", "session", "doc", "document", "v1", "v2"}
 
 
 def front(text):
-    m = re.match(r"---\n(.*?)\n---", text, re.S)
-    fm = {}
-    for line in (m.group(1) if m else "").splitlines():
-        k, _, v = line.partition(":")
-        v = v.strip()
-        if v.startswith("[") and v.endswith("]"):
-            fm[k] = [x.strip().strip('"') for x in v[1:-1].split(",") if x.strip()]
-        elif k and not line.startswith(" "):
-            fm[k] = v.strip('"')
-    return fm
+    sys.path.insert(0, str(Path(__file__).parent))
+    import frontmatter   # the one shared reader (MANTIS-IMP-063)
+    return frontmatter.parse(text)
 
 
 def aliases():
