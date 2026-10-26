@@ -52,6 +52,33 @@ Every Mantis command and module, what it does and which packages it needs: `tool
 list is written by `python tools/toollist.py` from each tool's own help text, so it cannot drift;
 `python tools/selftest.py` fails when it is out of date.
 
+### Jira and Confluence (read-only)
+
+`tools/atl.py` reads Jira and Confluence and never writes to them. Keys live in `mantis/config/.env`
+(never committed): `JIRA_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` and the same three with `CONFLUENCE_`.
+When a token expires, replace its line and save. Saved queries, folder roots and the Jira fields to
+keep are in `mantis/config/atlassian.json`. The commands you will use most:
+
+| To | Run |
+|---|---|
+| Check both keys work | `python tools/atl.py login` |
+| Save your starred Jira filters by name | `python tools/atl.py filters` |
+| List what a saved query or any JQL returns | `python tools/atl.py jira changed-24h` or `python tools/atl.py jira "project = X AND ..."` |
+| Fetch Features with all their children, and the pages they link | `python tools/atl.py sync-jira [query name]` |
+| See a folder's outline (titles only) | `python tools/atl.py tree <root name or page URL>` |
+| Mirror a folder's pages (only changed ones are fetched) | `python tools/atl.py sync-confluence [root name]` |
+| Compare the mirrored pages with the digests | `python tools/atl.py compare` |
+| Fetch single pages or issues | `python tools/atl.py page <url> ...`, `python tools/atl.py issue <KEY> ...` |
+| Download a page's images and diagrams (once each) | `python tools/atl.py attachments <url> ...`, or `--digested` for every page a digest names |
+
+The Confluence token needs these read-only classic scopes: `read:confluence-content.all`,
+`read:confluence-user`, `read:confluence-space.summary`, `readonly:content.attachment:confluence`
+(images and diagrams) and `search:confluence` (searches). Never tick `write:`, `delete:` or `manage:`.
+
+To save a query, add it under `jira_queries` in the config with a short name. To follow another
+folder, add it under `confluence_roots`. Reports go to `mantis/mirror/reports/`. Nothing fetched is
+digested until the owner approves it.
+
 Removed: the Quor MCP server (2026-10-09, AD-015). Its compress-every-read instruction clashed with
 keeping citations, and it indexes code only. To restore it, put its entry back in `.mcp.json`
 (`python -m quor.mcp.launcher`).

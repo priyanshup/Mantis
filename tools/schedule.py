@@ -3,6 +3,7 @@
     python tools/schedule.py meetings                         list meetings with their next date
     python tools/schedule.py add-meeting "Name" DAY [--time HH:MM] [--with "A, B"] [--purpose TEXT] [--cards a,b] [--every 1|2]
     python tools/schedule.py remove-meeting ID
+    python tools/schedule.py move-meeting ID REGULAR_DATE NEW_DATE|skip   one occurrence only (a holiday); NEW = REGULAR undoes it
     python tools/schedule.py away                             list away periods
     python tools/schedule.py add-away START END [--cover "A, B"] [--note TEXT]
     python tools/schedule.py remove-away ID
@@ -58,20 +59,42 @@ def meetings():
 
 
 def next_date(m, after=None):
-    """The next date (today included) a recurring meeting happens, skipping the owner's away days."""
+    """The next date (today included) a recurring meeting happens, skipping the owner's away days.
+    One-off moves (a holiday Monday held on Tuesday) and skips come from m["moves"]: {regular date: new date or ""}."""
     after = after or date.today()
     if m.get("day", "")[:3].lower() not in DAYS:
         return None
     wd = DAYS.index(m["day"][:3].lower())
-    d = after + timedelta(days=(wd - after.weekday()) % 7)
+    moves = m.get("moves") or {}
+    start = after - timedelta(days=14)   # an occurrence moved forward from up to two weeks back can still be next
+    d = start + timedelta(days=(wd - start.weekday()) % 7)
     every = int(m.get("every", 1) or 1)
     anchor = parse(m.get("anchor"))
-    for _ in range(30):
+    for _ in range(34):
         fortnight_ok = every == 1 or not anchor or ((d - anchor).days // 7) % every == 0
-        if fortnight_ok and not away_on(d):
-            return d
+        actual = (parse(moves[iso(d)]) if iso(d) in moves else d) if fortnight_ok else None
+        if actual and actual >= after and not away_on(actual):
+            return actual
         d += timedelta(days=7)
     return None
+
+
+def move_meeting(mid, regular, new=""):
+    """Move one occurrence (regular date -> new date), or skip it (new empty). new == regular undoes a move."""
+    if not parse(regular) or (new and not parse(new)):
+        raise ValueError("dates are YYYY-MM-DD")
+    d = _read(MEET, "meetings")
+    m = next((x for x in d["meetings"] if x["id"] == mid), None)
+    if not m:
+        raise ValueError(f"no meeting {mid}")
+    moves = m.setdefault("moves", {})
+    if new == regular:
+        moves.pop(regular, None)
+    else:
+        moves[regular] = new
+    m["moves"] = {k: v for k, v in moves.items() if k >= (date.today() - timedelta(days=30)).isoformat()}   # old moves drop off
+    _write(MEET, d)
+    return m
 
 
 def add_meeting(name, day, time="", attendees=(), purpose="", cards=(), every=1):
@@ -150,6 +173,9 @@ if __name__ == "__main__":
     elif a[0] == "add-meeting" and len(a) >= 3:
         m = add_meeting(a[1], a[2], arg(a, "--time"), arg(a, "--with").split(","), arg(a, "--purpose"), arg(a, "--cards").split(","), arg(a, "--every", "1"))
         print(f"Added meeting {m['name']} [{m['id']}], next {next_date(m)}")
+    elif a[0] == "move-meeting" and len(a) >= 4:
+        m = move_meeting(a[1], a[2], "" if a[3] == "skip" else a[3])
+        print(f"{m['name']}: {a[2]} " + ("skipped" if a[3] == "skip" else f"moved to {a[3]}") + f"; next {next_date(m)}")
     elif a[0] == "away":
         for p in periods():
             print(f"[{p['id']}] {p['start']} to {p['end']}, cover: {', '.join(p['cover']) or '-'} {p['note']}")

@@ -32,3 +32,8 @@
 /mantis/*
 !/mantis/README.md
 !/mantis/TEMPLATES/
+
+# Secrets: never commit a .env anywhere, even inside an allowed folder such as tools/ (MANTIS-IMP-087).
+.env
+*.env
+.env.*

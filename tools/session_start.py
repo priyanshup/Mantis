@@ -67,5 +67,17 @@ try:  # once a day: Claude prepares the owner's daily brief suggestions for the 
 except Exception:
     pass
 
-out = {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": " ".join(notes)}} if notes else {}
+try:  # a recurring meeting today (its regular day or a moved one): prepare its brief once, before it starts
+    sys.path.insert(0, str(ROOT / "tools"))
+    import schedule, brief
+    from datetime import date as _d2
+    for m in schedule.meetings():
+        if schedule.next_date(m, _d2.today()) == _d2.today() and ((brief.latest(m["name"]) or {}).get("date") != _d2.today().isoformat()):
+            notes.append(f"The owner's meeting '{m['name']}' is today{(' at ' + m['time']) if m.get('time') else ''}. Prepare its brief per "
+                         f"docs/rules/workflow/day.md, 'Meeting briefs' (python tools/brief.py gather \"{m['name']}\"), save it, and "
+                         "give the owner the bullets in your first reply. After the meeting, offer to save the takeaways.")
+except Exception:
+    pass
+
+out ={"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": " ".join(notes)}} if notes else {}
 print(json.dumps(out))

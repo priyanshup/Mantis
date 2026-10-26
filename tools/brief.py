@@ -5,6 +5,8 @@
     python tools/brief.py save FILE                 save a brief Claude wrote (JSON, format below)
     python tools/brief.py status [DAYS]             what changed on followed cards in the last DAYS (default 7), for a status update (free)
     python tools/brief.py show "Sam"                the latest brief for that person
+    python tools/brief.py takeaways FILE            after a meeting: save its takeaways (JSON, format below)
+    python tools/brief.py takeaways show "Weekly sync"   the latest takeaways of a meeting, with what is still open
 
 Code gathers the facts (no AI): the person's role, briefing style and notes; open follow-ups with
 them (raise and wait, with age and how often raised); card steps waiting on them; the owner's own
@@ -15,10 +17,18 @@ Brief JSON (save):
   {"for": "Sam Lee", "kind": "meeting", "title": "1-1 with Sam",
    "sections": [{"name": "Update him on", "bullets": [{"text": "...", "detail": "...", "source": "...",
                  "card": "card-slug", "followup": "<follow-up id or empty>"}]}, ...],
-   "new_followups": [{"topic": "...", "detail": "...", "card": "...", "kind": "raise"}]}
+   "new_followups": [{"topic": "...", "detail": "...", "card": "...", "kind": "raise", "person": "only in a meeting brief"}]}
 Section names: "Update them on", "Ask them", "Decide together", "Chase", "Personal" (use the
 person's pronoun-free name, e.g. "Update Sam on"). new_followups become open follow-ups so
 anything not closed in the meeting is there next time.
+
+Takeaways JSON (after the meeting, from the owner's notes):
+  {"meeting": "Weekly priorities sync", "date": "YYYY-MM-DD", "decisions": ["..."],
+   "mine": [{"title": "verb-first action", "due": "YYYY-MM-DD or empty", "priority": "high|medium|low", "card": "slug", "note": "..."}],
+   "theirs": [{"person": "Sam Lee", "topic": "...", "detail": "...", "card": "slug", "chase": "YYYY-MM-DD or empty"}],
+   "notes": "anything else worth keeping"}
+"mine" become the owner's tasks (Today page), "theirs" follow-ups owed to the owner; the next brief
+for the same meeting lists every one of them with its current status, so nothing drops.
 """
 import json, re, sys
 from datetime import date, timedelta
@@ -100,9 +110,11 @@ def gather(who):
         nd = schedule.next_date(meeting, today)
         print(f"Meeting: {meeting['name']}, {meeting['day']} {meeting['time']}, attendees {', '.join(meeting['attendees'])}; purpose: {meeting['purpose'] or '-'}; next {nd}.")
     shared_cards = set(meeting["cards"] if meeting else [])
-    last = latest(names[0]) if names else None
+    last = latest(meeting["name"]) if meeting and not person else (latest(names[0]) if names else None)
     since = (last or {}).get("date", (today - timedelta(days=14)).isoformat())
-    print(f"Last brief for {names[0] if names else who}: {last['date'] if last else 'none'}; changes counted since {since}.")
+    print(f"Last brief for {title if meeting and not person else (names[0] if names else who)}: {last['date'] if last else 'none'}; changes counted since {since}.")
+    if meeting:
+        print_takeaways(meeting["name"])
     for a in attendees:
         print(f"\nPERSON {a['name']}: role {a.get('role') or '-'}.")
         if a.get("briefing"):
@@ -147,12 +159,98 @@ def gather(who):
             print(f"  OPEN QUESTION [{o['status']}] on {', '.join(o['features'])}: {o['topic'][:170]}")
     for d, txt in decisions_since(since):
         print(f"DECISION {d}: {txt}")
+    if meeting and shared_cards:
+        for e in changes_since(since, shared_cards):
+            print(f"CHANGED {e}")
     away = schedule.next_away(today)
     if away:
         print(f"OWNER AWAY: {away['start']} to {away['end']}, cover {', '.join(away['cover']) or 'not set'}.")
     print("\nWrite the brief as JSON (format in tools/brief.py) with sections like 'Update <first name> on', 'Ask <first name>', "
           "'Decide together', 'Chase', 'Personal'. One short line per bullet, a 'detail' with the background and a 'source' in words. "
           "Order by what matters most to this person (briefing style). Put new topics worth tracking in new_followups. Save with: python tools/brief.py save <file>")
+
+
+CHANGE_LABEL = {"source": "NEW SOURCE", "question": "NEW QUESTION", "assumption": "NEW ASSUMPTION", "answer": "ANSWERED",
+                "likely": "LIKELY ANSWER", "closed": "CLOSED", "possible": "POSSIBLE CONFLICT", "conflict": "NEW CONFLICT",
+                "decision": "DECISION", "stage": "STAGE CHANGED", "page": "UPDATED", "jira": "MOVED TO JIRA", "diagram": "NEW DIAGRAM"}
+
+
+def changes_since(since, slugs):
+    """What's new (map/changes.json) on the given cards since a date, one line each."""
+    ch = _json(K / "map" / "changes.json", {})
+    titles = {c["slug"]: c["title"] for c in _json(K / "map" / "features.json", []) + _json(K / "map" / "topics.json", [])}
+    names = set(slugs) | {titles[s] for s in slugs if s in titles}
+    return [f"{e['date']} {CHANGE_LABEL[e['kind']]}: {e['title']}" + (f" ({e['detail'][:120]})" if e.get("detail") else "")
+            + (f" [{e['card']}]" if e.get("card") and e["card"] != e["title"] else "")
+            for e in ch.get("events", []) if e["date"] >= since and e["kind"] in CHANGE_LABEL
+            and (e.get("card") in names or e["title"] in names)][:40]
+
+
+# ---- meeting takeaways: the owner's actions become tasks, others' become follow-ups ----
+def latest_takeaways(meeting):
+    if not DIR.exists():
+        return None
+    for p in sorted(DIR.glob("*-takeaways.json"), reverse=True):
+        t = _json(p, {})
+        if t.get("meeting", "").lower() == meeting.lower():
+            return t
+    return None
+
+
+def save_takeaways(path):
+    import tasks_store, followups, people, schedule
+    t = json.loads(Path(path).read_text(encoding="utf-8"))
+    m = schedule.find_meeting(str(t.get("meeting", "")))
+    if not m:
+        raise ValueError(f"no meeting called '{t.get('meeting')}' (tools/schedule.py meetings)")
+    day = t.get("date") if re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(t.get("date", ""))) else date.today().isoformat()
+    src = f"{m['name']}, {day}"
+    out = {"meeting": m["name"], "date": day, "decisions": [str(x)[:400] for x in t.get("decisions", [])][:20],
+           "notes": str(t.get("notes", ""))[:3000], "mine": [], "theirs": []}
+    for a in t.get("mine", [])[:20]:
+        if not a.get("title"):
+            continue
+        task = tasks_store.add({"title": a["title"], "due": a.get("due", ""), "priority": a.get("priority", ""),
+                                "day": date.today().isoformat(), "source": f"Takeaway: {src}"[:120],
+                                "comments": [{"at": date.today().isoformat(), "text": a["note"]}] if a.get("note") else []})
+        out["mine"].append({"title": task["title"], "task": task["id"], "due": task["due"], "card": str(a.get("card", ""))[:80]})
+        print(f"Task added: {task['title']}")
+    for a in t.get("theirs", [])[:20]:
+        if not (a.get("person") and a.get("topic")):
+            continue
+        p = people.find(a["person"])
+        fu = followups.add(p["name"] if p else a["person"], a["topic"], a.get("detail", ""), a.get("card", ""), "wait",
+                           a.get("chase", ""), f"Takeaway: {src}")
+        out["theirs"].append({"person": fu["person"], "topic": fu["topic"], "followup": fu["id"], "card": fu["card"]})
+        print(f"Follow-up added for {fu['person']}: {fu['topic']}")
+    DIR.mkdir(parents=True, exist_ok=True)
+    (DIR / f"{day}-{people.slug(m['name'])}-takeaways.json").write_text(json.dumps(out, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"Saved the takeaways of {m['name']} ({day}). The next brief for it lists what is still open.")
+    return out
+
+
+def print_takeaways(meeting):
+    """Last meeting's takeaways with their status now, for the next brief."""
+    import tasks_store, followups
+    t = latest_takeaways(meeting)
+    if not t:
+        print("LAST TAKEAWAYS: none saved yet.")
+        return
+    tasks = {x["id"]: x for x in tasks_store.load()["tasks"]}
+    done_ids = {x.get("id") for x in tasks_store.archived()}
+    fus = {f["id"]: f for f in followups.load()["items"]}
+    print(f"LAST TAKEAWAYS ({t['date']}):")
+    for d in t["decisions"]:
+        print(f"  DECIDED: {d}")
+    for a in t["mine"]:
+        x = tasks.get(a["task"])
+        state = x["status"] if x else ("done" if a["task"] in done_ids else "done or removed")
+        print(f"  OWNER'S ACTION [{state}]: {a['title']}" + (f" (due {a['due']})" if a["due"] else ""))
+    for a in t["theirs"]:
+        f = fus.get(a["followup"])
+        print(f"  {a['person'].upper()} OWES [{f['status'] if f else 'removed'}] [{a['followup']}]: {a['topic']}")
+    if t.get("notes"):
+        print(f"  NOTES: {t['notes'][:400]}")
 
 
 def gather_status(days=7):
@@ -224,7 +322,8 @@ def save(path, kind_default="meeting"):
              "away": b.get("away") if kind == "handover" else None}
     for f in b.get("new_followups", [])[:10]:
         if f.get("topic"):
-            fu = followups.add(name, f["topic"], f.get("detail", ""), f.get("card", ""), f.get("kind", "raise"), "", f"From the {kind} brief, {clean['date']}")
+            # a meeting brief names the attendee each follow-up is for
+            fu = followups.add(f.get("person") or name, f["topic"], f.get("detail", ""), f.get("card", ""), f.get("kind", "raise"), "", f"From the {kind} brief, {clean['date']}")
             print(f"Follow-up added: {fu['topic']}")
     DIR.mkdir(parents=True, exist_ok=True)
     out = DIR / f"{clean['date']}-{people.slug(name)}-{kind}.json"
@@ -241,6 +340,10 @@ if __name__ == "__main__":
         gather(" ".join(a[1:]))
     elif len(a) >= 2 and a[0] == "save":
         save(a[1])
+    elif len(a) >= 3 and a[0] == "takeaways" and a[1] == "show":
+        print_takeaways(" ".join(a[2:]))
+    elif len(a) >= 2 and a[0] == "takeaways":
+        save_takeaways(a[1])
     elif len(a) >= 2 and a[0] == "show":
         import people
         p = people.find(" ".join(a[1:]))

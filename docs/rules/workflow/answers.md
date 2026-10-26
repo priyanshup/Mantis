@@ -34,6 +34,12 @@ fraction of one call per item (MANTIS-IMP-057). For each item:
    `knowledge/glossary.md`, both cited the same way. Write all of these in one
    `entities.py apply` file: `alias: Name | Other name | Owner answer, <date>`,
    `notsame: Name | Other name | Owner answer, <date>`, `entity: Name | type | | Owner answer, <date>`.
+   Where an answer says one thing is part of another ("the admin portal is part of the platform"), also add
+   `relation: Part | is part of | Whole | Owner answer, <date>`: the name check then never
+   asks whether a part and its whole are the same, under any spelling (MANTIS-IMP-088).
+   When an answer corrects a word (a mishearing, an old name), add it to the glossary's
+   Mishearings table: the health report then lists every card, output or roadmap line that still
+   uses the old word (`python tools/answered.py stale`), and those are fixed in the same session.
 5. **Possible conflicts** (status Unconfirmed). "Yes, they conflict": set the status to `Open`
    and note the owner's answer; if the owner says which statement is right, record it as the
    Resolution and set `Resolved`. "The plan changed": the newer statement is right; note it as
@@ -61,7 +67,9 @@ fraction of one call per item (MANTIS-IMP-057). For each item:
    the same session: only the parts those sections touch, cited, following `docs/rules/OUTPUTS_GUIDE.md`
    ("Updating a page already in Confluence or Jira"), then set its `updated` date. The site's Confluence
    and Jira panels then show the owner exactly which sections or fields to paste. An output marked
-   `track_card: false` copies someone else's text verbatim and is never rewritten.
+   `track_card: false` copies someone else's text verbatim and is never rewritten. If an output
+   already says what the changed card section says, record it as checked instead of editing it:
+   `python tools/changes.py mark <file>`.
 9. **Promises and decisions in the text.** A promise by the owner ("I will send the sheet")
    becomes a task: `python tools/tasks.py add "Title" --note "From your answer on <topic>, <date>"`.
    A promise by someone else becomes a wait on them:

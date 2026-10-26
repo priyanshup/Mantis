@@ -1,7 +1,9 @@
 """Read and write Mantis registers: one file per entry (stdlib only).
 
     python tools/entry.py next doc|gap|asm|cfl|dec|ast [N]   claim the next N IDs (safe across sessions)
-    python tools/entry.py add  doc|gap|asm|cfl|dec|ast FILE   add entries from FILE ('-' = stdin), one file each
+    python tools/entry.py add  doc|gap|asm|cfl|dec|ast FILE [--still-new]   add entries from FILE ('-' = stdin), one file each;
+                                                          a gap, conflict or assumption that looks settled already is refused
+                                                          until checked (--still-new once it is)
     python tools/entry.py status ID "New status text"     replace an entry's Status line
     python tools/entry.py priority ID Level ["why"]       set Critical|High|Medium|Low (or none) on a gap, assumption or conflict
     python tools/entry.py note ID "Label" "Text"          append "- **Label (date):** Text" to an entry
@@ -106,7 +108,7 @@ def cmd_next(kind, n=1):
     print("\n".join(locked(claim)))
 
 
-def cmd_add(kind, src):
+def cmd_add(kind, src, still_new=False):
     text = sys.stdin.read() if src == "-" else Path(src).read_text(encoding="utf-8")
     prefix = KINDS[kind][0]
     new = [(rid, text[s:e].strip() + "\n") for rid, s, e in blocks(text)]
@@ -115,6 +117,14 @@ def cmd_add(kind, src):
         sys.exit(f"Entries must start with '### {prefix}...'. Found: {ids or 'none'}")
     if len(set(ids)) != len(ids):
         sys.exit(f"Duplicate IDs inside the input: {ids}")
+    # Never ask the owner twice (MANTIS-IMP-088): a new question that looks like one already closed,
+    # resolved or answered is refused until it has been checked. Read the entries listed; if one
+    # settles the question, cite it instead. Only a question that is still new is added with --still-new.
+    if kind in ("gap", "cfl", "asm") and not still_new:
+        import answered
+        if answered.check_entries(text):
+            sys.exit("Nothing written. Read the entries above (python tools/entry.py show <ID>). If one already "
+                     "settles it, do not raise it; otherwise re-run with --still-new.")
 
     def write():
         clash = [r for r in ids if path_of(r).exists()]
@@ -297,8 +307,8 @@ if __name__ == "__main__":
         sys.exit(__doc__)
     if a[0] == "next" and len(a) in (2, 3) and a[1] in KINDS:
         cmd_next(a[1], int(a[2]) if len(a) == 3 else 1)
-    elif a[0] == "add" and len(a) == 3 and a[1] in KINDS:
-        cmd_add(a[1], a[2])
+    elif a[0] == "add" and len(a) in (3, 4) and a[1] in KINDS and (len(a) == 3 or a[3] == "--still-new"):
+        cmd_add(a[1], a[2], still_new=len(a) == 4)
     elif a[0] == "status" and len(a) == 3:
         cmd_status(a[1], a[2])
     elif a[0] == "apply" and len(a) in (2, 3):

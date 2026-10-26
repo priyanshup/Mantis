@@ -26,6 +26,8 @@ PATTERNS = [
     (re.compile(r"\bMANTIS-(DOC|GAP|ASM|CFL|DEC)-\d+", re.I), "knowledge ID"),
     (re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I), "email address"),
     (re.compile(r"https?://[a-z0-9.-]*atlassian\.net", re.I), "company Jira/Confluence URL"),
+    (re.compile(r"\bATAT[A-Za-z0-9_\-=]{20,}"), "Atlassian API token"),
+    (re.compile(r"(?i)\b(?:JIRA|CONFLUENCE)_API_TOKEN\s*=\s*\S{8,}"), "API token value"),
 ]
 TYPES = {"person", "organisation", "distributor", "market", "team"}
 SKIP_SUFFIX = {".png", ".jpg", ".jpeg", ".gif", ".ico", ".woff", ".woff2", ".zip"}

@@ -35,6 +35,8 @@ Cleanup and what goes where: `docs/system/MAINTENANCE.md`.
 ## The owner's day
 
 - "I'm meeting X, what should I discuss?": a meeting brief (`docs/rules/workflow/day.md`, "Meeting briefs").
+- Jira and Confluence: `python tools/atl.py` (read-only; commands in `docs/system/SKILLS.md`). Its
+  mirror in `mantis/mirror/` is not a source; ingest only what the owner approves from its reports.
 - "Follow up with X on Y": `python tools/followups.py add`. Time away and handovers: "Away planner and handover".
 - A question about the product or the work ("what is the target for…?"): a sourced answer (`docs/rules/workflow/questions.md`).
 - Buttons on the site run the same work in the background (`tools/jobs.py`); results are on the Health page.

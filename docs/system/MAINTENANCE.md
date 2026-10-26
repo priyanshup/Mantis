@@ -7,7 +7,7 @@ regenerated or was always temporary; archive what was knowledge; let the owner d
 
 | Kind | Examples | What happens to it |
 |---|---|---|
-| **Knowledge** (the source of truth) | `mantis/01_sources/`, `02_digests/`, `knowledge/` cards and registers, `outputs/`, `tasks/`, `docs/` | Never deleted automatically. Replaced versions go to `mantis/03_archive/`. |
+| **Knowledge** (the source of truth) | `mantis/01_sources/`, `02_digests/`, `knowledge/` cards and registers, `outputs/`, `tasks/`, `docs/` | Never deleted automatically. Replaced versions go to `mantis/03_archive/`. One exception in `01_sources/`: duplicate exports, and the binary of a superseded snapshot (its page-marked text stays), are removed weekly by `tools/prune_sources.py` after a zip backup. |
 | **Generated** (rebuilt from knowledge) | `mantis/knowledge/map/`, card text below the GENERATED marker, `registers/documents/` entries (except their Notes), the website, the search index (`%LOCALAPPDATA%\Mantis\search.db`, refreshed by every rebuild; `python tools/search.py rebuild` starts it again) | Never edited by hand. Rebuilt by `python tools/build_map.py`; safe to delete and rebuild. |
 | **Temporary** | `__pycache__/`, editor and OS temp files, `00_inbox/.extracted/` copies whose original is gone, old site builds in `%TEMP%`, project backups beyond the newest five | Removed by `tools/maintain.py`. |
 

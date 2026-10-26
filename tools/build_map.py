@@ -298,18 +298,29 @@ import hashlib
 _h = lambda s: hashlib.sha1(s.encode("utf-8")).hexdigest()[:8]
 _by = {e["name"]: e for e in kg["entities"]}
 _dt = lambda e: [{"id": d, "title": docs.get(d, {}).get("original_title", "")} for d in e["docs"][:3]]
+# A question the owner already answered is never asked again (MANTIS-IMP-088). If it comes back, the
+# answer was not applied to the register: say so on the health report instead of asking twice.
+import answered as _answered
+_done = _answered.answered_ids()
+_unapplied = []
 for c in kg["candidates"]:
     a, b = _by.get(c["a"]), _by.get(c["b"])
+    if a and b and "NAME-" + _h(c["a"] + "|" + c["b"]) in _done:
+        _unapplied.append("NAME-" + _h(c["a"] + "|" + c["b"]))
+        continue
     if a and b:
         open_items.append({"id": "NAME-" + _h(c["a"] + "|" + c["b"]), "kind": "name", "status": "Open", "status_full": "Open",
                            "topic": f'Are "{c["a"]}" and "{c["b"]}" the same thing?', "raised": "", "features": [],
                            "docs": _dt(a) + _dt(b), "names": [c["a"], c["b"]]})
 for e in kg["entities"]:
-    if e["type"] == "unknown" and len(e["docs"]) >= 5:
+    if e["type"] == "unknown" and len(e["docs"]) >= 5 and "TERM-" + _h(e["name"]) in _done:
+        _unapplied.append("TERM-" + _h(e["name"]))
+    elif e["type"] == "unknown" and len(e["docs"]) >= 5:
         open_items.append({"id": "TERM-" + _h(e["name"]), "kind": "term", "status": "Open", "status_full": "Open",
                            "topic": f'What is "{e["name"]}"? Named in {len(e["docs"])} documents; Mantis has no confirmed meaning or type for it yet.', "raised": "",
                            "features": [], "docs": _dt(e), "names": [e["name"]]})
 (OUT / "open-items.json").write_text(json.dumps(open_items, indent=1, ensure_ascii=False), encoding="utf-8")
+(OUT / "answers-unapplied.json").write_text(json.dumps(sorted(_unapplied)), encoding="utf-8")
 
 # registers.md: one line per entry that is still open
 rows = ["# Registers (compact)", "",

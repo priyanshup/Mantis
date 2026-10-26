@@ -59,6 +59,18 @@ or the Brief me button runs the job:
 3. `python tools/brief.py save <file>`. It shows on Today and on the person's card; each bullet
    expands. In chat, also give the bullets in a few lines.
 
+**Recurring meetings and their takeaways.** A recurring meeting (`tools/schedule.py add-meeting`, or
+the site) gets its brief on its day: the session-start hook asks for it once, on the regular day or
+on the day it was moved to. When a holiday moves one occurrence, `python tools/schedule.py
+move-meeting ID REGULAR_DATE NEW_DATE` (or `skip`); the next week returns to the regular day. A
+meeting's brief starts from its last takeaways and their status now, then what changed on its cards.
+After the meeting, when the owner pastes notes or lists takeaways, write them as JSON (format in
+`tools/brief.py`): decisions, the owner's own actions (`mine`, verb first, a due date only if the owner
+gave one) and actions owed by others (`theirs`). Save with `python tools/brief.py takeaways <file>`:
+the owner's actions become tasks on Today, the others' become follow-ups, and the next brief lists every
+one of them until it is done. Decisions taken there are reported to the owner; they go into the
+decision register only through `docs/rules/workflow/answers.md` ("Decisions") when the owner confirms.
+
 **Weekly status update:** the same format with `"for": "Weekly status"` and `"kind": "status"`,
 from `python tools/brief.py status` (what changed on followed cards in the last 7 days). Sections:
 Done this week, In progress, Blocked or at risk, Decisions needed, Outcomes (launch results and

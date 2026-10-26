@@ -147,8 +147,12 @@ def recent(n=20):
 
 
 def claude_today():
+    """Claude jobs started today that used the model. A job that failed before any model output (for example
+    at the subscription's session limit) cost nothing and does not count against the daily cap."""
     today = date.today().isoformat()
-    return sum(1 for j in recent(KEEP) if JOBS.get(j["type"], {}).get("kind") == "claude" and j["created"].startswith(today))
+    spent = lambda j: j.get("state") != "failed" or ((j.get("usage") or {}).get("output", 0) or 0) > 0
+    return sum(1 for j in recent(KEEP) if JOBS.get(j["type"], {}).get("kind") == "claude"
+               and j["created"].startswith(today) and spent(j))
 
 
 def daily_cap():

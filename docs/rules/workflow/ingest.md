@@ -44,7 +44,12 @@ Part of the workflow (index and the rules for every task: `../WORKFLOW.md`). Use
    confirms goes into the glossary's Mishearings table.
 6. **Assumptions, gaps, conflicts.** Decide which applies (rules: Assumptions vs. Knowledge
    Gaps). Claim IDs, write the entries to a scratch file in the register's format, then
-   `python tools/entry.py add gap <file>` (or `asm`, `cfl`). Stop and report live for a new
+   `python tools/entry.py add gap <file>` (or `asm`, `cfl`). `add` refuses an entry that looks
+   like a question already closed, resolved or answered, and names those entries: read them,
+   and if one settles it, cite it in the digest instead of asking again; re-run with
+   `--still-new` only when the question is genuinely new (MANTIS-IMP-088). In `key_entities`,
+   use the register's canonical names (`python tools/graph.py <name>`), so a known thing under
+   a new spelling does not become a new name question. Stop and report live for a new
    conflict or an assumption below Moderate evidence (rules: Batch Processing). Add a
    Priority line only when the sources make the stakes clear (rules: Priority).
 7. **Cross-check.** Read only the open items step 2 listed: `python tools/entry.py show <ID>`.

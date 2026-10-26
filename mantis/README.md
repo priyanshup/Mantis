@@ -6,12 +6,13 @@ document IDs and citations depend on these paths, so they do not change.
 | Folder | What it holds | Rules |
 |---|---|---|
 | `00_inbox/` | New files and pastes waiting for ingest; answers (`answers-*.md`) and page edits (`edit-*.md`) from the site. | Emptied by each ingest or processing run. `.extracted/` holds Markdown copies made by `tools/extract.py`. |
-| `01_sources/<ID>/<date>.*` | The original of every ingested document, one dated snapshot per version. | Never overwritten or deleted. |
+| `01_sources/<ID>/<date>.*` | The original of every ingested document, one dated snapshot per version. | Never overwritten. Weekly housekeeping removes duplicate exports, and replaces a superseded version's binary with its page-marked text (`tools/prune_sources.py`, zip backup first). The snapshot a current digest cites is never removed. |
 | `02_digests/<ID>.md` | One cited digest per document. | Edited only with a preview and the owner's approval. |
 | `03_archive/` | Old digest versions, processed answers and edits, snapshots. See `03_archive/README.md`. | Never deleted automatically. |
 | `knowledge/` | The working layer: cards, registers, glossary, personas, entities, focus. | See below. |
 | `outputs/` | Pages, epics and stories written for Confluence and Jira. | Written from `TEMPLATES/`; edited on the site or by Claude. |
 | `tasks/` | The owner's task list and daily brief; follow-ups, meetings, away periods, suggested deadlines, and saved briefs (`briefs/`). | Through the site or the tools (`tasks.py`, `followups.py`, `schedule.py`, `brief.py`, `away.py`) only. |
+| `mirror/` | A read-only copy of Jira issues and Confluence pages as Markdown, with indexes, diffs and comparison reports. Not a source: nothing in it is cited until it is ingested. | `tools/atl.py` only; safe to delete (the next sync refills it). |
 | `jobs/` | Records of background jobs started from the site's buttons (the newest 60 are kept). | `tools/jobs.py` |
 | `config/` | This instance's local settings and the leak-check denylist. Never committed. | By hand, with the owner |
 | `TEMPLATES/` | Templates for digests, register entries, cards, pages, epics and stories. | Change with care: outputs follow them. |

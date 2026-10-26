@@ -225,14 +225,21 @@ def behind(all_cards, work, today):
         cur = card_sections(c["curated"])
         h = hashlib.sha1(json.dumps(cur, sort_keys=True).encode("utf-8")).hexdigest()[:12]
         out_upd, card_upd = x.get("updated", ""), c["fm"].get("updated", "")
+        out_hash = hashlib.sha1(f.read_bytes()).hexdigest()[:12]
         rec = sync.get(x["file"])
-        if rec is None or rec.get("updated") != out_upd:   # new, or the output was just updated: in step from here
+        # In step from here when the output is new, its `updated` date moved, or its text was edited since the
+        # snapshot (a second update on the same day leaves the date unchanged; MANTIS-IMP-091).
+        edited = rec is not None and rec.get("out_hash") not in (None, out_hash)
+        if rec is None or rec.get("updated") != out_upd or edited:
             if rec is None and card_upd > out_upd:   # no snapshot from before: the dates are all we know
-                sync[x["file"]] = {"updated": out_upd, "card_hash": "", "sections": {}}
+                sync[x["file"]] = {"updated": out_upd, "card_hash": "", "sections": {}, "out_hash": out_hash}
             else:
-                sync[x["file"]] = {"updated": out_upd, "card_hash": h, "sections": cur}
+                sync[x["file"]] = {"updated": out_upd, "card_hash": h, "sections": cur, "out_hash": out_hash}
             changed = True
             rec = sync[x["file"]]
+        elif "out_hash" not in rec:
+            rec["out_hash"] = out_hash
+            changed = True
         if rec["card_hash"] == h:
             continue
         if rec["card_hash"]:
@@ -315,6 +322,18 @@ def timeline(docs, all_cards, features, events, focus, today, back=8, ahead=10):
 
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")   # arrows and accents in titles, on a Windows console too
+    if sys.argv[1:2] == ["mark"] and len(sys.argv) > 2:   # checked against the card, nothing to change (MANTIS-IMP-091)
+        sync = json.loads(SYNC.read_text(encoding="utf-8")) if SYNC.exists() else {}
+        for rel in sys.argv[2:]:
+            rel = rel.replace("\\", "/").removeprefix("mantis/")
+            if rel in sync:
+                sync[rel]["card_hash"] = ""   # re-snapshot the card on the next rebuild
+                sync[rel]["updated"] = "checked"
+                print(f"{rel}: marked in step; the next rebuild records the card as it is now.")
+            else:
+                print(f"{rel}: not a tracked output.")
+        SYNC.write_text(json.dumps(sync, indent=1, ensure_ascii=False), encoding="utf-8")
+        sys.exit(0)
     if sys.argv[1:2] == ["behind"]:   # what to update after processing (docs/rules/workflow/answers.md, ingest.md)
         data = json.loads((K / "map" / "changes.json").read_text(encoding="utf-8"))
         rows = data.get("behind", [])

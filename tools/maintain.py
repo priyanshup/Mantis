@@ -6,7 +6,9 @@
 
 Cleanup touches only things that are regenerated or temporary: __pycache__ folders, editor and
 OS temp files, old site build folders in %TEMP%, extracted inbox copies whose original has
-gone, and project backups beyond the newest five (%LOCALAPPDATA%/Mantis/backups). It never deletes knowledge, sources, outputs or archives; those are reported for the owner.
+gone, and project backups beyond the newest five (%LOCALAPPDATA%/Mantis/backups). Source snapshots:
+only duplicate exports and superseded binaries go, each superseded one keeping its page-marked text,
+with a zip backup first (tools/prune_sources.py). It never deletes knowledge, digests, outputs or archives.
 Writes mantis/knowledge/map/health.md and health.json.
 """
 import json, os, re, shutil, sys, tempfile, time
@@ -61,6 +63,15 @@ def cleanup():
             if p.stem not in originals:
                 p.unlink()
                 removed.append(p.relative_to(ROOT).as_posix())
+    try:   # source snapshots: duplicate exports and superseded binaries (text kept; owner decision 2026-10-11, MANTIS-IMP-089)
+        import prune_sources
+        dupes, superseded = prune_sources.plan()
+        if dupes or superseded:
+            prune_sources.apply(dupes, superseded)
+            removed += [f"source duplicate {f.relative_to(M).as_posix()}" for f, _ in dupes]
+            removed += [f"superseded source {f.relative_to(M).as_posix()} (text kept)" for f in superseded]
+    except Exception as e:
+        removed.append(f"source pruning skipped ({e})")
     return removed
 
 
@@ -116,6 +127,19 @@ def report():
     if soft:
         add("info", "Claims", f"{len(soft)} card claim(s) only partly supported (often a view stated as fact, or a dropped hedge) or too thin to judge. "
             "These verdicts vary between runs; treat them as prompts to reread. Run `python tools/support.py report`.")
+
+    # Never ask twice (MANTIS-IMP-088): answered questions whose answer did not reach the register, and
+    # wording the owner corrected that is still written as fact in cards, outputs or the roadmap.
+    import answered
+    unapplied = load("answers-unapplied.json") or []
+    if unapplied:
+        add("warn", "Answers", f"{len(unapplied)} answered question(s) would be asked again because the answer is not in the "
+            f"entity register: {', '.join(unapplied[:6])}. Find them in mantis/03_archive/answers/ and apply them "
+            "(docs/rules/workflow/answers.md, step 4).")
+    st = answered.stale()
+    if st:
+        add("warn", "Wording", f"{len(st)} place(s) still use a word the owner corrected: "
+            + "; ".join(f"{f}:{i} \"{h}\" (means {m})" for f, i, h, m in st[:4]) + ". Run `python tools/answered.py stale`.")
 
     # Owner actions (summaries to refresh, suggested cards, drafts, questions and names waiting) are on Home's
     # "Needs attention" list; this report keeps what is about Mantis itself (MANTIS-IMP-069).

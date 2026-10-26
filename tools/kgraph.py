@@ -49,6 +49,16 @@ def register():
 def build(docs, features):
     """docs: {doc_id: front matter}; features: list from build_map. Returns the graph dict."""
     reg, rels = register()
+    # What the owner already settled elsewhere counts too (MANTIS-IMP-088): people.md names and
+    # aliases are people, and a term the glossary explains is a known concept.
+    import answered
+    for alias_name, full in answered.people_aliases().items():
+        e = reg.setdefault(full, {"type": "person", "aliases": []})
+        if e["type"] == "unknown":
+            e["type"] = "person"
+        if alias_name != full and alias_name not in e["aliases"]:
+            e["aliases"].append(alias_name)
+    glossary = {norm(t) for t in answered.glossary_terms()}
     alias = {}
     for name, e in reg.items():
         for n in [name] + e["aliases"]:
@@ -93,8 +103,11 @@ def build(docs, features):
     for key in spellings:
         name = display(key)
         regent = reg.get(key, {"type": "unknown", "aliases": []})
+        typ = regent["type"]
+        if typ == "unknown" and (norm(name) in glossary or key in glossary):
+            typ = "concept"   # explained in the glossary, so never asked as "What is ...?"
         ents[key] = {
-            "id": name, "name": name, "type": regent["type"],
+            "id": name, "name": name, "type": typ,
             "aliases": sorted({s for s in spellings[key] if s != name} | set(regent["aliases"])),
             "docs": sorted(mentions[key], reverse=True),
             "features": [{"slug": s, "title": t, "docs": n, "kind": k} for s, t, n, k in sorted(feat_of[key], key=lambda x: -x[2])],
@@ -116,16 +129,34 @@ def build(docs, features):
     # (brand prefixes are local settings, mantis/config/settings.json).
     import local_config
     brands = [b.lower() for b in local_config.load().get("brand_prefixes", [])]
-    # Pairs the owner said are different (register table "Not the same") are never asked again.
+    # Pairs the owner said are different (register table "Not the same") are never asked again, under
+    # any spelling: both sides are compared as canonical entities, so an answer about "OMS" also covers
+    # its aliases (MANTIS-IMP-088).
     _text = (K / "entity_register.md").read_text(encoding="utf-8") if (K / "entity_register.md").exists() else ""
-    distinct = {frozenset((r[0].lower(), r[1].lower())) for r in table(_text, "Not the same") if len(r) >= 2}
+    canon = lambda n: alias.get(norm(n), norm(n))
+    distinct = {frozenset((canon(r[0]), canon(r[1]))) for r in table(_text, "Not the same") if len(r) >= 2}
+    # "X is part of Y" means X and Y are different things; so is anything further up the chain.
+    parent = defaultdict(set)
+    for r in rels:
+        if re.fullmatch(r"(?i)(is (a )?part of|is a (module|component|section) of|belongs to)", r["rel"].strip()):
+            parent[canon(r["from"])].add(canon(r["to"]))
+
+    def above(k, seen=None):
+        seen = set() if seen is None else seen
+        for p in parent.get(k, ()):
+            if p not in seen:
+                seen.add(p)
+                above(p, seen)
+        return seen
+
     keys = [k for k in ents if len(ents[k]["docs"]) >= 2 and len(norm(ents[k]["name"])) >= 3]
     cands = []
     for a, b in combinations(sorted(keys), 2):
         short, long_ = sorted((norm(ents[a]["name"]), norm(ents[b]["name"])), key=len)
         if any(short == long_.replace(b, "") for b in brands) or long_.startswith(short) or (short in long_ and len(short) >= 5):
-            if frozenset((ents[a]["name"].lower(), ents[b]["name"].lower())) not in distinct:
-                cands.append((ents[a]["name"], ents[b]["name"], len(ents[a]["docs"]) + len(ents[b]["docs"])))
+            if frozenset((a, b)) in distinct or a in above(b) or b in above(a):
+                continue
+            cands.append((ents[a]["name"], ents[b]["name"], len(ents[a]["docs"]) + len(ents[b]["docs"])))
     cands.sort(key=lambda c: -c[2])
 
     graph = {"entities": sorted(ents.values(), key=lambda e: (-len(e["docs"]), e["name"].lower())),
