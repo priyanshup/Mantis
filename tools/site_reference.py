@@ -1,4 +1,4 @@
-"""Site pages for reference and housekeeping: Library (pages, diagrams, decisions), Graph, What's new, Health (with the backlog), search."""
+"""Site pages for reference and housekeeping: Library (pages, diagrams, decisions), What's new, the backlog, search. Health lives on Sources (site_day.py)."""
 import re
 from site_common import *   # noqa: F401,F403  (shared state and helpers)
 
@@ -17,32 +17,13 @@ def page_library(items, built):
 <section class="panel-box lib-sec" data-libsec="written">{rows or '<p class="empty">Nothing written yet.</p>'}</section>
 <section class="lib-sec" data-libsec="diagrams" id="diagrams"><h2 class="lib-h">Diagrams</h2>{page_diagrams(built, embed=True)}</section>
 <section class="lib-sec" data-libsec="decisions" id="decisions"><h2 class="lib-h">Decisions</h2>{page_decisions(built, embed=True)}</section>"""
-    return shell("Library", body, active="library", built=built)
+    return shell("Library", body, built=built)
 
 
 def page_single(it, built):
     body = f"""<div class="crumbs"><a href="../library.html">Library</a><span>›</span><span>{esc(it["title"])}</span></div>
 <div class="tab-panel">{copy_bar("Copy page", it.get("file"))}<article class="doc">{render(it["md"])}</article></div>"""
-    return shell(it["title"], body, base="../", active="library", built=built)
-
-
-def page_graph(built):
-    titles = {d: t for d, t in GRAPH.get("titles", {}).items()}
-    keep = [e for e in GRAPH.get("entities", []) if len(e["docs"]) >= 2 or e["relations"] or e["type"] != "unknown"]
-    names = {e["name"] for e in keep}
-    data = [{"n": e["name"], "t": e["type"], "a": e["aliases"], "d": len(e["docs"]),
-             "docs": [re.sub(ID, "", titles.get(d, "")).strip() for d in e["docs"][:20]],
-             "f": [[x["slug"], x["title"], x["docs"], x.get("kind", "feature")] for x in e["features"]],
-             "r": [[r["rel"], r["to"], r["dir"]] for r in e["relations"]],
-             "l": [[n, w] for n, w in e["neighbours"] if n in names]} for e in keep]
-    types = ["system", "person", "team", "organisation", "distributor", "market", "concept", "unknown"]
-    chips = "".join(f'<button data-v="{t}">{t.capitalize()}</button>' for t in types)
-    body = f"""<div class="page-h"><div><h1>Knowledge graph</h1><p class="lead">The people, systems and places the sources name, and how they connect. Pick one to see its neighbourhood.</p></div></div>
-<div class="toolbar"><input id="gq" type="search" placeholder="Search names and aliases…" aria-label="Search entities">
-<div class="chips" id="f-type"><button data-v="all" class="on">All</button>{chips}</div></div>
-<div class="graph-wrap"><section class="panel-box ent-list" id="ent-list"></section><section class="tab-panel ent-detail" id="ent-detail"></section></div>
-<script id="graph" type="application/json">{json.dumps(data, ensure_ascii=False)}</script>"""
-    return shell("Graph", body, active="graph", built=built)
+    return shell(it["title"], body, base="../", built=built)
 
 
 def search_index(features, work, items, entries):
@@ -50,10 +31,10 @@ def search_index(features, work, items, entries):
     idx = []
     add = lambda kind, title, url, text="", where="": idx.append({"k": kind, "t": title, "u": url, "w": where, "x": text})
     for t in TOPICS:
-        add("Topic", t["title"], f"topics/{t['slug']}.html", plain(t["card_md"]), n_(len(t['docs']), "source"))
+        add("Idea" if not on_roadmap(t, False) else "Feature", t["title"], f"topics/{t['slug']}.html", plain(t["card_md"]), n_(len(t['docs']), "source"))
     for f in features:
         u = f"features/{f['slug']}.html"
-        add("Roadmap", f["title"], u + "#overview", plain(f["card_md"]), STATUS[f["status"]][0])
+        add("Feature", f["title"], u + "#overview", plain(f["card_md"]), STATUS[f["status"]][0])
         if f["page_md"]:
             add("Confluence page", f["title"], u + "#page", plain(f["page_md"]), f["title"])
     for x in work:
@@ -61,10 +42,11 @@ def search_index(features, work, items, entries):
     for it in items:
         if it.get("md"):
             add(it["kind"], it["title"], it["href"], plain(it["md"]))
-    for e in GRAPH.get("entities", []):
-        if len(e["docs"]) >= 2 or e["type"] != "unknown":
-            add("Entity", e["name"], f"graph.html#e={quote(e['name'])}", "Also called: " + ", ".join(e["aliases"]) if e["aliases"] else "", f"{e['type']}, {n_(len(e['docs']), 'document')}")
-            idx[-1]["a"] = "|".join(e["aliases"])
+    import people as people_mod   # a person opens their side panel (the link is a fallback to the People page)
+    for p in people_mod.load():
+        add("Person", p["name"], f"people.html#{p['slug']}", " ".join(x for x in (p["role"], p["team"]) if x), plain(p["role"], 80))
+        idx[-1]["a"] = "|".join(p["aliases"])
+        idx[-1]["p"] = p["name"]
     titles = GRAPH.get("titles", {})
     for p in sorted((M / "02_digests").glob("MANTIS-DOC-*.md"), reverse=True):
         m = re.search(r"(?ms)^## Summary\s*\n(.*?)(?=^## |\Z)", p.read_text(encoding="utf-8"))
@@ -72,9 +54,9 @@ def search_index(features, work, items, entries):
         if title:
             add("Source", title, "", plain(m.group(1), 900) if m else "")
     for e in entries:
-        add("Mantis backlog", e["title"], "health.html#backlog", plain(e["body"], 1500), e["id"].replace("MANTIS-", ""))
+        add("Mantis backlog", e["title"], "sources.html#backlog", plain(e["body"], 1500), e["id"].replace("MANTIS-", ""))
     for o in OPEN:
-        add("Open item", plain(o["topic"], 140), f"review.html#{o['id']}", plain(o["status_full"]), o["id"].replace("MANTIS-", ""))
+        add("Question", plain(o["topic"], 140), f"questions.html#k={hashlib.sha1(o['id'].encode('utf-8')).hexdigest()[:10]}", plain(o["status_full"]), o["id"].replace("MANTIS-", ""))
     return idx
 
 
@@ -159,7 +141,7 @@ def page_changes(built):
 <p class="muted small ev-sum" id="ev-sum" aria-live="polite"></p>
 <div class="ev-feed" id="ev-feed" data-today="{today.isoformat()}">{feed or '<p class="empty">Nothing changed in the last 30 days.</p>'}</div>
 <p class="empty" id="ev-none" hidden>Nothing of this kind in this period.</p>"""
-    return shell("What's new", body, active="changes", built=built)
+    return shell("What's new", body, active="sources", built=built)
 
 
 def page_diagrams(built, embed=False):
@@ -186,22 +168,6 @@ def page_diagrams(built, embed=False):
     if embed:   # shown inside another page (MANTIS-IMP-068): no page header, no shell
         return re.sub(r'^<div class="page-h">.*?</div></div>\n?', "", body, count=1, flags=re.S)
     return shell("Diagrams", body, active="diagrams", built=built)
-
-
-def page_health(built):
-    p = M / "knowledge" / "map" / "health.json"
-    h = json.loads(p.read_text(encoding="utf-8")) if p.exists() else {"date": "", "items": []}
-    lab = {"warn": ("Fix", "s-ref plain"), "todo": ("To do", "s-build plain"), "info": ("Note", "s-none plain")}   # "plain": a dot, not a stage icon
-    rows = "".join(f'<div class="row health-row">{pill(*lab[i["level"]])}<span class="tag">{esc(i["area"])}</span><span class="row-t health-msg">{esc(i["msg"])}</span></div>' for i in h["items"])
-    body = f"""<div class="page-h"><div><h1>Health</h1><p class="lead">What Mantis noticed on its last check ({esc(h["date"])}). Cleanup of temporary files runs weekly by itself; anything that needs a decision is listed here.</p></div></div>
-<section class="panel-box">{rows or '<p class="empty">All clear.</p>'}</section>
-<section class="panel-box jobs-box" id="jobs"><div class="box-h"><h2>Background jobs</h2><span class="muted small" id="job-quota"></span></div>
-{INBOX_STRIP.format(btn=job_btn("process-inbox", "Process inbox", cls="btn"))}
-<div class="job-acts">{job_btn("rebuild", "Rebuild everything", ai=False)}{job_btn("daily-brief", "Prepare today's brief")}</div>
-<p class="muted small job-note">Buttons marked ✦ use Claude on your normal subscription quota; the others are free. Jobs that hit a rule needing your decision stop and say "needs you" instead of guessing.</p>
-<div id="job-list"></div></section>
-<details class="grp-box backlog-box" id="backlog"><summary><h2>Mantis backlog</h2><span class="muted small">Ideas for Mantis itself</span></summary>{page_backlog(backlog(), built, embed=True)}</details>"""
-    return shell("Health", body, active="health", built=built)
 
 
 def page_backlog(entries, built, embed=False):

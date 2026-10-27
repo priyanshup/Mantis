@@ -41,8 +41,7 @@ with its entry), and write registers in one batch (`entry.py apply FILE`, `entit
 instead of one call per change. Do not reread a file you already have."""
 
 # The workflow file each job needs (MANTIS-IMP-058); jobs not listed need only the index.
-RULES = {"process-inbox": "docs/rules/workflow/ingest.md, docs/rules/workflow/answers.md and docs/rules/workflow/edits.md",
-         "process-answers": "docs/rules/workflow/answers.md", "refresh-card": "docs/rules/workflow/ingest.md ('End of batch')",
+RULES = {"pull": "docs/rules/workflow/pull.md", "refresh-card": "docs/rules/workflow/pull.md",
          "daily-brief": "docs/rules/workflow/day.md", "meeting-brief": "docs/rules/workflow/day.md",
          "status-update": "docs/rules/workflow/day.md", "handover": "docs/rules/workflow/day.md",
          "ask-deep": "docs/rules/workflow/questions.md"}
@@ -53,22 +52,15 @@ JOB_TOOLS = "Bash,Read,Edit,Write,Glob,Grep"
 JOBS = {
     "rebuild": {"label": "Rebuild the site and cards", "kind": "free"},
     "skip-brief": {"label": "Skip today's brief", "kind": "free"},
-    "process-inbox": {"label": "Process the inbox", "kind": "claude", "prompt": (
-        "Job: process everything waiting in mantis/00_inbox, in this order: owner answers (answers-*.md, "
-        "WORKFLOW 'Owner answers from the site'), page edits (edit-*.md, 'Owner edits from the site'), then "
-        "files to ingest (everything else, the ingest checklist; exports of our own pages per 'Exports of our "
-        "own pages'). Then refresh the curated summary of every card that now shows new sources, cited, and "
-        "add their IDs to source_documents, and check each refreshed card's claims with `python tools/support.py check --card <slug>`. Finally run `python tools/changes.py behind` and update every page, epic and story it lists, per the workflow file (only the parts the changed card sections touch; set `updated`), then rebuild. If the inbox is empty, say so and stop.")},
-    "process-answers": {"label": "Process your answers", "kind": "claude", "prompt": (
-        "Job: process only the owner's answers waiting in mantis/00_inbox/answers-*.md, per WORKFLOW 'Owner "
-        "answers from the site'. Update any card an answer changes. Finally run `python tools/changes.py behind` and update every page, epic and story it lists, per the workflow file (only the parts the changed card sections touch; set `updated`), then rebuild. Leave other inbox files alone.")},
+    "pull": {"label": "Pull: what changed", "kind": "claude", "prompt": (
+        "Job: run a pull per the workflow file, all the way to `python tools/pull.py finish`. End with the brief "
+        "it prints, as it prints it.")},
+    # One way to update a card (MANTIS-IMP-094): the pull's card pass, for this one card
     "refresh-card": {"label": "Refresh card summary", "kind": "claude", "arg": "card", "prompt": (
-        "Job: refresh the curated summary of the card '{arg}' (mantis/knowledge/features/{arg}.md or "
-        "mantis/knowledge/topics/{arg}.md). First run `python tools/contradictions.py context --card {arg}`: "
-        "where a new source disagrees with the summary, record an unconfirmed conflict (the tool prints how) "
-        "and keep the summary's claim. Fold everything else that matters into the curated part above the "
-        "GENERATED marker, cited, and add the IDs to source_documents. Then run `python tools/support.py check --card {arg}` "
-        "and handle what it finds per the workflow file. Finally run `python tools/changes.py behind` and update every page, epic and story it lists, per the workflow file (only the parts the changed card sections touch; set `updated`), then rebuild. Change nothing else.")},
+        "Job: one card pass for '{arg}' per the workflow file: section 3 for this card only, starting with "
+        "`python tools/pull.py packet {arg}` (skip the headline; do run `python tools/pull.py done {arg}`), then "
+        "section 4 items 1 and 2 for this card, then `python tools/build_map.py`. Do not run finish. If the "
+        "packet shows nothing new, say so and stop.")},
     "daily-brief": {"label": "Prepare today's brief", "kind": "claude", "prompt": (
         "Job: prepare today's daily brief per WORKFLOW 'Daily brief and the owner's tasks': run "
         "`python tools/tasks.py context`, write up to 5 suggestions and save them with "
@@ -92,6 +84,16 @@ JOBS = {
         "with `python tools/ask.py save <file>` (fix or drop any point whose quote is not found). Change no knowledge. "
         "End with the answer in two or three sentences.")},
 }
+
+def quiet():
+    """subprocess options for work started in the background on Windows: no console window and no busy
+    cursor (STARTF_FORCEOFFFEEDBACK; without it every rebuild shows the spinning pointer)."""
+    if os.name != "nt":
+        return {}
+    si = subprocess.STARTUPINFO()
+    si.dwFlags |= 0x00000080   # STARTF_FORCEOFFFEEDBACK
+    return {"creationflags": subprocess.CREATE_NO_WINDOW, "startupinfo": si}
+
 
 _lock = threading.Lock()
 _queue = []          # job ids waiting
@@ -235,7 +237,7 @@ def run(job, on_done=None):
     _write(job)
     try:
         if job["type"] == "rebuild":
-            r = subprocess.run([sys.executable, str(ROOT / "tools" / "build_map.py")], cwd=ROOT, capture_output=True, text=True, timeout=600)
+            r = subprocess.run([sys.executable, str(ROOT / "tools" / "build_map.py")], cwd=ROOT, capture_output=True, text=True, timeout=600, **quiet())
             ok = r.returncode == 0
             job.update(state="done" if ok else "failed",
                        summary="Site, map and cards rebuilt." if ok else "The rebuild failed: " + r.stderr.strip().splitlines()[-1][:300])
@@ -284,8 +286,7 @@ def _run_agent(job):
     if os.environ.get("MANTIS_AGENT_CMD"):   # another tool: pass the prompt only
         cmd = agent_command() + [UNATTENDED + "\n\n" + prompt]
     r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                       timeout=TIMEOUT, env=_clean_env(), stdin=subprocess.DEVNULL,
-                       creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+                       timeout=TIMEOUT, env=_clean_env(), stdin=subprocess.DEVNULL, **quiet())
     text, turns, err = r.stdout.strip(), 0, r.returncode != 0
     try:
         out = json.loads(text)

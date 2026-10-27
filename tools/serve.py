@@ -11,10 +11,15 @@ as mantis/00_inbox/answers-<time>.md; GET /api/answers/pending lists the IDs wai
 Edited pages, epics and stories (POST /api/edits) are saved as mantis/00_inbox/edit-<time>-<name>.md;
 tools/apply_edits.py applies them. GET /api/edits/pending lists the documents waiting.
 
+Notes, transcripts and files dropped on the Meetings or Sources page (POST /api/inbox {"name", "text" or
+base64 "data", "meeting"}) go to mantis/00_inbox/ for the next pull. Undo of an automatic close
+(POST /api/reopen {"id"}) runs tools/entry.py reopen.
+
 Buttons on the site start background jobs (tools/jobs.py): POST /api/jobs {"type", "arg"} queues
 one of the fixed job types; GET /api/jobs returns recent jobs, the running one and inbox counts.
 
-Open pages reload by themselves after a rebuild. If the site is already being served,
+Open pages reload by themselves after a rebuild (they check every 3 seconds, only while visible). The
+watcher rebuilds for hand edits only, checking every 5 seconds. If the site is already being served,
 this exits quietly. Stop with Ctrl+C.
 """
 import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
@@ -26,6 +31,8 @@ sys.path.insert(0, str(ROOT / "tools"))
 import tasks_store
 import jobs
 import extra
+import buildlock
+import pull
 PORT = 8000
 URL = f"http://localhost:{PORT}/"
 PIDFILE = (Path(os.environ["LOCALAPPDATA"]) / "Mantis" if os.environ.get("LOCALAPPDATA") else ROOT) / "serve.pid"
@@ -44,23 +51,25 @@ def stamp():
 
 
 def rebuild():
-    r = subprocess.run([sys.executable, str(ROOT / "tools" / "build_map.py")], capture_output=True, text=True)
+    r = subprocess.run([sys.executable, str(ROOT / "tools" / "build_map.py")], capture_output=True, text=True, **jobs.quiet())
     last = (r.stdout.strip().splitlines() or [""])[-1]
     print(time.strftime("%H:%M:%S"), last if r.returncode == 0 else "Build failed:\n" + r.stderr[-1500:], flush=True)
 
 
 def watch():
-    seen = stamp()
+    """Rebuild for hand edits only. Claude and the site's buttons rebuild themselves when they finish, so an
+    edit older than the last rebuild's end is already in, and a build's own writes never trigger another."""
+    seen = 0.0
     while True:
-        time.sleep(1.5)
+        time.sleep(5)
         try:
             now = stamp()
         except OSError:
             continue
-        if now != seen:
-            time.sleep(0.5)  # let the editor finish writing
-            seen = stamp()
+        if now != seen and now > buildlock.last_done() and not buildlock.held():
+            time.sleep(1)  # let the editor finish writing
             rebuild()
+        seen = now
 
 
 INBOX = ROOT / "mantis" / "00_inbox"
@@ -171,6 +180,49 @@ def set_focus(slug, action, order=None, rebuild_after=True):
     return f
 
 
+INBOX_TYPES = {".md", ".txt", ".vtt", ".srt", ".docx", ".pdf", ".html", ".htm", ".xlsx", ".pptx"}
+
+
+def save_inbox(b):
+    """Meeting notes, a transcript or a file dropped on the site, saved to the inbox for the next pull. Returns its name."""
+    import base64
+    name = re.sub(r"[^\w .-]+", "", str(b.get("name", "")).strip())[:80].strip(" .") or "notes.md"
+    stem, ext = os.path.splitext(name)
+    ext = ext.lower() or ".md"
+    if ext not in INBOX_TYPES:
+        raise ValueError("Mantis reads notes, transcripts, Word, PDF, web pages and spreadsheets: " + ", ".join(sorted(INBOX_TYPES)))
+    meeting = re.sub(r"[^\w -]+", "", str(b.get("meeting", "")))[:60].strip()
+    if b.get("text") is not None:
+        text = str(b["text"]).replace("\r\n", "\n").strip()
+        if not text:
+            raise ValueError("nothing to save")
+        head = f"# {meeting} notes, {time.strftime('%Y-%m-%d')}\n\nMeeting: {meeting}\n\n" if meeting else ""
+        data, ext = (head + text + "\n").encode("utf-8"), ".md" if ext not in (".txt", ".vtt", ".srt") else ext
+    else:
+        data = base64.b64decode(str(b.get("data", "")), validate=True)
+    if not data or len(data) > 15_000_000:
+        raise ValueError("the file is empty or larger than 15 MB")
+    prefix = time.strftime("%Y-%m-%d") + (f"-{meeting.lower().replace(' ', '-')}" if meeting else "")
+    INBOX.mkdir(parents=True, exist_ok=True)
+    target = INBOX / f"{prefix}-{stem.replace(' ', '-')}{ext}"
+    n = 2
+    while target.exists():   # never overwrite something waiting
+        target = INBOX / f"{prefix}-{stem.replace(' ', '-')}-{n}{ext}"
+        n += 1
+    target.write_bytes(data)
+    return target.name
+
+
+def reopen(rid):
+    """The owner's Undo for an automatic close (MANTIS-IMP-094): entry.py reopen, which refuses any other close."""
+    if not re.fullmatch(r"MANTIS-GAP-\d{3}", rid):
+        raise ValueError("only an open question that closed automatically can be reopened")
+    r = subprocess.run([sys.executable, str(ROOT / "tools" / "entry.py"), "reopen", rid], capture_output=True, text=True, cwd=ROOT, **jobs.quiet())
+    if r.returncode:
+        raise ValueError((r.stderr or r.stdout).strip().splitlines()[-1] if (r.stderr or r.stdout).strip() else "could not reopen")
+    threading.Thread(target=rebuild, daemon=True).start()
+
+
 def pending_edits():
     """Target paths (mantis/outputs/...) that have an edit waiting in the inbox."""
     out = set()
@@ -232,6 +284,18 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
                 return self.reply(200, extra.payload())
             except Exception as e:
                 return self.reply(500, {"error": str(e)})
+        if self.path.split("?")[0] == "/api/filters":   # what Mantis pulls (MANTIS-IMP-094); edited on the Sources page
+            try:
+                return self.reply(200, {"filters": pull.list_filters()})
+            except (OSError, ValueError) as e:
+                return self.reply(500, {"error": str(e)})
+        if self.path.split("?")[0] == "/api/unmapped":   # tickets no card owns, for the owner to map or skip
+            try:
+                return self.reply(200, {"items": pull.unmapped(), "cards": [{"slug": k, "title": v["title"]} for k, v in pull.cards().items()]})
+            except (OSError, ValueError) as e:
+                return self.reply(500, {"error": str(e)})
+        if self.path.split("?")[0] == "/api/pull-brief":
+            return self.reply(200, {**pull.load_brief(), "pending": pull.pending_counts()})
         if self.path.startswith("/api/brief?id="):
             try:
                 return self.reply(200, extra.brief(self.path.split("=", 1)[1]))
@@ -242,9 +306,43 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         # Only the site itself may post (blocks other web pages from writing to the inbox).
         origin = self.headers.get("Origin", "")
-        if self.path not in ("/api/answers", "/api/edits", "/api/focus", "/api/tasks", "/api/jobs", "/api/followups", "/api/deadlines", "/api/schedule", "/api/published") \
+        if self.path not in ("/api/answers", "/api/edits", "/api/focus", "/api/tasks", "/api/jobs", "/api/followups", "/api/deadlines", "/api/schedule", "/api/published", "/api/filters", "/api/inbox", "/api/reopen", "/api/mapping") \
                 or origin not in (f"http://localhost:{PORT}", f"http://127.0.0.1:{PORT}"):
             return self.reply(403, {"error": "not allowed"})
+        if self.path == "/api/mapping":   # {"root": "<Jira key>", "card": "<slug>" or "skip"}
+            try:
+                b = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", "0")), 5_000)).decode("utf-8"))
+                return self.reply(200, {"items": pull.map_ticket(str(b.get("root", "")), str(b.get("card", "")))})
+            except (ValueError, OSError, TypeError) as e:
+                return self.reply(400, {"error": str(e)[:300]})
+        if self.path in ("/api/inbox", "/api/reopen"):
+            try:
+                size = int(self.headers.get("Content-Length", "0"))
+                if size > 21_000_000:
+                    return self.reply(413, {"error": "too large: 15 MB at most"})
+                b = json.loads(self.rfile.read(size).decode("utf-8"))
+                if self.path == "/api/reopen":
+                    reopen(str(b.get("id", "")))
+                    print(time.strftime("%H:%M:%S"), f"Reopened {b.get('id')} (the owner undid an automatic close)", flush=True)
+                    return self.reply(200, {"ok": True})
+                name = save_inbox(b)
+                print(time.strftime("%H:%M:%S"), f"Saved mantis/00_inbox/{name}", flush=True)
+                return self.reply(200, {"file": name, **jobs.status()})
+            except (ValueError, OSError, TypeError, UnicodeDecodeError) as e:
+                return self.reply(400, {"error": str(e)[:300]})
+        if self.path == "/api/filters":   # {"action": add|set|remove|test, "id", "label", "type", "value", "active"}
+            try:
+                b = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", "0")), 20_000)).decode("utf-8"))
+                act = str(b.get("action", ""))
+                if act == "test":
+                    return self.reply(200, pull.test_filter(str(b.get("id", "")), b.get("type"), b.get("value")))
+                active = b.get("active") if isinstance(b.get("active"), bool) else None
+                text = lambda k: str(b[k])[:2000] if b.get(k) is not None else None
+                return self.reply(200, {"filters": pull.set_filter(act, str(b.get("id", "")), text("label"), text("value"), active, b.get("type"))})
+            except (ValueError, OSError, TypeError) as e:
+                return self.reply(400, {"error": str(e)})
+            except Exception as e:   # a Jira or Confluence error while testing
+                return self.reply(502, {"error": str(e)[:300]})
         if self.path == "/api/published":   # Confluence sync (MANTIS-IMP-019): remember the version now in Confluence
             try:
                 body = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", "0")), 10_000)).decode("utf-8"))
@@ -361,7 +459,8 @@ if __name__ == "__main__":
         exe = Path(sys.executable).with_name("pythonw.exe")
         subprocess.Popen([str(exe if exe.exists() else sys.executable), __file__], cwd=str(ROOT),
                          creationflags=getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0),
-                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True)
+                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True,
+                         startupinfo=jobs.quiet().get("startupinfo"))
         print(f"Mantis is starting at {URL}")
         sys.exit(0)
     PIDFILE.parent.mkdir(parents=True, exist_ok=True)

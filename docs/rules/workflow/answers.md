@@ -1,12 +1,12 @@
 # Owner answers and decisions
 
-Part of the workflow (index and the rules for every task: `../WORKFLOW.md`). Use this file for: Answers from the Open items page, and decisions the owner settles.
+Part of the workflow (index and the rules for every task: `../WORKFLOW.md`). Use this file for: Answers from the Questions page, and decisions the owner settles.
 
 ## Owner answers from the site
 
-`00_inbox/answers-*.md` files come from the Open items page (the session-start hook says when
+`00_inbox/answers-*.md` files come from the Questions page (the session-start hook says when
 one is waiting). The owner's answer is user knowledge: cite it as "Source: Owner answer via
-the Open items page, <date>". First run `python tools/answers.py check --all` (MANTIS-IMP-050):
+the Questions page, <date>". First run `python tools/answers.py check --all` (MANTIS-IMP-050):
 one read with every waiting answer, its entry's full text, the owner's earlier answers on the
 same or linked entries, words that look misheard (the glossary's Mishearings table), and
 sentences that read as a promise ("I will send…") or a decision ("we will use…"). Do not open
@@ -20,7 +20,7 @@ fraction of one call per item (MANTIS-IMP-057). For each item:
    answer, record it as replacing that answer, name both in the note, and list it in the report.
    Read a flagged mishearing as the word it stands for, and say so in the note.
 2. **Answers it.** Record the answer:
-   `python tools/entry.py note <ID> "Resolution" "Source: Owner answer via the Open items page, <date>. <answer>"`,
+   `python tools/entry.py note <ID> "Resolution" "Source: Owner answer via the Questions page, <date>. <answer>"`,
    then set the final status with `entry.py status`: a gap Closed, an assumption Confirmed or
    Corrected, a conflict Resolved. The owner choosing "Answers it" is the explicit
    confirmation the rules require. If the answer contradicts a digest, raise a conflict and
@@ -51,7 +51,7 @@ fraction of one call per item (MANTIS-IMP-057). For each item:
 6. **Not decided yet.** Nobody can answer it until something happens (a spike, a design, a
    steering meeting). Note the owner's words with `entry.py note <ID> "Owner answer" "..."` and
    set `Deferred (not decided yet; revisit when: <trigger, or "not stated">; owner <date>)`. It
-   leaves Open items and shows on its card under "Decided later". When the trigger happens, set
+   leaves the Questions page and shows on its card under "Decided later". When the trigger happens, set
    it back to `Open`. Use this also when the owner picked "Answers it" but the answer says it is
    undecided, and say so in the report.
 7. **Someone else must answer.** Add `entry.py note <ID> "Ask" "<who>"` (plus any answer

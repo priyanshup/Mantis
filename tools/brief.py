@@ -320,6 +320,9 @@ def save(path, kind_default="meeting"):
                   "card": str(x.get("card", ""))[:80], "followup": str(x.get("followup", ""))[:20]}
                  for x in s.get("bullets", [])[:25] if x.get("text")]} for s in b["sections"][:10]],
              "away": b.get("away") if kind == "handover" else None}
+    import repeats   # each fact once (MANTIS-IMP-094): say what repeats, so it is fixed and saved again
+    for k, where, a, b_ in repeats.check(repeats.units_json(clean)):
+        print(f"REPEATS ({k}, {where}): fix it, then save again.\n  {a[:140]}" + (f"\n  {b_[:140]}" if b_ else ""))
     for f in b.get("new_followups", [])[:10]:
         if f.get("topic"):
             # a meeting brief names the attendee each follow-up is for

@@ -18,6 +18,7 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import frontmatter
+import textcache
 
 ROOT = Path(__file__).resolve().parent.parent
 K = ROOT / "mantis" / "knowledge"
@@ -176,8 +177,8 @@ def attention(rows):
 def build():
     rows = scan()
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps({"states": {k: v[0] for k, v in STATES.items()}, "features": rows,
-                               "attention": attention(rows)}, indent=1), encoding="utf-8")
+    textcache.write(OUT, json.dumps({"states": {k: v[0] for k, v in STATES.items()}, "features": rows,
+                               "attention": attention(rows)}, indent=1))
     return rows
 
 

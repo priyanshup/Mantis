@@ -15,6 +15,7 @@ import json, os, re, shutil, sys, tempfile, time
 from datetime import date, datetime
 from itertools import combinations
 from pathlib import Path
+import textcache
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent.parent
@@ -51,6 +52,11 @@ def cleanup():
         tasks_store.load()
     except Exception:
         pass
+    packets = M / "mirror" / "packets"   # pull packets: a digested one was copied to 01_sources; the mirror copy is a working file
+    for p in packets.glob("*.md") if packets.exists() else []:
+        if time.time() - p.stat().st_mtime > 30 * 86400:
+            p.unlink(missing_ok=True)
+            removed.append(f"mirror/packets/{p.name}")
     backups = Path(os.environ.get("LOCALAPPDATA", tempfile.gettempdir())) / "Mantis" / "backups"
     if backups.exists():   # whole-project zips taken before big changes: keep the newest five
         for p in sorted(backups.glob("*.zip"), key=lambda x: x.stat().st_mtime, reverse=True)[5:]:
@@ -173,6 +179,12 @@ def report():
         docs = classify.corpus()
         w = json.loads(classify.CONFIG.read_text(encoding="utf-8"))
         pairs = classify.pair_scores(docs, w["weights"], floor=min(0.5, w["version"] - 0.05))
+        try:   # pairs checked and known to be different documents (local settings): parts of one study read alike
+            import local_config
+            distinct = {frozenset(p) for p in local_config.load().get("classify_known_distinct_pairs", [])}
+            pairs = [p for p in pairs if frozenset(p[1:]) not in distinct]
+        except Exception:
+            pass
         near = [p for p in pairs if p[0] >= 0.5]
         if near:
             add("info", "Duplicates", "Near-duplicate digests (same card covers them): " + ", ".join(f"{x[-4:]}~{y[-4:]} ({s:.2f})" for s, x, y in near[:6]) + ".")
@@ -184,16 +196,24 @@ def report():
     arch = M / "03_archive"
     size = sum(p.stat().st_size for p in arch.rglob("*") if p.is_file()) if arch.exists() else 0
     oldest = [p.name for p in arch.iterdir() if p.name != "README.md" and (time.time() - p.stat().st_mtime) / 86400 > 90] if arch.exists() else []
+    try:   # each fact once (MANTIS-IMP-094): pages, epics and stories that say something twice
+        import repeats
+        rep = [p.stem for p in (M / "outputs").rglob("*.md") if p.name != "README.md" and repeats.check_file(p)]
+        if rep:
+            add("todo", "Repeats", f"{len(rep)} page(s), epic(s) or stor(ies) say something twice: {', '.join(rep[:6])}. "
+                                   "python tools/repeats.py --outputs shows where.")
+    except Exception as e:
+        add("info", "Repeats", f"Repetition check skipped: {e}")
     add("info", "Archive", f"03_archive holds {size / 1e6:.1f} MB" + (f"; older than 90 days: {', '.join(oldest[:6])}. The owner decides what to delete." if oldest else "."))
 
     order = {"warn": 0, "todo": 1, "info": 2}
     items.sort(key=lambda i: order[i["level"]])
     MAP.mkdir(parents=True, exist_ok=True)
-    (MAP / "health.json").write_text(json.dumps({"date": TODAY.isoformat(), "items": items}, indent=1), encoding="utf-8")
+    textcache.write((MAP / "health.json"), json.dumps({"date": TODAY.isoformat(), "items": items}, indent=1))
     label = {"warn": "Fix", "todo": "To do", "info": "Note"}
     rows = ["# Mantis health", "", f"Generated {TODAY.isoformat()} by `tools/maintain.py`.", ""]
     rows += [f"- **{label[i['level']]}** ({i['area']}): {i['msg']}" for i in items] or ["All clear."]
-    (MAP / "health.md").write_text("\n".join(rows) + "\n", encoding="utf-8")
+    textcache.write((MAP / "health.md"), "\n".join(rows) + "\n")
     return items
 
 

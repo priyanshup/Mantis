@@ -69,17 +69,20 @@ def words(text):
     return {w for w in found if w not in STOP and len(w) > 2}
 
 
-def settled():
-    """[(id, status, words, short text)] for every settled register entry and every archived answer."""
+def settled(open_=False):
+    """[(id, status, words, short text)] for every settled register entry and every archived answer
+    (open_=True: every open gap instead, to find the questions one answer also settles)."""
     out = []
-    for folder in ("gaps", "conflicts", "assumptions"):
+    for folder in (("gaps",) if open_ else ("gaps", "conflicts", "assumptions")):
         for p in (K / "registers" / folder).glob("MANTIS-*.md"):
             t = p.read_text(encoding="utf-8")
             st = re.search(r"(?m)^- \*\*Status:\*\*\s*(.+)$", t)
             status = st.group(1).strip() if st else ""
-            if status and not OPEN.match(status):
+            if status and bool(OPEN.match(status)) == open_:
                 topic = re.search(r"(?m)^- \*\*Topic:\*\*\s*(.+)$", t)
                 out.append((p.stem, status[:60], words(t), (topic.group(1) if topic else "")[:110]))
+    if open_:
+        return out
     for p in ANSWERS.glob("answers-*.md") if ANSWERS.exists() else []:
         for m in re.finditer(r"(?ms)^## (\S+): (.+?)$(.*?)(?=^## |\Z)", p.read_text(encoding="utf-8")):
             out.append((m.group(1), f"answered in {p.name}", words(m.group(2) + " " + m.group(3)), m.group(2)[:110]))
@@ -89,13 +92,13 @@ def settled():
 FLOOR = 0.20   # calibrated 2026-10-11: repeats score 0.25-0.40 (GAP-044 vs CFL-007, GAP-040 vs CFL-004), unrelated entries 0.17 or less
 
 
-def similar(text, top=3, floor=FLOOR, exclude=()):
-    """Settled entries close to the new entry: [(score, id, status, topic)].
+def similar(text, top=3, floor=FLOOR, exclude=(), open_=False):
+    """Settled entries close to the new entry (open_=True: open gaps): [(score, id, status, topic)].
 
     Cosine similarity of word sets weighted by rarity (idf), so shared rare words ("MTs", "POPIA")
     count and words every entry uses do not; long entries cannot match everything."""
     import math
-    rows = [r for r in settled() if r[0] not in exclude and r[2]]
+    rows = [r for r in settled(open_) if r[0] not in exclude and r[2]]
     w = words(text)
     if len(w) < 4 or not rows:
         return []

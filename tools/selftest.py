@@ -13,6 +13,8 @@ Checks, each one a failure that has happened before:
   tools     read-only commands answer: entry.py check, answers.py, mishear.py, assets.py status,
             changes.py, graph.py, contradictions.py, estimates.py
   readiness fixed cards get the expected decision-readiness state (evidence, not filled fields)
+  pull      filters parse, children find their filter, noise is told apart, unchanged files are not rewritten
+  repeats   a sentence said twice is found; the summary at the top and the epic's job labels are not
   data      every generated map file is valid JSON
 Exit code 1 lists every failure; nothing is changed.
 """
@@ -158,10 +160,47 @@ def search_index():
             search.M, search.K = old
 
 
+def pull_logic():
+    """The pull reads only changes: filters parse, children find their filter, noise is told apart (MANTIS-IMP-094)."""
+    import tempfile, atl_updates as U, pull, textcache
+    check("pull", U.without_order("project = CUD AND x = 1 ORDER BY updated DESC") == "project = CUD AND x = 1", "ORDER BY not stripped")
+    check("pull", U.projects_of("project in (CUD, ABC) AND component = Y", {}) == ["CUD", "ABC"], "project list not read")
+    check("pull", U.projects_of('project = "CUD" AND issuetype = Feature', {}) == ["CUD"], "single project not read")
+    check("pull", U.tree_root("219416883") == "219416883" and U.tree_root('space = CUD and title ~ "x"') == "", "tree vs CQL")
+    parents = {"S-3": "E-2", "E-2": "F-1", "X-9": None}
+    check("pull", U.filter_of("S-3", parents, {"feat": {"F-1"}}) == "feat" and U.filter_of("X-9", parents, {"feat": {"F-1"}}) is None,
+          "a child did not find its filter through the parent chain")
+    check("pull", {"status", "attachments"} <= U.NOISE and not {"status", "comments"} <= U.NOISE, "noise rule")
+    check("pull", U.filter_of("S-3", parents, {"skip": {"E-2"}}) == "skip", "a skipped item did not take its children with it")
+    import site_day
+    scope = lambda **o: site_day.scope_of({"kind": "gap", "status": "Open", **o})
+    check("pull", scope(kind="term") == "tidy" and scope(ask={"name": "A"}) == "others" and scope() == "you"
+          and scope(status="Unconfirmed", kind="conflict", ask={"name": "A"}) == "you", "Questions sides")
+    md = "# K-1\n\n## Comments (3)\n\n**A B, 2026-10-01:** one\n\n**C D, 2026-10-02:** two\n\n**E F, 2026-10-03:** three\n"
+    check("pull", pull.comments_tail(md, 1) == "**E F, 2026-10-03:** three", f"new comments: {pull.comments_tail(md, 1)!r}")
+    with tempfile.TemporaryDirectory() as d:   # a rebuild that changes nothing writes nothing (nonstop rebuilds until 2026-10-27)
+        f = Path(d) / "x.json"
+        check("pull", textcache.write(f, "a") and not textcache.write(f, "a") and textcache.write(f, "b"), "write-if-changed")
+
+
+def repeats_rule():
+    """Each fact once (MANTIS-IMP-094): a repeat is found, a summary at the top and the epic's job labels are not."""
+    import repeats
+    page = ("## At a glance\nDistributors upload all stock levels at once from one spreadsheet file.\n\n"
+            "## Problem\nDistributors type every stock level by hand, product by product, every week.\n\n"
+            "## Scope\nDistributors type every stock level by hand, product by product, each week.\n")
+    found = repeats.check(repeats.units_md(page))
+    check("repeats", len(found) == 1 and found[0][1] == "Problem / Scope", f"page: {found}")
+    epic = ("**Jobs to be done**\n1. Download a stock upload template with sample or real stock data\n\n"
+            "**Acceptance criteria**\nMVP JTBD 1: Download a stock upload template with sample or real stock data\n")
+    check("repeats", repeats.check(repeats.units_md(epic)) == [], "the epic's job label was taken for a repeat")
+
+
 def tools():
     runs = [["entry.py", "check"], ["mishear.py", str(ROOT / "README.md")], ["assets.py", "status"], ["changes.py", "1"],
             ["answers.py"], ["contradictions.py"], ["estimates.py"], ["graph.py", "--help"],
-            ["citations.py"], ["support.py", "report"], ["readiness.py"], ["decisions.py"]]
+            ["citations.py"], ["support.py", "report"], ["readiness.py"], ["decisions.py"],
+            ["pull.py", "filters"], ["pull.py", "plan"], ["pull.py", "brief"]]
     for r in runs:
         p = subprocess.run([sys.executable, str(T / r[0]), *r[1:]], capture_output=True, text=True, encoding="utf-8",
                            errors="replace", cwd=ROOT, timeout=120)
@@ -179,7 +218,7 @@ def data():
 
 if __name__ == "__main__":
     quick = "--quick" in sys.argv
-    code(); js_css(); docs(); readiness_rules(); decision_watch(); search_index()
+    code(); js_css(); docs(); readiness_rules(); decision_watch(); search_index(); pull_logic(); repeats_rule()
     if not quick:
         tools(); data()
     if fails:

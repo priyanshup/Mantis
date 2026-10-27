@@ -134,74 +134,6 @@
     sync();
   }
 
-  // ---- Knowledge graph ----
-  const gd = $("#graph");
-  if (gd) {
-    const all = JSON.parse(gd.textContent);
-    const by = Object.fromEntries(all.map((e) => [e.n, e]));
-    const st = { q: "", type: "all", cur: decodeURIComponent((location.hash.match(/e=([^&]+)/) || [])[1] || "") };
-    if (!by[st.cur]) st.cur = all[0] && all[0].n;
-    const key = (s) => s.toLowerCase().replace(/[^0-9a-z]/g, "");
-    const typePill = (t) => `<span class="pill t-${t}">${esc(t)}</span>`;
-
-    function list() {
-      const q = key(st.q);
-      const xs = all.filter((e) => (st.type === "all" || e.t === st.type) && (!q || key(e.n).includes(q) || e.a.some((a) => key(a).includes(q))));
-      $("#ent-list").innerHTML = xs.slice(0, 200).map((e) =>
-        `<a class="row ent-row${e.n === st.cur ? " on" : ""}" href="#e=${encodeURIComponent(e.n)}"><span class="dot t-${e.t}"></span><span class="row-t">${esc(e.n)}</span><span class="muted small">${e.d}</span></a>`).join("")
-        || '<p class="empty">No entity matches.</p>';
-    }
-    let hoverWired = false;
-    function wireGraphHover() {   // show a relation's label while its node or edge is under the pointer
-      if (hoverWired) return; hoverWired = true;
-      const box = $("#ent-detail"), mark = (i, on) => $$(`[data-i="${i}"]`, box).forEach((n) => n.classList.toggle("lit", on));
-      box.addEventListener("pointerover", (e) => { const n = e.target.closest("[data-i]"); if (n) mark(n.dataset.i, true); });
-      box.addEventListener("pointerout", (e) => { const n = e.target.closest("[data-i]"); if (n) mark(n.dataset.i, false); });
-    }
-    function svg(e) {
-      const W = 560, H = 380, cx = W / 2, cy = H / 2;
-      const ring = [];
-      e.r.forEach(([rel, to, dir]) => { if (by[to] && !ring.some((x) => x.n === to)) ring.push({ n: to, rel: dir === "out" ? rel : to + " " + rel, w: 3, isRel: true }); });
-      e.l.forEach(([n, w]) => { if (!ring.some((x) => x.n === n) && ring.length < 14) ring.push({ n, w }); });
-      const maxW = Math.max(1, ...ring.map((x) => x.w));
-      const pts = ring.map((x, i) => {
-        const a = (i / Math.max(ring.length, 1)) * Math.PI * 2 - Math.PI / 2, r = 150;
-        return { ...x, x: cx + Math.cos(a) * r * 1.35, y: cy + Math.sin(a) * r * 0.95 };
-      });
-      // Relation labels would pile up in the middle, so each one shows only while its node or edge is hovered.
-      const lines = pts.map((p, i) => `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" class="g-edge${p.isRel ? " rel" : ""}" data-i="${i}" stroke-width="${p.isRel ? 2.5 : 1 + 4 * p.w / maxW}"/>` +
-        `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" class="g-hit" data-i="${i}"/>`).join("");
-      const labels = pts.map((p, i) => p.isRel ? `<text x="${cx + (p.x - cx) * 0.62}" y="${cy + (p.y - cy) * 0.62 - 6}" class="g-rel" data-i="${i}">${esc(p.rel)}</text>` : "").join("");
-      const nodes = pts.map((p, i) => { const t = (by[p.n] || {}).t || "unknown";
-        return `<a href="#e=${encodeURIComponent(p.n)}" data-i="${i}"><circle cx="${p.x}" cy="${p.y}" r="7" class="g-node t-${t}"/><text x="${p.x}" y="${p.y < cy - 20 ? p.y - 13 : p.y + 21}" class="g-label">${esc(p.n.length > 22 ? p.n.slice(0, 21) + "…" : p.n)}</text></a>`; }).join("");
-      return `<svg viewBox="0 0 ${W} ${H}" class="g-svg" role="img" aria-label="Neighbourhood of ${esc(e.n)}">${lines}${nodes}${labels}` +
-        `<circle cx="${cx}" cy="${cy}" r="12" class="g-node g-center t-${e.t}"/><text x="${cx}" y="${cy + 30}" class="g-label g-main">${esc(e.n)}</text></svg>`;
-    }
-    function detail() {
-      const e = by[st.cur];
-      if (!e) { $("#ent-detail").innerHTML = '<p class="empty">Pick an entity.</p>'; return; }
-      const feats = e.f.map(([s, t, n, k]) => `<a class="chip" href="${k === "topic" ? "topics" : "features"}/${s}.html">${esc(t)} <span class="muted">${n}</span></a>`).join("");
-      const rels = e.r.map(([rel, to, dir]) => `<li>${dir === "out" ? `${esc(e.n)} ${esc(rel)} <a href="#e=${encodeURIComponent(to)}">${esc(to)}</a>` : `<a href="#e=${encodeURIComponent(to)}">${esc(to)}</a> ${esc(rel)} ${esc(e.n)}`}</li>`).join("");
-      const linked = e.l.map(([n, w]) => `<a class="chip" href="#e=${encodeURIComponent(n)}">${esc(n)} <span class="muted">${w}</span></a>`).join("");
-      wireGraphHover();
-      $("#ent-detail").innerHTML = `<div class="ent-head"><h2>${esc(e.n)}</h2>${typePill(e.t)}<span class="muted small">named in ${e.d} document${e.d === 1 ? "" : "s"}</span></div>` +
-        (e.a.length ? `<p class="muted small">Also called: ${e.a.map(esc).join(", ")}</p>` : "") +
-        (e.l.length || e.r.length ? svg(e) : "") +
-        (rels ? `<h3>Relations</h3><ul>${rels}</ul>` : "") +
-        (feats ? `<h3>Roadmap topics</h3><div class="ent-chips">${feats}</div>` : "") +
-        (linked ? `<h3>Often named together with</h3><div class="ent-chips">${linked}</div><p class="muted small">Number = documents that name both.</p>` : "") +
-        `<details class="ent-docs"><summary>Named in ${e.d} document${e.d === 1 ? "" : "s"}${e.d > 20 ? " (latest 20)" : ""}</summary><ul>${e.docs.filter(Boolean).map((t) => `<li>${esc(t)}</li>`).join("")}</ul></details>`;
-    }
-    function sync() {
-      $$("#f-type button").forEach((b) => b.classList.toggle("on", b.dataset.v === st.type));
-      list(); detail();
-    }
-    window.addEventListener("hashchange", () => { const m = location.hash.match(/e=([^&]+)/); if (m) { st.cur = decodeURIComponent(m[1]); sync(); } });
-    $("#gq").addEventListener("input", (ev) => { st.q = ev.target.value; list(); });
-    $("#f-type").addEventListener("click", (ev) => { const b = ev.target.closest("button"); if (b) { st.type = b.dataset.v; sync(); } });
-    sync();
-  }
-
   // ---- Search across all of Mantis (IMP-006); index built with the site, searched here ----
   const gs = $("#gsearch"), gr = $("#gresults");
   if (gs) {
@@ -224,8 +156,8 @@
           const t = norm(r.t + " " + (r.a || "")), x = norm(r.x), w = norm(r.w || "");
           if (!terms.every((s) => t.includes(s) || x.includes(s) || w.includes(s))) continue;
           let sc = terms.reduce((a, s) => a + (t.includes(s) ? 6 : 0) + (t.startsWith(s) ? 3 : 0) + (w.includes(s) ? 2 : 0) + (x.includes(s) ? 1 : 0), 0);
-          if (r.k === "Topic" || r.k === "Roadmap") sc += 4;   // summary pages first: read the card before any document
-          else if (r.k === "Entity") sc += 1;
+          if (r.k === "Feature" || r.k === "Idea") sc += 4;   // summary pages first: read the card before any document
+          else if (r.k === "Person") sc += 2;
           const ql = norm(q);
           if (norm(r.t) === ql || (r.a || "").split("|").some((x) => norm(x) === ql)) sc += 20;
           hits.push([sc, r]);
@@ -235,7 +167,7 @@
         gr.innerHTML = top.length ? top.map((r, i) => {
           const inner = `<span class="gr-k">${esc(r.k)}</span><span class="gr-t">${esc(r.t)}</span>${r.w ? `<span class="gr-w">${esc(r.w)}</span>` : ""}` +
             (r.x ? `<span class="gr-x">${snip(r.x, terms)}</span>` : "");
-          return r.u ? `<a class="gr" data-i="${i}" href="${base}${r.u}">${inner}</a>` : `<div class="gr gr-src" data-i="${i}">${inner}</div>`;
+          return r.p ? `<a class="gr" data-i="${i}" href="${base}${r.u}" data-person="${esc(r.p)}">${inner}</a>` : r.u ? `<a class="gr" data-i="${i}" href="${base}${r.u}">${inner}</a>` : `<div class="gr gr-src" data-i="${i}">${inner}</div>`;
         }).join("") + (hits.length > 14 ? `<p class="gr-more">${hits.length - 14} more: add a word to narrow it down.</p>` : "")
           : `<p class="gr-more">Nothing found for "${esc(q)}".</p>`;
         gr.hidden = false;
@@ -249,7 +181,7 @@
         e.preventDefault(); sel = Math.max(0, Math.min(links.length - 1, sel + (e.key === "ArrowDown" ? 1 : -1)));
         links.forEach((l, i) => l.classList.toggle("on", i === sel));
       } else if (e.key === "Enter" && links[Math.max(sel, 0)] && links[Math.max(sel, 0)].href) {
-        location.href = links[Math.max(sel, 0)].href; gr.hidden = true;
+        e.preventDefault(); links[Math.max(sel, 0)].click(); gr.hidden = true;   // a person opens their panel (see the drawer)
       } else if (e.key === "Escape") { gr.hidden = true; gs.blur(); }
     });
     document.addEventListener("click", (e) => { if (!e.target.closest(".gsearch")) gr.hidden = true; });

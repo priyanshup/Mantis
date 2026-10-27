@@ -56,8 +56,22 @@ list is written by `python tools/toollist.py` from each tool's own help text, so
 
 `tools/atl.py` reads Jira and Confluence and never writes to them. Keys live in `mantis/config/.env`
 (never committed): `JIRA_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` and the same three with `CONFLUENCE_`.
-When a token expires, replace its line and save. Saved queries, folder roots and the Jira fields to
-keep are in `mantis/config/atlassian.json`. The commands you will use most:
+When a token expires, replace its line and save. Filters, saved queries and the Jira fields to keep
+are in `mantis/config/atlassian.json`.
+
+**Filters** decide what a pull fetches. Each has a label, a type (jira: JQL that picks the root
+issues, whose children are followed; confluence: a page URL or ID for its whole tree, or CQL), an
+active flag, its last run and what that run found. Pages Mantis has digested are always checked.
+
+| To | Run |
+|---|---|
+| See the filters | `python tools/pull.py filters` |
+| Add one | `python tools/pull.py filter add jira "Label" "project = X AND ..."` (or `confluence "Label" <page URL>`) |
+| Change, switch on or off | `python tools/pull.py filter set <id> [--label X] [--value V] [--on \| --off]` |
+| See how many items it selects | `python tools/pull.py filter test <id>` |
+| Remove one | `python tools/pull.py filter remove <id>` |
+
+The bulk and one-off reads:
 
 | To | Run |
 |---|---|
@@ -75,9 +89,9 @@ The Confluence token needs these read-only classic scopes: `read:confluence-cont
 `read:confluence-user`, `read:confluence-space.summary`, `readonly:content.attachment:confluence`
 (images and diagrams) and `search:confluence` (searches). Never tick `write:`, `delete:` or `manage:`.
 
-To save a query, add it under `jira_queries` in the config with a short name. To follow another
-folder, add it under `confluence_roots`. Reports go to `mantis/mirror/reports/`. Nothing fetched is
-digested until the owner approves it.
+To save a query for `atl.py jira`, add it under `jira_queries` in the config with a short name. To
+follow another folder or query in every pull, add a filter. Reports go to `mantis/mirror/reports/`.
+Nothing fetched is digested until the owner starts a pull (`docs/rules/workflow/pull.md`).
 
 Removed: the Quor MCP server (2026-10-09, AD-015). Its compress-every-read instruction clashed with
 keeping citations, and it indexes code only. To restore it, put its entry back in `.mcp.json`

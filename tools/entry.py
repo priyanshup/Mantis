@@ -5,6 +5,9 @@
                                                           a gap, conflict or assumption that looks settled already is refused
                                                           until checked (--still-new once it is)
     python tools/entry.py status ID "New status text"     replace an entry's Status line
+    python tools/entry.py close GAP-ID "evidence" DOC-ID  close an open question a source clearly answers (Strong
+                                                          evidence only); lists open questions it may also settle
+    python tools/entry.py reopen GAP-ID                   undo an automatic close (the owner's Undo)
     python tools/entry.py priority ID Level ["why"]       set Critical|High|Medium|Low (or none) on a gap, assumption or conflict
     python tools/entry.py note ID "Label" "Text"          append "- **Label (date):** Text" to an entry
     python tools/entry.py apply [--dry-run] FILE          many notes, statuses and priorities at once (format: entry.py apply --help-format)
@@ -156,6 +159,39 @@ def cmd_status(rid, new_status):
         print(f"{rid} now: {new_status}")
 
     locked(change)
+
+
+AUTO = "Closed (auto, "   # an open question a source answered with Strong evidence (MANTIS-IMP-094); the owner can undo it
+
+
+def cmd_close(rid, evidence, source):
+    """Close an open question that a source clearly answers, then list open questions the same answer may settle."""
+    if kind_of(rid) != "gap":
+        sys.exit("Only open questions (gaps) close automatically. Conflicts and assumptions wait for the owner.")
+    if not re.fullmatch(r"MANTIS-DOC-\d{4}", source):
+        sys.exit("Name the source document that answers it (MANTIS-DOC-nnnn).")
+    p, text = read(rid)
+    m = STATUS_RE.search(text)
+    if not m or not re.match(r"- \*\*Status:\*\*\s*(Open|Potential Resolution)", m.group(0)):
+        sys.exit(f"{rid} is not open: {' '.join(m.group(0).split()) if m else 'no status line'}")
+    cmd_status(rid, f"{AUTO}{time.strftime('%Y-%m-%d')}: {' '.join(evidence.split())}; source {source})")
+    import answered
+    hits = answered.similar(text, top=5, exclude={rid}, open_=True)
+    if hits:
+        print("Open questions the same answer may settle (close each only on its own evidence):")
+        for score, hid, status, topic in hits:
+            print(f"  {hid} ({status}; similarity {score:.2f}): {topic}")
+
+
+def cmd_reopen(rid):
+    """Undo an automatic close: the question is open again and the entry keeps what the close said."""
+    p, text = read(rid)
+    m = STATUS_RE.search(text)
+    was = " ".join(m.group(0).split()).replace("- **Status:** ", "") if m else ""
+    if not was.startswith(AUTO):
+        sys.exit(f"{rid} was not closed automatically ({was or 'no status'}); change it with 'status'.")
+    cmd_status(rid, f"Open (reopened {time.strftime('%Y-%m-%d')}: the owner undid the automatic close)")
+    cmd_note(rid, "Automatic close undone", was)
 
 
 PRIORITIES = ("Critical", "High", "Medium", "Low")
@@ -311,6 +347,10 @@ if __name__ == "__main__":
         cmd_add(a[1], a[2], still_new=len(a) == 4)
     elif a[0] == "status" and len(a) == 3:
         cmd_status(a[1], a[2])
+    elif a[0] == "close" and len(a) == 4:
+        cmd_close(a[1], a[2], a[3])
+    elif a[0] == "reopen" and len(a) == 2:
+        cmd_reopen(a[1])
     elif a[0] == "apply" and len(a) in (2, 3):
         cmd_apply(a[1] if a[1] != "--dry-run" else a[2], dry="--dry-run" in a)
     elif a[0] == "priority" and len(a) in (3, 4):

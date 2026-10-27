@@ -53,13 +53,14 @@ Part of the workflow (index and the rules for every task: `../WORKFLOW.md`). Use
    conflict or an assumption below Moderate evidence (rules: Batch Processing). Add a
    Priority line only when the sources make the stakes clear (rules: Priority).
 7. **Cross-check.** Read only the open items step 2 listed: `python tools/entry.py show <ID>`.
-   Strong or Moderate evidence: `python tools/entry.py status <ID> "Potential Resolution (<date>: <evidence>)"`.
-   Weak: report only. Only the owner closes, confirms or resolves (rules: Potential Resolution).
+   An open question (gap) with Strong evidence: `python tools/entry.py close <GAP> "<evidence, where>" <DOC>`.
+   Moderate evidence, or Strong on a conflict or assumption: `python tools/entry.py status <ID> "Potential Resolution (<date>: <evidence>)"`.
+   Weak: report only. Only the owner confirms or resolves (rules: Potential Resolution).
    Then the contradiction check: `python tools/contradictions.py context <ID>` prints the new
    source beside its cards and closest sources. For each statement that disagrees on a date,
    number, scope, owner or meaning, add a conflict with Statement A and B and
    `Status: Unconfirmed (possible conflict found <date> by the contradiction check)`. Do not
-   change the card's claim; the owner settles it on Open items. A batch or job does not stop
+   change the card's claim; the owner settles it on Questions. A batch or job does not stop
    for these; a conflict you are sure of still stops it (rules: Batch Processing).
 8. **Index and cards.** Nothing to write: `build_map.py` generates the index entry and adds the
    document to every card whose tags it carries, marked new. If the document changes a
@@ -74,6 +75,8 @@ Part of the workflow (index and the rules for every task: `../WORKFLOW.md`). Use
    (MANTIS-IMP-057).
 
 ## End of batch
+
+Inside a pull, skip this section: the pull's card passes and finish do it once (`pull.md`).
 
 - Run `python tools/build_map.py`. It rebuilds the map, cards, index, lint, health report and site.
 - Refresh the summaries of cards that now show new sources (`map/cards.md`, column "new"): run

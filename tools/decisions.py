@@ -17,6 +17,7 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import frontmatter
+import textcache
 
 ROOT = Path(__file__).resolve().parent.parent
 M = ROOT / "mantis"
@@ -107,8 +108,8 @@ def build():
             cards, outs = downstream(d["id"])
             flagged.append({"id": d["id"], "decision": d["decision"][:200], "changes": changes, "cards": cards, "outputs": outs,
                             "reviewed": sync.get(d["id"], {}).get("reviewed", "")})
-    SYNC.write_text(json.dumps(record(sync=sync), indent=1, ensure_ascii=False), encoding="utf-8")
-    OUT.write_text(json.dumps({"flagged": flagged}, indent=1, ensure_ascii=False), encoding="utf-8")
+    textcache.write(SYNC, json.dumps(record(sync=sync), indent=1, ensure_ascii=False))   # unchanged: not rewritten, or the server's watcher
+    textcache.write(OUT, json.dumps({"flagged": flagged}, indent=1, ensure_ascii=False))  # sees a change after every build
     return flagged
 
 

@@ -98,12 +98,27 @@ def gather(who):
     for st in steps.load():
         if not st["done"]:
             print(f"  STEP {st['card']}: {st['step']} | who {st['who']} | {st['status'] or 'open'}" + (f" | due {st['due']}" if st["due"] else ""))
-    print("\nWAITING ON OTHERS (follow-ups and steps by person):")
+    print("\nWAITING ON OTHERS (follow-ups and steps by person, with how long each usually takes to reply):")
+    end = date.fromisoformat(s["period"]["end"])
+    risks = []
     for person, g in followups.grouped().items():
+        days, n = followups.turnaround(person)
+        basis = f"usually {days} working day(s), from {n} closed request(s)" if n else f"no reply history: ASSUMED {days} working days"
+        print(f"  {person} ({basis}):")
         for f in g["items"]:
-            print(f"  {person}: {f['kind']} - {f['topic']}" + (f" (chase {f['chase']})" if f["chase"] else ""))
+            print(f"    {f['kind']} - {f['topic']}" + (f" (chase {f['chase']})" if f["chase"] else ""))
+            if f["kind"] == "wait" and f["chase"] and f["chase"] <= end.isoformat():
+                risks.append(f"chase {person} on {f['chase']} about '{f['topic']}' (the owner is away then: the cover chases)")
         for st in g["steps"]:
-            print(f"  {person}: step on {st['card']} - {st['step']} ({st['status'] or 'open'})")
+            print(f"    step on {st['card']} - {st['step']} ({st['status'] or 'open'})" + (f" | due {st['due']}" if st["due"] else ""))
+            reply = _add_working(date.today(), days)
+            if st["due"] and reply.isoformat() > st["due"]:
+                risks.append(f"{st['card']}: '{st['step']}' is due {st['due']}, but {person} usually needs until {reply.isoformat()}")
+            elif st["due"] and st["due"] <= end.isoformat():
+                risks.append(f"{st['card']}: '{st['step']}' (due {st['due']}, {person}) falls while the owner is away: the cover chases it")
+    print("\nAT RISK (from the usual reply times; say how sure, and what the cover should do):")
+    for r_ in risks or ["nothing dated depends on someone slower than the time left"]:
+        print("  " + r_)
     print("\nOPEN QUESTIONS ON FOLLOWED CARDS (decisions pending first):")
     for o in sorted(brief.open_items(focus), key=lambda o: o["status"] == "Open")[:12]:
         print(f"  [{o['status']}] {', '.join(o['features'][:3])}: {o['topic'][:160]}")
@@ -115,9 +130,16 @@ def gather(who):
         p = people.find(n, ps)
         if p:
             print(f"  {p['name']}: {p['role'][:120]}" + (f"; {p['channel']}" if p["channel"] else ""))
-    print("\nWrite the handover as JSON (format in tools/brief.py, \"kind\": \"handover\") for this recipient: sections such as "
-          "'While I'm away', 'Dates in the window', 'Waiting on others', 'If this happens', 'Decisions pending', 'Contacts'. "
-          "Frame it by their briefing style. Plain words, no internal IDs. Save with: python tools/away.py save <file>")
+    print("\nWrite the handover from mantis/TEMPLATES/handover.md as JSON (format in tools/brief.py, \"kind\": \"handover\"), "
+          "framed by the recipient's briefing style. Each fact once, plain words, no internal IDs; then "
+          "python tools/repeats.py <file>. Save with: python tools/away.py save <file>")
+
+
+def _add_working(d, n):
+    while n > 0:
+        d += timedelta(days=1)
+        n -= d.weekday() < 5
+    return d
 
 
 def save(path):

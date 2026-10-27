@@ -2,7 +2,8 @@
 
     python tools/tasks.py list                          today's open tasks, carry-overs and reminders
     python tools/tasks.py add "Title" [--due D] [--remind D] [--day D] [--contact NAME] [--priority high|medium|low] [--estimate MIN] [--note TEXT]
-    python tools/tasks.py suggest FILE                  set today's brief suggestions from a JSON list (see docs/rules/workflow/day.md)
+    python tools/tasks.py suggest FILE [--add]          set today's brief suggestions from a JSON list (see docs/rules/workflow/day.md);
+                                                        --add keeps today's and adds these (a pull's suggestions; 10 at most)
     python tools/tasks.py context                       compact input for writing today's suggestions
 
 Dates are YYYY-MM-DD. --day plans it for that date (default: today; "backlog" for no date).
@@ -44,10 +45,13 @@ def cmd_add(title):
     print("Added:", T.add(t)["title"])
 
 
-def cmd_suggest(path):
-    items = json.loads(Path(path).read_text(encoding="utf-8"))
-    clean = []
-    for i, s in enumerate(items[:8]):
+def cmd_suggest(path, add=False):
+    items = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+    kept = [s for s in T.suggestions()["items"] if add]   # --add: a pull's suggestions join today's brief
+    known = {s["title"].lower() for s in kept}
+    items = [s for s in items if str(s.get("title", "")).lower() not in known]
+    clean = list(kept)
+    for i, s in enumerate(items[:max(0, 10 - len(kept)) if add else 8], len(kept)):
         clean.append({"id": f"{T.today()}-{i + 1}", "title": str(s.get("title", ""))[:200], "why": str(s.get("why", ""))[:600],
                       "who": str(s.get("who", ""))[:120], "say": str(s.get("say", ""))[:1200],
                       "questions": [str(q)[:300] for q in s.get("questions", [])[:6]],
@@ -116,6 +120,6 @@ if __name__ == "__main__":
     elif a[0] == "context":
         cmd_context()
     elif a[0] == "suggest" and len(a) > 1:
-        cmd_suggest(a[1])
+        cmd_suggest(a[1], add="--add" in a)
     else:
         sys.exit(__doc__)

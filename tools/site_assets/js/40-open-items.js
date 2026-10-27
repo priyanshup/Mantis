@@ -1,21 +1,35 @@
-  // ---- Open items page (IMP-007) ----
+  // ---- Questions page (IMP-007, MANTIS-IMP-094): To answer / Waiting on others / Closed automatically, then the filters ----
   const oi = $("#f-oi");
   if (oi) {
     const who = $("#oi-who");   // who can answer (IMP-046): combines with the chips
-    let cur = "all";
+    const qs = $("#q-scope");
+    let cur = "all", scope = "you";
     const apply = (v) => {
       cur = v;
       $$("button", oi).forEach((b) => b.classList.toggle("on", b.dataset.v === v));
-      const w = who ? who.value : "";
+      const w = who && scope === "others" ? who.value : "";
       $$("details.oi").forEach((d) => (d.hidden = !((v === "all" || d.dataset.kind === v || (v === "names" && /^(name|term)$/.test(d.dataset.kind)) || (v === "potential" && !/^(Open|Unconfirmed)$/.test(d.dataset.status)) || (v === "priority" && /^(Critical|High)$/.test(d.dataset.priority)) || (v === "possible" && d.dataset.status === "Unconfirmed"))
-        && (!w || d.dataset.ask === w))));
+        && d.dataset.scope === scope && (!w || d.dataset.ask === w))));
       $$(".oi-group").forEach((g) => {   // hide empty topics; the count shows what the filter leaves
         const n = $$("details.oi", g).filter((d) => !d.hidden).length;
         g.hidden = !n; $(".oi-n", g).textContent = n;
       });
+      const empty = $("#q-empty");
+      if (empty) empty.hidden = scope === "closed" || $$("#oi-flat details.oi").some((d) => !d.hidden);
     };
+    const setScope = (s) => {
+      scope = s;
+      $$("button", qs).forEach((b) => { b.classList.toggle("on", b.dataset.v === s); b.setAttribute("aria-selected", String(b.dataset.v === s)); });
+      $("#q-closed").hidden = s !== "closed"; $("#q-lists").hidden = s === "closed"; $("#q-tools").hidden = s === "closed";
+      if (who) who.hidden = s !== "others";
+      apply(cur);
+    };
+    if (qs) qs.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setScope(b.dataset.v); });
     oi.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) apply(b.dataset.v); });
     if (who) who.addEventListener("change", () => apply(cur));
+    // A link to one question opens the side it is on; #who= goes to Waiting on others
+    const linked = location.hash.startsWith("#k=") && $(`#oi-flat details.oi[data-k="${CSS.escape(location.hash.slice(3))}"]`);
+    setScope(linked ? linked.dataset.scope : location.hash.startsWith("#who=") ? "others" : location.hash === "#closed" ? "closed" : "you");
     // One list (each question once) or By topic (grouped; a question linked to several topics repeats there)
     const view = $("#oi-view");
     const setView = (v) => {
@@ -133,7 +147,7 @@
       }
       if (!r.ok) { toast(j.error || "The answers could not be saved. Your drafts are still here."); return; }
       ids.forEach((k) => delete drafts[k]); save(); markSent(j.pending || ids);
-      toast(`Saved ${j.saved} answer${j.saved === 1 ? "" : "s"}. Press Process answers to record ${j.saved === 1 ? "it" : "them"} now.`); if (typeof pollJobs === "function") pollJobs();
+      toast(`Saved ${j.saved} answer${j.saved === 1 ? "" : "s"}. The next pull records ${j.saved === 1 ? "it" : "them"}: press Pull now when you are ready.`); if (typeof pollJobs === "function") pollJobs();
     });
   }
 

@@ -6,8 +6,9 @@ updated: YYYY-MM-DD
 ---
 
 <!-- Feature page (Confluence). A starting point, not a form: drop or merge sections that
-don't help this feature. Rules: docs/rules/OUTPUTS_GUIDE.md. Reference: see CLAUDE.local.md.
-Each fact lives in one section. Status only in the header and At a glance. -->
+don't help this feature. Rules: docs/rules/OUTPUTS_GUIDE.md. Reference: mantis/config/voice.md.
+Each fact lives in one section. Status lives in the header line only. Plain words everywhere;
+what only engineers need goes under Technical detail, never into the plain sections. -->
 
 # <Feature name>
 
@@ -22,7 +23,6 @@ Status | Product owner | Jira <KEY> | Updated <date>
 | Primary job | When <situation>, I want to <action>, so I can <outcome> |
 | Hypothesis | If <change>, then <result>, measured by <primary metric> |
 | Scope | MVP: <jobs>. Later: <jobs> |
-| Status | <discovery / ready for build / in build> |
 | Decision needed | <what, from whom, by when> |
 
 ## Persona
@@ -42,6 +42,11 @@ What we will build, in plain numbered steps.
 |---|---|---|
 
 Rabbit holes: <known traps to avoid, one line each>
+
+## Technical detail
+*Source:*
+For engineers: systems and integrations touched, data and its owner, non-functional needs
+(volume, speed, security). Only what the plain sections leave out; drop the section if nothing.
 
 ## Business context
 *Source:*

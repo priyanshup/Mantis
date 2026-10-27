@@ -16,7 +16,7 @@ There is no word limit. Length is fine when every line adds something. Repetitio
 makes a page long and boring.
 
 - Each fact lives in one section. Elsewhere, refer to it ("see Scope") and don't restate it.
-- Status appears only in the header line and in At a glance.
+- Status appears only in the header line.
 - At a glance is the only summary. No "key takeaways", recap or closing summary.
 - Glossary terms and personas live in the shared registers
   (`mantis/knowledge/glossary.md`, `mantis/knowledge/personas.md`). Pages link to them and
@@ -24,6 +24,13 @@ makes a page long and boring.
 - No empty sections. If there is nothing to say, drop the heading or say so in one line.
 - Templates are a starting point, not a form to fill in. Drop or merge sections that
   don't help this feature.
+
+## Plain first, technical apart (owner instruction, 2026-10-27)
+
+Every page, brief and handover reads in plain words first: what it is, why it matters, what is
+needed. What only engineers need (systems, APIs, data, edge cases) goes in its own section,
+Technical detail on a page and Technical notes in an epic, never mixed into the plain ones. A fact
+sits in one of the two, not both. The plain part never needs the technical part to make sense.
 
 ## Write only what was asked
 
@@ -55,7 +62,8 @@ and recommend discovery rather than writing a build-ready spec.
    (`assets.py new <hash>`, opening that one image full size to write its cited description,
    then `entry.py add ast`). Draw a new diagram only when nothing fits, or the owner asks for a
    new one (for example a simpler version for executives).
-4. **Self-check** (below), then run the `humanizer` skill (`docs/rules/WRITING_STYLE.md`).
+4. **Self-check** (below), then run the `humanizer` skill (`docs/rules/WRITING_STYLE.md`), then
+   `python tools/repeats.py <file>`: fix every repeat it lists.
 5. **Save** it where the site picks it up (table below), with the template's front matter
    and `status: draft`, then run `python tools/build_map.py`. The owner reads and copies it
    from the site (http://localhost:8000). Do not write HTML by hand. Set `status: review`
@@ -92,17 +100,17 @@ that matters later, capture it with the session's source document (WORKFLOW, "Be
 | User story (Jira) | `mantis/TEMPLATES/user-story.md` | `mantis/outputs/user-stories/<slug or other>/<nn>-<name>.md`; `epic: none` if it stands alone |
 | Brief before drafting | `mantis/TEMPLATES/brief.md` | shown in chat, not saved |
 | Feature card (knowledge) | `mantis/TEMPLATES/feature-card.md` | `mantis/knowledge/features/<slug>.md` |
-| Discovery brief (topic with no requirements yet) | Section order below | `mantis/outputs/confluence/<slug>.md` |
+| Discovery brief (topic with no requirements yet) | `mantis/TEMPLATES/discovery-brief.md` | `mantis/outputs/confluence/<slug>.md` |
+| Handover (time away) | `mantis/TEMPLATES/handover.md` | brief JSON, `tools/away.py save` |
+| Meeting notes and transcripts | `mantis/TEMPLATES/meeting-notes.md` | takeaways JSON, `tools/brief.py takeaways` |
+| Meeting brief, status update | `tools/brief.py` (its docstring) | brief JSON, `tools/brief.py save` |
+| Since-last-pull lines | `docs/rules/workflow/pull.md`, step 3.6 | `tools/pull.py headline` |
 
-Reference examples of each output for this instance are listed in `CLAUDE.local.md`.
+Reference examples of each output and the voice samples for this instance: `mantis/config/voice.md`
+(local). Read it before writing a page, epic, story or brief; nothing else needs it.
 
 `<slug>` is the feature card's `feature` value; that is how the site files an output under
 its feature. A page with no feature card shows in the site's Library.
-
-**Discovery brief order:** In one minute (what it is, why it matters, where we are, what
-must happen first, decision needed), How it works today (a day in the life), What we know
-and don't know, Why we are not building yet, Questions, Plan, Contacts, Glossary link,
-Sources.
 
 ## Sources and honesty
 
@@ -127,7 +135,8 @@ Spell out every acronym on first use or link the glossary.
 ## Self-check before handing over
 
 - [ ] At a glance answers: what, why, what do you want from me.
-- [ ] Each fact appears once. Status only in the header and At a glance.
+- [ ] Each fact appears once; `python tools/repeats.py <file>` lists nothing. Status only in the header.
+- [ ] Plain sections read on their own; technical detail sits in its own section.
 - [ ] No empty sections; nothing copied from the glossary or persona register.
 - [ ] Persona: one card, marked assumed or interviewed, with its source.
 - [ ] Every metric has a baseline (or "baseline unknown"), a target, a date and a data source.

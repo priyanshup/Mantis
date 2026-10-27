@@ -128,6 +128,26 @@ def grouped(include_steps=True):
     return out
 
 
+ASSUMED_REPLY = 3   # working days, when a person has no closed requests yet (an assumption, and said so)
+
+
+def working_days(a, b):
+    a, b = date.fromisoformat(a), date.fromisoformat(b)
+    return sum(1 for k in range((b - a).days) if date.fromordinal(a.toordinal() + k + 1).weekday() < 5)
+
+
+def turnaround(person, items=None):
+    """How long this person usually takes to answer what the owner waits on (MANTIS-IMP-094, handovers).
+    Returns (working days, how many closed requests it rests on); (ASSUMED_REPLY, 0) when there is no history.
+    A request still open longer than that raises the estimate: they are slower than the closed ones show."""
+    items = items if items is not None else _read()["items"]
+    mine = [i for i in items if i["person"] == person and i["kind"] == "wait"]
+    done = sorted(working_days(i["created"], i["done_at"][:10]) for i in mine if i["status"] == "done" and i.get("done_at"))
+    est = done[len(done) // 2] if done else ASSUMED_REPLY
+    waiting = [working_days(i["created"], date.today().isoformat()) for i in mine if i["status"] == "open"]
+    return max([est] + waiting), len(done)
+
+
 def arg(a, name, default=""):
     return a[a.index(name) + 1] if name in a and a.index(name) + 1 < len(a) else default
 

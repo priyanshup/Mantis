@@ -5,21 +5,22 @@
     python tools/atl.py jira <query name | JQL>       list matching issues, one line each (nothing saved)
     python tools/atl.py issue <KEY> [...]             issues as Markdown, saved to the mirror
     python tools/atl.py page <url | id> [...]         pages as Markdown, saved to the mirror
-    python tools/atl.py tree <root name | url | id>   outline of a folder or page tree, titles only
-    python tools/atl.py sync-confluence [root name] [--refresh]   mirror every page under a root whose version
-                                                      changed (--refresh: every page, after a converter fix)
+    python tools/atl.py tree <filter | url | id>      outline of a folder or page tree, titles only
+    python tools/atl.py sync-confluence [filter] [--refresh]   mirror every page under a Confluence filter's tree
+                                                      whose version changed (--refresh: every page, after a converter fix)
     python tools/atl.py compare                       mirrored pages against digests: same, changed, related, new
-    python tools/atl.py sync-jira [query name]        a query's issues with all their children, plus linked pages
+    python tools/atl.py sync-jira [filter | query]    a query's issues with all their children, plus linked pages
+                                                      (default: the first active Jira filter)
     python tools/atl.py attachments <url | id> ... | --digested   download page images and diagram previews
     python tools/atl.py summary                       the counts from the last compare and sync-jira
 
-Keys: mantis/config/.env. Saved queries, roots and fields: mantis/config/atlassian.json. Output:
+Keys: mantis/config/.env. Filters, saved queries and fields: mantis/config/atlassian.json. Output:
 mantis/mirror/ (see atl_store.py); reports in mantis/mirror/reports/. Nothing here writes to Jira or
-Confluence, and nothing is digested: ingesting what a report lists is a separate, approved step.
+Confluence. These are the bulk and one-off reads; the everyday "what changed" is tools/pull.py.
 """
 import datetime, json, sys
 
-import atl_client, atl_compare, atl_confluence, atl_jira, atl_media, atl_store
+import atl_client, atl_compare, atl_confluence, atl_jira, atl_media, atl_store, atl_updates
 
 sys.dont_write_bytecode = True
 TODAY = datetime.date.today().isoformat()
@@ -41,11 +42,18 @@ def jira_fields(c, conf):
 
 
 def root_id(conf, value):
-    roots = conf.get("confluence_roots", {})
-    if not value:
-        value = next(iter(roots), "")
-    r = roots.get(value)
-    return (value, r["id"]) if r else (value, atl_confluence.page_id(value))
+    """A Confluence filter (by id or label) that names a page tree, or a page URL or ID as given."""
+    roots = [f for f in atl_updates.filters(conf) if f["type"] == "confluence" and atl_updates.tree_root(f["value"])]
+    r = next((f for f in roots if value in (f["id"], f["label"])), None) if value else (roots[0] if roots else None)
+    return (r["id"], atl_updates.tree_root(r["value"])) if r else (value, atl_confluence.page_id(value))
+
+
+def jira_query(conf, value):
+    """A Jira filter (by id or label), a saved query name, a filter ID, or JQL; empty: the first active Jira filter."""
+    fl = [f for f in atl_updates.filters(conf) if f["type"] == "jira"]
+    r = next((f for f in fl if value in (f["id"], f["label"])), None) if value else \
+        next((f for f in fl if f.get("active")), None)
+    return r["value"] if r else atl_jira.resolve(conf, value)
 
 
 # ------------------------------------------------------------------ simple commands
@@ -70,7 +78,7 @@ def cmd_filters(_):
 
 def cmd_jira(args):
     c, conf = atl_client.connect("jira"), cfg()
-    jql = atl_jira.jql_for(c, atl_jira.resolve(conf, " ".join(args)))
+    jql = atl_jira.jql_for(c, jira_query(conf, " ".join(args)))
     issues = atl_jira.search(c, jql, ["summary", "status", "issuetype", "assignee", "updated", "parent"])
     say(f"JQL: {jql}\n{len(issues)} issue(s)\n")
     for i in issues:
@@ -243,8 +251,7 @@ def mantis_keys(project_keys):
 
 def cmd_sync_jira(args):
     c, conf = atl_client.connect("jira"), cfg()
-    name = " ".join(args) or conf.get("default_jira_query", "")
-    jql = atl_jira.jql_for(c, atl_jira.resolve(conf, name))
+    jql = atl_jira.jql_for(c, jira_query(conf, " ".join(args)))
     names, custom = jira_fields(c, conf)
     fields = atl_jira.BASE_FIELDS + custom
     say(f"JQL: {jql}")

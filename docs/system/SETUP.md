@@ -57,7 +57,7 @@ python tools/serve.py --background
    every skill listed is available."
 8. **Turn on the commit guard** (engine repo only): `git config core.hooksPath tools/githooks`.
 
-The site's buttons that run Claude (process inbox, answers, briefs) find Claude by themselves:
+The site's buttons that run Claude (pull, briefs, refresh) find Claude by themselves:
 the `claude` command if installed, otherwise the copy inside the VS Code extension. They use your
 normal Claude subscription quota, the same as chatting. Make sure no `ANTHROPIC_API_KEY` is set
 in your environment; if one is, Claude bills that key per use instead.
@@ -72,7 +72,7 @@ Nothing in the knowledge base depends on Claude. What is Claude-specific, and wh
 | Session-start hook (`.claude/settings.json`) | Run `python tools/session_start.py` yourself at the start of a session, and act on what it prints. |
 | Skills (`.claude/skills/`) | Plain Markdown. Tell the new assistant to read the one a rule names. |
 | Claude's private memory | Not needed: everything durable is in the repo. |
-| Site buttons that run Claude | Set `MANTIS_AGENT_CMD` to the new tool's headless command (for example `codex exec`), or process the inbox in chat instead. |
+| Site buttons that run Claude | Set `MANTIS_AGENT_CMD` to the new tool's headless command (for example `codex exec`), or run the pull in chat instead. |
 
 **First session on a new assistant.** Paste this:
 

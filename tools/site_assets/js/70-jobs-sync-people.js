@@ -34,7 +34,7 @@
       const first = (fresh.summary || "").split("\n").find((l) => l.trim()) || "";
       h.className = `nocopy show ${ok ? "ok" : needs ? "needs" : "bad"}`;
       h.innerHTML = `<span class="jh-ico" aria-hidden="true">${ok ? "✓" : needs ? "!" : "×"}</span><div class="jh-t"><b>${esc(fresh.label)} · ${ok ? "done" : needs ? `needs you (${needs})` : "stopped"}</b><span>${esc(first.replace(/^[-*•]\s*/, ""))}</span>` +
-        `<a href="${jBase}health.html#jobs">Details</a></div><button type="button" class="jh-x" aria-label="Close">✕</button>`;
+        `<a href="${jBase}${fresh.type === "pull" ? "index.html#pull-box" : "sources.html#jobs"}">${fresh.type === "pull" ? "See the brief" : "Details"}</a></div><button type="button" class="jh-x" aria-label="Close">✕</button>`;
       $(".jh-x", h).addEventListener("click", () => { markSeen(fresh.id); h.className = "nocopy"; });
       if (ok) setTimeout(() => { markSeen(fresh.id); h.classList.remove("show"); }, 6500);
       return false;
@@ -75,17 +75,8 @@
   document.addEventListener("keydown", (e) => {   // Enter in the Ask box asks
     if (e.key === "Enter" && e.target.id === "ask-q") { e.preventDefault(); const b = $("#ask-go"); if (b) b.click(); }
   });
-  // Inbox strip (Home, Health): what is waiting, with one button to process it all
+  // Questions: the answers you submitted wait for the next pull; Sources: the job list
   function paintInbox(st) {
-    $$(".inbox-strip").forEach((s) => {
-      const n = st.inbox || {}, parts = [];
-      if (n.files) parts.push(`${n.files} file${n.files > 1 ? "s" : ""} to read`);
-      if (n.edits) parts.push(`${n.edits} page edit${n.edits > 1 ? "s" : ""}`);
-      if (n.answers) parts.push(`${n.answers} answer file${n.answers > 1 ? "s" : ""}`);
-      const busy = (st.active || []).some((j) => j.type === "process-inbox");
-      s.hidden = !parts.length && !busy;
-      $(".is-what", s).textContent = parts.length ? "Waiting in your inbox: " + parts.join(" · ") : "Processing your inbox…";
-    });
     $$(".answers-strip").forEach((s) => { s.hidden = !(st.inbox || {}).answers; });
     const jl = $("#job-list");
     if (jl) {
@@ -135,7 +126,8 @@
   // Live data from tools/serve.py (GET /api/extra), changed through POST /api/followups, /api/deadlines,
   // /api/schedule. Briefs and handovers are written by Claude jobs and opened here; each bullet expands.
   const X = { d: null };
-  const xOn = jobsOn && ($("#t-people") || $(".people-grid"));
+  const xOn = jobsOn;   // live data is loaded where a page shows it, or when the People panel opens
+  const xHere = () => $("#t-people") || $(".people-grid") || $("#mt-list");
   const dShort = (d) => d ? new Date(d + "T12:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) : "";
   const ago = (d) => { const n = Math.round((Date.now() - new Date(d + "T12:00").getTime()) / 864e5); return n <= 0 ? "today" : n === 1 ? "1 day" : `${n} days`; };
   const first = (n) => String(n || "").split(" ")[0];
@@ -164,7 +156,11 @@
   const stepRow = (s) => `<li class="fu step"><div class="fu-t"><span class="pill s-none plain">Step</span><span>${esc(s.step)}</span><a class="muted small" href="${jBase}features/${s.card}.html">${esc(s.card_title)}</a><span class="muted small">${esc(s.status || "open")}${s.due ? ` · due ${dShort(s.due)}` : ""}</span></div></li>`;
   function briefLinks(forName, kind) {
     const bs = (X.d.briefs || []).filter((b) => (!forName || b.for === forName) && (!kind || b.kind === kind)).slice(0, 4);
-    return bs.map((b) => `<button type="button" class="chip" data-brief="${b.id}">${((t, k) => t.toLowerCase().startsWith(k.toLowerCase()) ? esc(t) : esc(k) + " · " + esc(t))(b.title || b.for, { handover: "Handover", status: "Status", answer: "Answer" }[b.kind] || "Brief")} · ${dShort(b.date)}</button>`).join("");
+    // the date shows once: a title that already carries it ("Weekly sync, 26 Oct") gets no second date
+    const dated = (t, d) => { const x = new Date(d + "T12:00"), day = String(x.getDate()), mon = x.toLocaleDateString("en-GB", { month: "short" });
+      return new RegExp(`\\b${day} ${mon}\\b|\\b${mon} ${day}\\b`, "i").test(t); };
+    return bs.map((b) => { const t = b.title || b.for;
+      return `<button type="button" class="chip" data-brief="${b.id}">${((k) => t.toLowerCase().startsWith(k.toLowerCase()) ? esc(t) : esc(k) + " · " + esc(t))({ handover: "Handover", status: "Status", answer: "Answer" }[b.kind] || "Brief")}${dated(t, b.date) ? "" : " · " + dShort(b.date)}</button>`; }).join("");
   }
   function paintX() {
     const d = X.d; if (!d) return;
@@ -196,16 +192,16 @@
         dl.map((s) => `<li class="dl" data-task="${s.task_id}"><div><b>${esc(s.title)}</b><span class="muted small"><b>${dShort(s.date)}</b> · ${esc(s.why)}</span></div>` +
           `<span class="fu-acts"><button type="button" class="mini on" data-da="accept" data-date="${s.date}">Accept</button><input type="date" class="dl-date" value="${s.date}" aria-label="Another date"><button type="button" class="mini" data-da="change">Set</button><button type="button" class="mini" data-da="decline">No deadline</button></span></li>`).join("") + "</ul>" : "";
     }
-    // Today, side column: brief me, then follow-ups
+    // Meetings page: the one-off brief picker and recent briefs (the regular meetings are drawn by paintDay)
+    const mw = $("#mb-who");
+    if (mw && !mw.options.length) mw.innerHTML = (d.people || []).map((p) => `<option value="${esc(p.name)}">${esc(p.name)}${p.role ? " · " + esc(p.role.split(/[;,.]/)[0]).slice(0, 48) : ""}</option>`).join("");
+    const mbs = $("#mt-briefs");
+    if (mbs) mbs.innerHTML = [briefLinks("", "meeting"), briefLinks("", "status")].join("");
+    // Today, side column: follow-ups, then Ask
     const tp = $("#t-people");
     if (tp) {
       const g = d.followups || {}, persons = Object.keys(g).sort((a, b) => (g[b].items.length - g[a].items.length) || a.localeCompare(b));
       const nFu = persons.reduce((n, p) => n + g[p].items.length + g[p].steps.length, 0);
-      const briefs = [briefLinks("", "meeting"), briefLinks("", "status")].join("");
-      const meet = `<section class="side-card"><div class="sc-h"><h2>Meeting brief</h2></div>` +
-        `<div class="mb-row"><select id="mb-who" class="sel sel-sm" aria-label="Meeting with">${whoOptions()}</select><button type="button" class="btn job ai" data-job="meeting-brief" data-arg-from="#mb-who" title="Uses Claude, on your normal quota">Brief me</button></div>` +
-        (briefs ? `<div class="chips sc-chips">${briefs}</div>` : "") +
-        `<button type="button" class="linkish small job ai" data-job="status-update" title="Uses Claude, on your normal quota">Write this week's status update</button></section>`;
       const fus = persons.map((p) => `<details class="fu-person"><summary><b>${esc(p)}</b><span class="fu-count">${g[p].items.length + g[p].steps.length}</span></summary>` +
         `<ul class="fu-list">${g[p].items.map(fuRow).join("")}${g[p].steps.map(stepRow).join("")}</ul></details>`).join("") || '<p class="muted small">Nothing open with anyone.</p>';
       const addFu = `<details class="fu-new"><summary>+ Add a follow-up</summary><form class="fu-add" id="fu-add"><input name="person" list="pp-names" placeholder="Person" required aria-label="Person"><input name="topic" placeholder="What to raise or chase" required aria-label="Topic">` +
@@ -216,16 +212,17 @@
         `<button type="button" id="ask-go" class="btn job ai" data-job="ask" data-arg-from="#ask-q" title="Uses Claude, on your normal quota">Ask</button></div>` +
         (answers ? `<div class="chips sc-chips">${answers}</div>` : `<p class="muted small sc-hint">Answers come from your sources, each point with the passage it rests on.</p>`) +
         `<button type="button" class="linkish small job ai" data-job="ask-deep" data-arg-from="#ask-q" title="A wider, slower search (a few minutes, many more tokens): when a quick answer says its passages were not enough">Dig deeper</button></section>`;
-      tp.innerHTML = ask + meet + `<section class="side-card" id="followups"><div class="sc-h"><h2>Follow-ups</h2><span class="sc-n">${nFu || ""}</span></div>${fus}${addFu}</section>`;
+      tp.innerHTML = `<section class="side-card" id="followups"><div class="sc-h"><h2>Follow-ups</h2><span class="sc-n">${nFu || ""}</span></div>${fus}${addFu}</section>` + ask;
     }
-    // People page: regular meetings (set up here, used by briefs and deadlines)
+    // Meetings page: add a regular meeting (the list itself is drawn by paintDay)
     const pm = $("#pp-meetings");
-    if (pm) {
-      const ms = (d.meetings || []).map((m) => `<li><b>${esc(m.name)}</b> <span class="muted small">${esc(m.day)}${m.time ? " " + esc(m.time) : ""}${m.every > 1 ? ` · every ${m.every} weeks` : ""} · with ${esc((m.attendees || []).join(", ") || "-")}${m.next ? ` · next ${dShort(m.next)}` : ""}</span> <button type="button" class="mini icon" data-meet-rm="${m.id}" aria-label="Remove">✕</button></li>`).join("");
-      pm.innerHTML = `<ul class="meet-list">${ms || '<li class="muted small">None yet. Add your weekly meetings.</li>'}</ul>` +
-        `<form class="fu-add" id="meet-add"><input name="name" placeholder="Meeting name (e.g. Sam 1-1)" required aria-label="Meeting name"><select name="day" class="sel sel-sm" aria-label="Day">${["Mon", "Tue", "Wed", "Thu", "Fri"].map((x) => `<option>${x}</option>`).join("")}</select>` +
-        `<input name="time" type="time" aria-label="Time"><input name="attendees" list="pp-names" placeholder="With (names, comma-separated)" aria-label="With"><select name="every" class="sel sel-sm" aria-label="How often"><option value="1">Weekly</option><option value="2">Every 2 weeks</option></select><button class="btn-line" type="submit">Add</button>${peopleList()}</form>`;
+    if (pm && !$("#meet-add", pm)) {
+      pm.innerHTML = `<form class="fu-add meet-form" id="meet-add"><label>Name <input name="name" placeholder="e.g. Sam 1-1" required></label>` +
+        `<label>Day <select name="day" class="sel sel-sm">${["Mon", "Tue", "Wed", "Thu", "Fri"].map((x) => `<option>${x}</option>`).join("")}</select></label>` +
+        `<label>Time <input name="time" type="time"></label><label>How often <select name="every" class="sel sel-sm"><option value="1">Weekly</option><option value="2">Every 2 weeks</option></select></label>` +
+        `<label class="wide">With <input name="attendees" list="pp-names" placeholder="Names, comma-separated"></label><button class="btn" type="submit">Add meeting</button>${peopleList()}</form>`;
     }
+    if (typeof paintDay === "function") paintDay(d);
     // People page: counts and lists per person
     $$(".person").forEach((card) => {
       const name = card.dataset.name, g = (d.followups || {})[name] || { items: [], steps: [] };
@@ -266,7 +263,8 @@
         return;
       }
       const br = e.target.closest("[data-brief]"); if (br) { openBrief(br.dataset.brief); return; }
-      const mr = e.target.closest("[data-meet-rm]"); if (mr) { xPost("api/schedule", { action: "remove-meeting", id: mr.dataset.meetRm }, "Meeting removed."); return; }
+      const mr = e.target.closest("[data-meet-rm]");
+      if (mr) { if (confirm(`${mr.getAttribute("aria-label") || "Remove this meeting"}? Its agenda and brief history stop showing here.`)) xPost("api/schedule", { action: "remove-meeting", id: mr.dataset.meetRm }, "Meeting removed."); return; }
       const ar = e.target.closest("[data-away-rm]"); if (ar && confirm("Remove this away period?")) { xPost("api/schedule", { action: "remove-away", id: ar.dataset.awayRm }, "Away period removed."); return; }
       const pa = e.target.closest(".pp-add");
       if (pa) { const t = prompt(`Follow-up with ${pa.dataset.person}: what do you want to raise or chase?`); if (t) xPost("api/followups", { action: "add", person: pa.dataset.person, topic: t }, "Follow-up added."); }
@@ -279,8 +277,8 @@
     });
     const pf = $("#pp-filter");
     if (pf) pf.addEventListener("input", () => { const q = pf.value.toLowerCase(); $$(".person").forEach((c) => { c.hidden = q && !c.textContent.toLowerCase().includes(q); }); });
-    if (location.hash) setTimeout(() => { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView({ block: "center" }); }, 300);
-    loadX();
+    if (location.hash && !location.hash.includes("=")) setTimeout(() => { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView({ block: "center" }); }, 300);
+    if (xHere()) loadX();
     // A finished brief or handover job: refresh the lists so the new brief appears
     let lastDone = "";
     setInterval(() => { if (!jState) return; const j = (jState.jobs || []).find((x) => ["meeting-brief", "handover"].includes(x.type) && x.ended); if (j && j.id !== lastDone) { if (lastDone) loadX(); lastDone = j.id; } }, 3000);

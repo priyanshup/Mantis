@@ -27,13 +27,69 @@ def briefs_index():
     return out
 
 
+AGENDA_CAP = 5   # items per agenda section; the rest is counted, not listed
+
+
+def _qkey(rid):
+    """The anchor the Questions page uses for an open item (a hash, so no Mantis ID shows in the address)."""
+    import hashlib
+    return hashlib.sha1(rid.encode("utf-8")).hexdigest()[:10]
+
+
+def agenda(m, fus, open_items, titles, brief_cards):
+    """A regular meeting's agenda, built from what is open (MANTIS-IMP-094): decide, ask, chase, update.
+    Each section lists links, never restated text, so one fact has one home (the question, the follow-up)."""
+    who = {people.find(a)["name"] if people.find(a) else a for a in m.get("attendees", [])}
+    cards = set(m.get("cards", []))
+    card = lambda o: titles.get(next((s for s in o.get("features", []) if s in cards), ""), "")
+    decide = [o for o in open_items if o["status"] != "Open" and set(o.get("features", [])) & cards]
+    ask = [o for o in open_items if o["status"] == "Open" and (o.get("ask") or {}).get("name") in who]
+    ask.sort(key=lambda o: o["ask"]["how"] != "named")
+    q = lambda o: {"text": o["topic"].split(" (MANTIS-")[0][:200], "href": f"questions.html#k={_qkey(o['id'])}", "note": card(o)}
+    f = lambda x: {"text": x["topic"], "fu": x["id"], "note": x["person"].split()[0] + (f", chase {x['chase']}" if x.get("chase") else "")}
+    mine = [x for p in who for x in fus.get(p, {}).get("items", [])]
+    secs = [("Decide", [q(o) for o in decide]),
+            ("Ask", [f(x) for x in mine if x["kind"] == "raise"] + [q(o) for o in ask]),
+            ("Chase", [f(x) for x in mine if x["kind"] == "wait"]),
+            ("Update them on", [{"text": line, "note": c["title"]} for c in brief_cards if c["slug"] in cards for line in c["lines"]])]
+    if len(cards) <= 3:   # a meeting about one or two subjects: what is still open on them is worth raising too
+        seen = {o["id"] for o in decide + ask}
+        secs.append(("Still open", [q(o) for o in open_items if o["status"] == "Open" and set(o.get("features", [])) & cards and o["id"] not in seen]))
+    return [{"name": n, "items": items[:AGENDA_CAP], "more": max(0, len(items) - AGENDA_CAP)} for n, items in secs if items]
+
+
+def last_time(m):
+    """The meeting's last saved takeaways, each action with its status now."""
+    import brief, tasks_store
+    t = brief.latest_takeaways(m["name"])
+    if not t:
+        return None
+    tasks = {x["id"]: x for x in tasks_store.load()["tasks"]}
+    fus = {x["id"]: x for x in followups.load()["items"]}
+    return {"date": t["date"], "decisions": t.get("decisions", []), "notes": t.get("notes", "")[:600],
+            "actions": [{"text": a["title"], "who": "You", "state": (tasks.get(a["task"]) or {}).get("status", "done")} for a in t.get("mine", [])]
+                       + [{"text": a["topic"], "who": a["person"].split()[0], "state": (fus.get(a["followup"]) or {}).get("status", "removed")}
+                          for a in t.get("theirs", [])]}
+
+
 def payload():
     ps = people.load()
     today = date.today()
+    mp = ROOT / "mantis" / "knowledge" / "map"
+    read = lambda n: json.loads((mp / n).read_text(encoding="utf-8")) if (mp / n).exists() else []
+    open_items = [o for o in read("open-items.json") if o["kind"] in ("gap", "conflict", "assumption")]
+    titles = {c["slug"]: c["title"] for c in read("features.json") + read("topics.json")}
+    try:
+        last = json.loads((ROOT / "mantis" / "tasks" / "pull-brief.json").read_text(encoding="utf-8")).get("last") or {}
+    except (OSError, ValueError):
+        last = {}
+    fus = followups.grouped(include_steps=False)
     ms = []
     for m in schedule.meetings():
         nd = schedule.next_date(m, today)
-        ms.append(dict(m, next=nd.isoformat() if nd else ""))
+        ms.append(dict(m, next=nd.isoformat() if nd else "", agenda=agenda(m, fus, open_items, titles, last.get("cards", [])),
+                       last=last_time(m), key=people.slug(m["name"])))
+    ms.sort(key=lambda m: m["next"] or "9999")
     away = schedule.next_away(today)
     before = []
     if away:   # what needs the owner before leaving: own open steps, own dated tasks, waiting follow-ups to chase

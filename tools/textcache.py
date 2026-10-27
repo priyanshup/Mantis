@@ -7,6 +7,10 @@ OneDrive. A file that has not changed since the last rebuild is never opened aga
 
     import textcache
     text = textcache.read(path)        # same as path.read_text(encoding="utf-8")
+    textcache.write(path, text)        # same as path.write_text(...), but skipped when nothing changed
+
+A rebuild that changes nothing must write nothing: every write wakes OneDrive and the site
+server's watcher (a write on every build kept the server rebuilding nonstop until 2026-10-27).
 
 The cache is saved when the process exits. Deleting it is always safe; the next rebuild refills it.
 """
@@ -58,6 +62,22 @@ def read(path):
     _cache[key] = [stamp, text]
     _dirty = True
     return text
+
+
+def write(path, text):
+    """Write the file only if its text differs from what is there. Returns True when it wrote."""
+    global _dirty
+    p = Path(path)
+    try:
+        if read(p) == text:
+            return False
+    except (OSError, UnicodeDecodeError):
+        pass
+    p.write_text(text, encoding="utf-8")
+    st = p.stat()
+    _cache[os.path.normcase(os.path.abspath(p))] = [[st.st_size, st.st_mtime_ns], text]
+    _dirty = True
+    return True
 
 
 def prune():

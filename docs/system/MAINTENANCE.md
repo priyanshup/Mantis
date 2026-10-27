@@ -15,7 +15,7 @@ regenerated or was always temporary; archive what was knowledge; let the owner d
 
 | When | What | How |
 |---|---|---|
-| Every rebuild | Health report (`map/health.md`, the site's Health page): files to fix, inbox waiting, old open items, large digests, near-duplicates, archive size. | `build_map.py` calls `maintain.py --report` |
+| Every rebuild | Health report (`map/health.md`, Health and jobs on the site's Sources page): files to fix, inbox waiting, old open items, large digests, near-duplicates, archive size. | `build_map.py` calls `maintain.py --report` |
 | Weekly, at session start | Temporary-file cleanup plus the health report. | Session-start hook runs `maintain.py --if-due` |
 | Daily, on first use | Done tasks move to `tasks/archive.json`; archived tasks and deleted tasks go after 7 days. | `tools/tasks_store.py` rollover |
 | After processing | Answer and edit files leave the inbox for `03_archive/answers/` and `03_archive/edits/`. | WORKFLOW steps |

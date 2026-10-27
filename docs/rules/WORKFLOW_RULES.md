@@ -182,7 +182,7 @@ triaged yet", never Medium by default.
 
 Set it with `python tools/entry.py priority <ID> <Level> "<why>"` when the reason is clear from
 the sources or the owner says so; otherwise leave it out. A guess at priority is an assumption
-like any other. The Open items page and `map/registers.md` list Critical and High first, then
+like any other. The Questions page and `map/registers.md` list Critical and High first, then
 untriaged, then Medium and Low.
 
 ## Evidence Source Types
@@ -199,8 +199,8 @@ reliability characteristics and must be tagged explicitly rather than presented 
   [date].`
 - **User's own outside knowledge**: the user's personal knowledge, stated directly, not yet
   backed by any ingested document. Tag as: `Source: User knowledge, [date], not yet present in any
-  ingested document.` An answer given on the Open items page is tagged `Source: Owner answer via
-  the Open items page, [date].`
+  ingested document.` An answer given on the Questions page is tagged `Source: Owner answer via
+  the Questions page, [date].`
 - **External AI research**: a third-party AI research tool (named for this instance in
   `CLAUDE.local.md`) searched the company's own wiki/tracker directly and returned citations to
   specific pages with quoted content. This is **strong supporting evidence, but is not equivalent
@@ -299,7 +299,8 @@ the Knowledge Gap entry's status to reflect the promotion rather than deleting i
 Assumptions, Conflicts, and Knowledge Gaps all share the same three-state resolution pattern:
 `Open` → `Potential Resolution` → a final state (`Confirmed`/`Corrected` for Assumptions,
 `Resolved` for Conflicts, `Promoted`/`Closed` for Knowledge Gaps). **Never jump straight from
-`Open` to a final state automatically**: that final step is always a human decision. Two other
+`Open` to a final state automatically**: that final step is a human decision (one exception for
+open questions, below). Two other
 states are owner decisions too: `Deferred` (the owner said it is not decided yet; it waits on the
 card under "Decided later" with its trigger) and `Unconfirmed` (a possible conflict, below).
 
@@ -317,7 +318,15 @@ decision:
 
 Only the final step — moving an item from `Potential Resolution` to `Confirmed` / `Resolved` /
 `Promoted` / `Closed` — always requires explicit user confirmation. Choosing "Answers it" on the
-Open items page is that confirmation.
+Questions page is that confirmation.
+
+**One exception, decided by the owner on 2026-10-27 (MANTIS-IMP-094): open questions close
+themselves.** A Knowledge Gap that a new source answers with `Strong` evidence is closed at once with
+`tools/entry.py close`, which writes `Closed (auto, <date>: <evidence>; source <DOC>)` and lists
+other open gaps the same answer may settle. Each of those closes only on its own Strong evidence.
+The brief after a pull lists every automatic close, and `tools/entry.py reopen` undoes one. The
+exception covers gaps only: Conflicts and Assumptions still wait for the owner, and Moderate
+evidence still stops at `Potential Resolution`. Digests that cite the gap are not edited.
 
 Before actually closing/confirming an item once approved, show what else is affected — which
 digests reference it, via their `assumptions_referenced` / `conflicts_referenced` /
@@ -378,7 +387,8 @@ Rules:
 - When a later document appears to fill a gap, assess Evidence Strength: `Strong`/`Moderate`
   sets it to `Potential Resolution` directly (no pre-approval needed for that step); `Weak` is
   reported but leaves it `Open`. Either way, only move it to `Promoted` or `Closed` once the user
-  explicitly confirms.
+  explicitly confirms, except a gap answered with Strong evidence, which closes itself (see
+  "Potential Resolution", the exception).
 - **Source-internal rendering ambiguity** (e.g. garbled, duplicated, or internally inconsistent
   content within a single source — mismatched statuses across repeated blocks, strikethrough
   formatting that contradicts a non-struck occurrence elsewhere, an inconsistent highlighting
@@ -406,7 +416,7 @@ contradiction is never smoothed over in a card or a digest.
 (`tools/contradictions.py`) finds two statements that may disagree but you cannot tell whether
 they truly conflict or the plan simply moved, record the conflict with status `Unconfirmed
 (possible conflict found <date> by the contradiction check)` and carry on: it is posted to the
-Open items page and does not stop the batch. The owner answers "Yes, they conflict" (it becomes
+Questions page and does not stop the batch. The owner answers "Yes, they conflict" (it becomes
 `Open`, or `Resolved` if they say which is right), "The plan changed" (`Resolved (plan changed)`,
 the newer statement wins) or "Not a conflict" (`Closed (not a conflict)`).
 
@@ -438,6 +448,12 @@ Never silently edit an existing digest. Before any change:
 
 This applies to any edit — correcting a fact, updating a confidence level, adding a citation, or
 anything else — not just full regenerations.
+
+**One exception, decided by the owner on 2026-10-27 (MANTIS-IMP-094): a card's monthly pull digest.**
+A digest whose front matter has `pull_card` and `pull_month` collects that card's Jira and
+Confluence changes for the month. A pull may add a dated `## <date>` section to it, cited to its new
+source file, and rewrite its Summary to cover the month, without a preview. Nothing else in it
+changes, and each addition still gets a Change Log line.
 
 ## Change Log
 

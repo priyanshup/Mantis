@@ -160,9 +160,9 @@ the people and systems named. Sources the summary does not cover yet are marked 
 card says so, so freshness is visible instead of silently lost. Reading a card replaces opening
 the digests behind it: a subject with 30 documents costs about 1,500 tokens instead of 60,000.
 
-The owner chooses which cards matter on the site's Topics page: **Follow** puts a card in "My
-focus" (Home), and **Roadmap** adds a topic card to the Roadmap board or takes a roadmap feature
-off it. The choices live in `mantis/knowledge/focus.json`, written by `tools/serve.py`; they are
+The owner chooses which cards matter on the site's Features page: **Follow** puts a card in
+Following (ranked by the owner), and **Roadmap** adds a topic card to the Roadmap board or takes a
+roadmap feature off it. The choices live in `mantis/knowledge/focus.json`, written by `tools/serve.py`; they are
 preferences, not knowledge, so they skip the inbox and apply at once.
 
 ## Engine and knowledge (added 2026-10-10, MANTIS-IMP-036)

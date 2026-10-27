@@ -38,26 +38,32 @@
   // ---- Home ----
   const hello = $("#hello");
   if (hello) { const h = new Date().getHours(); hello.textContent = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; }
-  // ---- Topics page: My focus / On roadmap / All, plus Follow and Roadmap buttons saved via tools/serve.py ----
+  // ---- Features: Following / Roadmap / Ideas / All (MANTIS-IMP-094), plus Follow and Roadmap buttons saved via tools/serve.py ----
+  // Following shows the ranked focus list, Roadmap the board, list and timeline; Ideas, All and Archived filter the cards.
   const ttab = $("#ttab");
   if (ttab) {
-    const saved = store.get("mantis-topics");
-    let tab = saved.tab || "focus";
+    const PANEL = { focus: "focus", roadmap: "roadmap", ideas: "tiles", all: "tiles", archived: "tiles" };
+    const fromHash = () => { const h = location.hash.slice(1); return h === "following" ? "focus" : PANEL[h] ? h : ""; };
+    let tab = fromHash() || store.get("mantis-features").tab || "focus";
+    if (!PANEL[tab]) tab = "focus";
     const tq = $("#tq");
     const show = () => {
+      $$("[data-scope-panel]").forEach((p) => (p.hidden = p.dataset.scopePanel !== PANEL[tab]));
       const q = (tq.value || "").toLowerCase(); let n = 0;
       $$(".topic-tile").forEach((t) => {
         const arc = t.dataset.archived === "1";
-        const inTab = tab === "archived" ? arc : !arc && (tab === "all" || (tab === "focus" && t.dataset.following === "1") || (tab === "roadmap" && t.dataset.roadmap === "1"));
+        const inTab = tab === "archived" ? arc : !arc && (tab === "all" || (tab === "ideas" && t.dataset.idea === "1"));
         t.hidden = !inTab || (q && !t.textContent.toLowerCase().includes(q)); if (!t.hidden) n++;
       });
-      $$("button", ttab).forEach((b) => b.classList.toggle("on", b.dataset.v === tab));
-      $("#t-empty").hidden = n > 0; store.set("mantis-topics", { tab });
+      $$("button", ttab).forEach((b) => { b.classList.toggle("on", b.dataset.v === tab); b.setAttribute("aria-selected", String(b.dataset.v === tab)); });
+      const ab = $("[data-arch]"); if (ab) ab.classList.toggle("on", tab === "archived");
+      $("#t-empty").hidden = PANEL[tab] !== "tiles" || n > 0; store.set("mantis-features", { tab });
       drawBulk();
     };
+    window.addEventListener("hashchange", () => { const h = fromHash(); if (h) { tab = h; show(); } });
     // Bulk actions work on the cards shown (so a filter narrows them). Each offers Undo, which survives
     // the page reload that follows the site rebuild.
-    const BULK = { focus: [["unfollow", "Clear all focus"]], roadmap: [["unroadmap", "Clear roadmap"]],
+    const BULK = { ideas: [["follow", "Follow all"], ["roadmap", "Add all to roadmap"]],
       all: [["follow", "Follow all"], ["unfollow", "Unfollow all"], ["roadmap", "Add all to roadmap"], ["unroadmap", "Clear roadmap"]],
       archived: [["unarchive", "Restore all"]] };
     const INVERSE = { follow: "unfollow", unfollow: "follow", roadmap: "unroadmap", unroadmap: "roadmap", archive: "unarchive", unarchive: "archive" };
@@ -66,7 +72,7 @@
     const targets = (action) => $$(".topic-tile").filter((t) => !t.hidden && (t.dataset[FIELD(action)] === "1") === /^un/.test(action));
     function drawBulk() {
       const filtered = !!(tq.value || "").trim();
-      bulkEl.innerHTML = BULK[tab].map(([a, l]) => { const n = targets(a).length;
+      bulkEl.innerHTML = (BULK[tab] || []).map(([a, l]) => { const n = targets(a).length;
         return `<button type="button" class="mini${/^un/.test(a) ? " t-del" : ""}" data-bulk="${a}" ${n ? "" : "disabled"}>${l}${filtered ? " shown" : ""}${n ? ` · ${n}` : ""}</button>`; }).join("");
     }
     const LABEL = { following: ["☆ Follow", "★ Following"], roadmap: ["+ Roadmap", "✓ On roadmap"], archived: ["Archive", "Restore"] };
@@ -74,6 +80,7 @@
     function setTile(tile, action) {
       const f = FIELD(action), on = !/^un/.test(action), b = $(`.act[data-a="${BTN[f]}"]`, tile);
       tile.dataset[f] = on ? "1" : "0"; b.textContent = LABEL[f][+on]; if (f !== "archived") { b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); }
+      if (f === "roadmap") tile.dataset.idea = !on && ($(".tag", tile) || {}).textContent === "Idea" ? "1" : "0";   // an idea is a topic off the roadmap
       if (action === "archive") { setTile(tile, "unfollow"); setTile(tile, "unroadmap"); }   // the server does the same
     }
     async function bulk(action, slugs) {
@@ -98,6 +105,7 @@
       if (u && u.until > Date.now()) setTimeout(() => toast(u.msg, undoBulk(u)), 300); else sessionStorage.removeItem("mantis-undo");
     } catch (e) {}
     ttab.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { tab = b.dataset.v; show(); } });
+    const ab = $("[data-arch]"); if (ab) ab.addEventListener("click", () => { tab = tab === "archived" ? "all" : "archived"; show(); });
     tq.addEventListener("input", show);
     document.addEventListener("click", async (e) => {
       const b = e.target.closest(".tile-acts .act"); if (!b) return;
@@ -123,7 +131,9 @@
       const want = decodeURIComponent(location.hash.slice(1)) || "overview";
       const id = document.getElementById("p-" + want) ? want : "overview";
       $$(".tab-panel").forEach((p) => (p.hidden = p.id !== "p-" + id));
-      $$(".tabs a").forEach((a) => a.classList.toggle("on", id === a.dataset.match || (a.dataset.match.endsWith("-") && id.startsWith(a.dataset.match))));
+      // a tab owns one panel or several ("page epic- story-": Drafts); a trailing dash matches a prefix
+      $$(".tabs a").forEach((a) => { const on = a.dataset.match.split(" ").some((m) => (m.endsWith("-") ? id.startsWith(m) : id === m));
+        a.classList.toggle("on", on); if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
       $$(".story").forEach((a) => a.classList.toggle("on", a.dataset.anchor === id));
     };
     // Switching tabs keeps your place; only if the tabs have scrolled out of view does the page glide back to them.

@@ -112,7 +112,7 @@ for did, fm in reversed(list(docs.items())):
                             CONF.get(fm.get("document_confidence", ""), "?"),
                             ",".join(fm.get("topics", [])[:3]), str(len(open_gaps))]))
 lines += ["", "D0001 means MANTIS-DOC-0001. conf: H high, M medium, L low."]
-(OUT / "MAP.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+textcache.write((OUT / "MAP.md"), "\n".join(lines) + "\n")
 
 
 # topics.md and entities.md
@@ -121,7 +121,7 @@ def invert(d, title):
     for k in sorted(d, key=lambda x: (-len(d[x]), x.lower())):
         rows.append(f"{k}: " + " ".join(short(i) for i in d[k]))
     return "\n".join(rows) + "\n"
-(OUT / "topics.md").write_text(invert(by_topic, "Topics"), encoding="utf-8")
+textcache.write((OUT / "topics.md"), invert(by_topic, "Topics"))
 
 # Features and work items: card front matter + outputs (pages, epics, stories)
 OUTP = M / "outputs"
@@ -176,14 +176,14 @@ for slug, (p, fm) in cards.items():
 features.sort(key=lambda f: (f["priority"] or "P9", f["title"]))
 
 # (map/features.md was dropped on 2026-10-10, MANTIS-IMP-065: cards.md and features.json carry it, and nothing read it.)
-(OUT / "features.json").write_text(json.dumps(features, indent=1), encoding="utf-8")
-(OUT / "work.json").write_text(json.dumps({"epics": epics, "stories": stories}, indent=1), encoding="utf-8")
+textcache.write((OUT / "features.json"), json.dumps(features, indent=1))
+textcache.write((OUT / "work.json"), json.dumps({"epics": epics, "stories": stories}, indent=1))
 
 topics = [{"slug": c["slug"], "title": c["title"], "type": "topic", "kind": "topic", "card": c["path"].relative_to(M).as_posix(),
            "docs": c["linked"], "new_docs": c["new"], "covered": c["covered"], "updated": c["fm"].get("updated", ""),
            "match": c["fm"].get("match_topics", [])} for c in all_cards if c["folder"] == "topics"]
 topics.sort(key=lambda x: x["title"].lower())
-(OUT / "topics.json").write_text(json.dumps(topics, indent=1), encoding="utf-8")
+textcache.write((OUT / "topics.json"), json.dumps(topics, indent=1))
 # Entity graph (tools/kgraph.py): writes entities.json, entities.md, entity-graph.md, entity-candidates.md
 import kgraph
 kg = kgraph.build(docs, features + topics)
@@ -212,8 +212,8 @@ rows = ["# Knowledge assets", "", "Generated from `registers/assets/`. Reuse one
         f"{len(asset_list)} registered; {_tiers.get('candidate', 0)} candidate(s) waiting; {_tiers.get('decorative', 0)} decorative and {_tiers.get('ignored', 0)} ignored image(s) left out.", "",
         "id | type | title | sources | used by", "---|---|---|---|---"]
 rows += [" | ".join([a["id"], a["type"] or "-", a["title"][:90], ",".join(short(d) for d in a["docs"]), str(len(a["referenced_by"]))]) for a in asset_list]
-(OUT / "assets.md").write_text("\n".join(rows) + "\n", encoding="utf-8")
-(OUT / "assets.json").write_text(json.dumps({"assets": asset_list, "tiers": dict(_tiers)}, indent=1, ensure_ascii=False), encoding="utf-8")
+textcache.write((OUT / "assets.md"), "\n".join(rows) + "\n")
+textcache.write((OUT / "assets.json"), json.dumps({"assets": asset_list, "tiers": dict(_tiers)}, indent=1, ensure_ascii=False))
 
 _deferred = {rid: r for reg in (gaps, asms, cfls) for rid, r in reg.items() if r["status"].lower().startswith("deferred")}
 _c = cards_mod.write(all_cards, docs, summaries, gaps, kg["entities"], is_open, asset_list, _deferred)
@@ -229,7 +229,7 @@ for _p in sorted((OUTP / "confluence").glob("*.md")):
                   "updated": _fm.get("updated", ""), "href": f"features/{_p.stem}.html#page" if _p.stem in cards else f"pages/{_p.stem}.html"})
 _focus = json.loads((M / "knowledge" / "focus.json").read_text(encoding="utf-8")) if (M / "knowledge" / "focus.json").exists() else {}
 _changes = changes_mod.build(docs, all_cards, features, {"gap": gaps, "assumption": asms, "conflict": cfls}, _work, asset_list, _focus)
-(OUT / "changes.json").write_text(json.dumps(_changes, indent=1, ensure_ascii=False), encoding="utf-8")
+textcache.write((OUT / "changes.json"), json.dumps(_changes, indent=1, ensure_ascii=False))
 if _c:
     print(f"Cards: {_c} regenerated")
 
@@ -250,7 +250,7 @@ rows += [f"- {t}: {n} documents" for t, n in suggest[:20]] or ["None."]
 rows += ["", f"## Cards to split (over {cards_mod.SPLIT_SOURCES} sources or {cards_mod.SPLIT_BYTES // 1000} KB)", ""]
 rows += [f"- {x['slug']}: {x['sources']} sources, {x['bytes'] / 1024:.0f} KB. Tags its sources share: "
          + (", ".join(f"{t} ({n})" for t, n in x["tags"]) or "none on 3+ sources") for x in cards_mod.too_large(all_cards, docs)] or ["None."]
-(OUT / "cards.md").write_text("\n".join(rows) + "\n", encoding="utf-8")
+textcache.write((OUT / "cards.md"), "\n".join(rows) + "\n")
 
 # open-items.json: every open or potentially resolved entry, for the site's Open items page (IMP-007)
 doc_feats = defaultdict(set)
@@ -319,8 +319,8 @@ for e in kg["entities"]:
         open_items.append({"id": "TERM-" + _h(e["name"]), "kind": "term", "status": "Open", "status_full": "Open",
                            "topic": f'What is "{e["name"]}"? Named in {len(e["docs"])} documents; Mantis has no confirmed meaning or type for it yet.', "raised": "",
                            "features": [], "docs": _dt(e), "names": [e["name"]]})
-(OUT / "open-items.json").write_text(json.dumps(open_items, indent=1, ensure_ascii=False), encoding="utf-8")
-(OUT / "answers-unapplied.json").write_text(json.dumps(sorted(_unapplied)), encoding="utf-8")
+textcache.write((OUT / "open-items.json"), json.dumps(open_items, indent=1, ensure_ascii=False))
+textcache.write((OUT / "answers-unapplied.json"), json.dumps(sorted(_unapplied)))
 
 # registers.md: one line per entry that is still open
 rows = ["# Registers (compact)", "",
@@ -332,14 +332,14 @@ for reg in (gaps, asms, cfls):
     for rid, r in sorted(reg.items(), key=lambda kv: PRIO_RANK[kv[1]["priority"]]):
         if is_open(r["status"]):
             rows.append(" | ".join([rid, r["priority"] or "-", r["status"], r["topic"][:110], ",".join(short(x) for x in r["docs"])]))
-(OUT / "registers.md").write_text("\n".join(rows) + "\n", encoding="utf-8")
+textcache.write((OUT / "registers.md"), "\n".join(rows) + "\n")
 
 # titles.json: document titles for the site (replaced the 274 KB graph.json, MANTIS-IMP-065; the entity graph is entities.json)
 for typ, reg in (("gap", gaps), ("assumption", asms), ("conflict", cfls)):
     for i, r in reg.items():
         for d in r["docs"]: edges.append((d, i, typ))
 edges = sorted(set(edges))
-(OUT / "titles.json").write_text(json.dumps({d: f.get("original_title", "") for d, f in docs.items()}, ensure_ascii=False, indent=0), encoding="utf-8")
+textcache.write((OUT / "titles.json"), json.dumps({d: f.get("original_title", "") for d, f in docs.items()}, ensure_ascii=False, indent=0))
 
 # The search index for questions (MANTIS-IMP-086): only digests, cards and relations that changed are re-indexed; no AI
 try:
@@ -369,3 +369,4 @@ try:
     build_site.build()
 except ImportError as e:
     print(f"\nSite not rebuilt: {e}")
+buildlock.mark_done()   # the server's watcher skips edits older than this, including this build's own writes

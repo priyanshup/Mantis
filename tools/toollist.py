@@ -14,12 +14,12 @@ sys.dont_write_bytecode = True
 T = Path(__file__).resolve().parent
 OUT = T / "README.md"
 GROUPS = [
-    ("Everyday", ["build_map", "serve", "tasks", "followups", "brief", "away", "schedule", "deadlines", "people", "steps", "jobs"]),
+    ("Everyday", ["pull", "build_map", "serve", "tasks", "followups", "brief", "away", "schedule", "deadlines", "people", "steps", "jobs"]),
     ("Ingest and answers", ["extract", "mishear", "classify", "entry", "entities", "answers", "contradictions", "support", "estimates", "assets", "apply_edits"]),
     ("Look up", ["ask", "search", "peek", "graph", "readiness", "decisions"]),
-    ("Housekeeping and setup", ["maintain", "session_start", "init", "leakcheck", "selftest", "toollist", "citations", "evaluate", "answered", "prune_sources", "refresh_report"]),
-    ("Jira and Confluence (read-only)", ["atl", "atl_client", "atl_confluence", "atl_jira", "atl_compare", "atl_convert", "atl_media", "atl_store"]),
-    ("Modules (used by the commands)", ["build_site", "site_common", "site_plan", "site_people", "site_reference", "cards", "changes", "index_gen", "kgraph", "tasks_store", "edit_common", "frontmatter",
+    ("Housekeeping and setup", ["maintain", "session_start", "init", "leakcheck", "selftest", "toollist", "citations", "repeats", "evaluate", "answered", "prune_sources", "refresh_report"]),
+    ("Jira and Confluence (read-only)", ["atl", "atl_client", "atl_confluence", "atl_jira", "atl_compare", "atl_convert", "atl_media", "atl_store", "atl_updates"]),
+    ("Modules (used by the commands)", ["build_site", "site_common", "site_day", "site_plan", "site_people", "site_reference", "cards", "changes", "index_gen", "kgraph", "tasks_store", "edit_common", "frontmatter",
                                         "buildlock", "textcache", "extra", "local_config"]),
 ]
 PACKAGES = {"pypdf": "pypdf", "PIL": "pillow", "markdown": "markdown", "openpyxl": "openpyxl", "markdownify": "markdownify", "docx": "python-docx"}

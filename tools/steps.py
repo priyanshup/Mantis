@@ -12,6 +12,7 @@ deadlines and the away planner.
 import json, re, sys
 from datetime import datetime
 from pathlib import Path
+import textcache
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent.parent
@@ -76,7 +77,7 @@ def collect():
 def build():
     steps = collect()
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(steps, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    textcache.write(OUT, json.dumps(steps, indent=1, ensure_ascii=False) + "\n")
     return steps
 
 

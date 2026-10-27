@@ -84,7 +84,7 @@ def build(docs, all_cards, features, regs, work, assets, focus, today=None):
         folder = {"gap": "gaps", "assumption": "assumptions", "conflict": "conflicts"}[kind]
         for rid, r in reg.items():
             c = first_card(r["docs"])
-            href = f"review.html#k={qkey(rid)}"   # an opaque key: IDs never reach a page
+            href = f"questions.html#k={qkey(rid)}"   # an opaque key: IDs never reach a page
             status = r.get("status_raw", "")
             if kind == "conflict" and status.lower().startswith("unconfirmed"):
                 add(r["raised"], "possible", r["topic"], "Two sources may disagree. Confirm or dismiss it on Open items.", href, c, rid)
@@ -143,7 +143,7 @@ def build(docs, all_cards, features, regs, work, assets, focus, today=None):
                 reg = next(r for r in regs.values() if rid in r)
                 c = first_card(reg[rid]["docs"])
                 logged.append({"date": iso, "kind": "closed", "title": plain(reg[rid]["topic"], 160), "detail": f"{was} → {st}",
-                               "href": f"review.html#k={qkey(rid)}", "card": c["title"] if c else "", "card_href": card_href(c) if c else "",
+                               "href": f"questions.html#k={qkey(rid)}", "card": c["title"] if c else "", "card_href": card_href(c) if c else "",
                                "key": f"closed:{rid}"})
         for f, st in state["work"].items():
             was = old.get("work", {}).get(f)

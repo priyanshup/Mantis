@@ -72,29 +72,6 @@
     });
   }
 
-  // ---- Nav: "More" closes on an outside click or Escape ----
-  // On small screens the menu panel lists every page: the grouped part stays open there, because a
-  // closed <details> never renders its contents, whatever the CSS says.
-  const nm = $(".nav-more");
-  if (nm) {
-    const small = matchMedia("(max-width: 860px)");
-    const fit = () => { nm.open = small.matches; };
-    fit(); small.addEventListener("change", fit);
-    nm.addEventListener("toggle", () => { if (small.matches && !nm.open) nm.open = true; });
-    document.addEventListener("click", (e) => { if (!small.matches && nm.open && !nm.contains(e.target)) nm.open = false; });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !small.matches) nm.open = false; });
-  }
-
-  // ---- Header menu on small windows: one button opens the nav as a panel ----
-  const mb = $(".menu-btn"), top = $(".top");
-  if (mb) {
-    const setMenu = (open, viaKey) => {
-      top.classList.toggle("menu-open", open); mb.setAttribute("aria-expanded", open ? "true" : "false");
-      if (open && viaKey) { const first = $(".mainnav a.on") || $(".mainnav a"); if (first) first.focus(); }
-    };
-    mb.addEventListener("click", (e) => setMenu(!top.classList.contains("menu-open"), e.detail === 0));
-    document.addEventListener("click", (e) => { if (top.classList.contains("menu-open") && !e.target.closest(".mainnav, .menu-btn")) setMenu(false); });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && top.classList.contains("menu-open")) { setMenu(false); mb.focus(); } });
-    matchMedia("(min-width: 861px)").addEventListener("change", (m) => { if (m.matches) setMenu(false); });
-  }
+  // Navigation is five plain links (MANTIS-IMP-094): the header on wide windows, the tab bar at the bottom on
+  // narrow ones (CSS swaps them). Nothing to open or close, so nothing here.
 

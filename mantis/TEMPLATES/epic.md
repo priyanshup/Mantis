@@ -7,7 +7,9 @@ status: draft   # draft / review / in-jira / done
 updated: YYYY-MM-DD
 ---
 
-<!-- Jira epic. Format from the team's reference epic (named in CLAUDE.local.md). A starting point: adapt to the feature. -->
+<!-- Jira epic. Format from the team's reference epic (named in mantis/config/voice.md). A starting point: adapt to
+the feature. Each fact once: the problem is not restated in the jobs, and a job's detail lives in its criteria. -->
+
 
 Confluence: <link to the feature page>
 
@@ -37,6 +39,9 @@ Given <context>, when <action>, then:
 
 **Out of scope**
 - <one line each>
+
+**Technical notes**
+- <Only what engineers need and the sections above leave out: systems, APIs, data. Drop it if nothing.>
 
 <!-- Writing the criteria:
 - One Given/When stem per job, then a list of outcomes that a tester can pass or fail one by one.

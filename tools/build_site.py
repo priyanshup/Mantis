@@ -21,6 +21,7 @@ from site_common import *   # noqa: F401,F403  (shared state, helpers, shell)
 from site_plan import *     # noqa: F401,F403
 from site_people import *   # noqa: F401,F403
 from site_reference import *   # noqa: F401,F403
+from site_day import *   # noqa: F401,F403
 
 
 # ---------- Build ----------
@@ -55,9 +56,8 @@ def build():
     fp = M / "knowledge" / "focus.json"
     if fp.exists():
         FOCUS.update(json.loads(fp.read_text(encoding="utf-8")))
-    hp = M / "knowledge" / "map" / "health.json"
-    BADGES["review"] = sum(1 for o in OPEN if o["status"] != "Open")
-    BADGES["health"] = sum(1 for i in (json.loads(hp.read_text(encoding="utf-8"))["items"] if hp.exists() else []) if i["level"] == "warn")
+    # The tab's badge counts only what blocks progress until the owner decides: likely answers and possible conflicts
+    BADGES["questions"] = sum(1 for o in yours() if o["status"] != "Open")
     items = library_items(features, work)
     # Pages are built in memory; only files whose content changed are written (MANTIS-IMP-016).
     out = {}
@@ -67,16 +67,17 @@ def build():
             out["assets/" + p.relative_to(assets).as_posix()] = p.read_bytes()
     out["assets/app.js"] = app_js()
     w = lambda rel, s: out.__setitem__(rel, s.encode("utf-8"))
-    w("index.html", page_home(features, later, work, items, built))
-    w("roadmap.html", page_roadmap(features, later, built))
+    # The five tabs (MANTIS-IMP-094), then the pages they lead to
+    w("index.html", page_today(features, work, built))
+    w("meetings.html", page_meetings(built))
+    w("features.html", page_features(features, later, built))
+    w("questions.html", page_review(features, built))
+    w("sources.html", page_sources(work, built))
     w("work.html", page_work(work, features, built))
     w("library.html", page_library(items, built))
-    w("graph.html", page_graph(built))
-    w("review.html", page_review(features, built))
-    w("topics.html", page_topics(TOPICS, features, built))
-    w("health.html", page_health(built))
-    w("today.html", page_today(built))
     w("people.html", page_people(built))
+    w("people.json", json.dumps(people_data(), ensure_ascii=False))   # the side panel's People list
+    w("library.json", json.dumps([{k: it[k] for k in ("kind", "title", "href", "where", "status")} for it in items], ensure_ascii=False))
     for a in ASSETS:   # copy each registered image once; pages point at /diagrams/<file>
         f = M / "knowledge" / "assets" / a.get("file", "")
         if a.get("file") and f.is_file():
@@ -133,7 +134,7 @@ def build():
                 pass   # held by the other build or the browser; the next build removes it
     if written or removed or not (SITE / "version.txt").exists():
         (SITE / "version.txt").write_text(str(datetime.now().timestamp()), encoding="utf-8")
-    leaks = [rel for rel, data in out.items() if rel.endswith(".html") and Path(rel).name not in ("backlog.html", "review.html", "health.html")
+    leaks = [rel for rel, data in out.items() if rel.endswith(".html") and Path(rel).name not in ("questions.html", "sources.html")
              and re.search(r"\b(?:DOC|GAP|ASM|CFL|DEC|AST)-\d", re.sub(r"(?s)<template.*?</template>", "", data.decode("utf-8")))]
     print(f"Site: {len(features)} topics, {len(work)} epics and stories, {len(items)} library items -> {SITE} ({written} file(s) changed)"
           + (f"  WARNING, IDs left in: {leaks}" if leaks else ""))

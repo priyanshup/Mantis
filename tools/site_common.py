@@ -145,45 +145,43 @@ def prio_pill(p):
     return pill(p, "p-" + p.lower()) if p else ""
 
 
-# Header (redesigned 2026-10-10): the five places used every day stay visible; the rest sit in one menu in
-# three titled groups (HIG tab-bars: fewer tabs, no hidden overflow; sidebars: two levels, short group titles).
-NAV = (("home", "index.html", "Home"), ("today", "today.html", "Today"), ("roadmap", "roadmap.html", "Roadmap"),
-       ("review", "review.html", "Open items"), ("people", "people.html", "People"))
+# Five tabs, one per recurring moment (MANTIS-IMP-094): every one always visible, no overflow menu (HIG tab bars:
+# "Avoid overflow tabs"; single-word labels). People and the library open in a side panel from any page.
+NAV = (("today", "index.html", "Today"), ("meetings", "meetings.html", "Meetings"), ("features", "features.html", "Features"),
+       ("questions", "questions.html", "Questions"), ("sources", "sources.html", "Sources"))
+ICON = {   # 24px outline symbols for the compact tab bar, one visual language, drawn with currentColor
+    "today": '<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v10a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5zM4 10h16M8.5 3v4M15.5 3v4"/><path d="M9 14.5l2 2 4-4"/>',
+    "meetings": '<circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c.6-3 2.8-4.8 5.5-4.8s4.9 1.8 5.5 4.8"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M15.6 14.3c2.4-.3 4.3 1.3 4.9 3.9"/>',
+    "features": '<path d="M12 3.5 20.5 8 12 12.5 3.5 8z"/><path d="m3.5 12 8.5 4.5 8.5-4.5"/><path d="m3.5 16 8.5 4.5 8.5-4.5"/>',
+    "questions": '<path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5h-7l-4.5 3.5V17.5H5A1.5 1.5 0 0 1 3.5 16V7A1.5 1.5 0 0 1 5 5.5z"/><path d="M10 9.6a2 2 0 1 1 2.7 1.9c-.5.2-.7.6-.7 1.1v.3"/><path d="M12 15.2h.01"/>',
+    "sources": '<path d="M12 3.5v11m0 0-4-4m4 4 4-4"/><path d="M4.5 14.5v3a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3"/>',
+    "browse": '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M14.5 4.5v15"/><path d="M16.8 8.5h1.7M16.8 11.5h1.7"/>',
+}
 
 
-NAV_GROUPS = (   # MANTIS-IMP-068: Timeline is a Roadmap view, Diagrams and Decisions live in Library, the backlog in Health
-    ("Plan", (("topics", "topics.html", "Topics", "Every subject, followed or not"),
-              ("work", "work.html", "Epics & stories", "What is drafted and what is in Jira"))),
-    ("Reference", (("library", "library.html", "Library", "Pages, diagrams and decisions"),
-                   ("graph", "graph.html", "Graph", "People, systems and how they connect"))),
-    ("Mantis", (("changes", "changes.html", "What's new", "Everything that changed"),
-                ("health", "health.html", "Health", "Jobs, checks and the backlog"))),
-)
-# Old addresses keep working: each becomes a redirect to where the content lives now
-MOVED = {"timeline.html": "roadmap.html#view=timeline", "diagrams.html": "library.html#diagrams",
-         "decisions.html": "library.html#decisions", "backlog.html": "health.html#backlog"}
+def icon(k, cls="ico"):
+    return (f'<svg class="{cls}" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" '
+            f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{ICON[k]}</svg>')
+
+
+# Old addresses keep working: each becomes a redirect to where the content lives now (its #anchor kept)
+MOVED = {"today.html": "index.html", "roadmap.html": "features.html#roadmap", "topics.html": "features.html#all",
+         "timeline.html": "features.html#roadmap", "review.html": "questions.html", "health.html": "sources.html#health",
+         "backlog.html": "sources.html#health", "graph.html": "features.html",
+         "diagrams.html": "library.html#diagrams", "decisions.html": "library.html#decisions"}
 
 
 def redirect(to):
-    return (f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url={to}">'
-            f'<title>Moved</title></head><body><p>This page moved: <a href="{to}">{to}</a>.</p></body></html>')
-
-
-NAV_MORE = tuple((k, h, n) for _, items in NAV_GROUPS for k, h, n, _ in items)
+    return (f'<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Moved</title>'
+            f'<script>location.replace({json.dumps(to.split("#")[0])} + (location.hash || {json.dumps("#" + to.split("#")[1] if "#" in to else "")}))</script>'
+            f'<meta http-equiv="refresh" content="0; url={to}"></head><body><p>This page moved: <a href="{to}">{to}</a>.</p></body></html>')
 
 
 def shell(title, body, base="", active="", built=""):
-    badge = lambda k: f' <span class="badge" title="Waiting for you">{BADGES[k]}</span>' if BADGES.get(k) else ""
-    link = lambda key, href: href + ("#waiting" if key == "review" and BADGES.get("review") else "")
-    nav = "".join(f'<a href="{base}{link(key, href)}" class="{"on" if key == active else ""}"{" aria-current=\"page\"" if key == active else ""}>{name}{badge(key)}</a>'
-                  for key, href, name in NAV)
-    here = next((n for k, _, n in NAV_MORE if k == active), "")   # inside the menu, its button names the page you are on
-    groups = "".join(f'<div class="nav-grp"><p class="nav-gt">{g}</p>'
-                     + "".join(f'<a href="{base}{href}" class="{"on" if key == active else ""}"{" aria-current=\"page\"" if key == active else ""}>'
-                               f'<span class="nav-n">{name}</span><span class="nav-h">{hint}</span></a>' for key, href, name, hint in items) + "</div>"
-                     for g, items in NAV_GROUPS)
-    nav += (f'<details class="nav-more"><summary class="{"on" if here else ""}" aria-label="More pages{": " + here if here else ""}">{esc(here) or "More"}</summary>'
-            f'<div class="nav-pop">{groups}</div></details>')
+    badge = lambda k: f'<span class="badge" aria-label="{BADGES[k]} waiting for you">{BADGES[k]}</span>' if BADGES.get(k) else ""
+    cur = lambda key: ' class="on" aria-current="page"' if key == active else ""
+    nav = "".join(f'<a href="{base}{href}"{cur(key)}>{name}{badge(key)}</a>' for key, href, name in NAV)
+    tabbar = "".join(f'<a href="{base}{href}"{cur(key)}>{icon(key)}<span>{name}</span>{badge(key)}</a>' for key, href, name in NAV)
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
@@ -197,11 +195,13 @@ def shell(title, body, base="", active="", built=""):
 <nav class="mainnav" id="mainnav" aria-label="Main">{nav}</nav>
 <div class="gsearch"><input id="gsearch" type="search" placeholder="Search Mantis" aria-label="Search all of Mantis" autocomplete="off" data-base="{base}">
 <div id="gresults" class="gresults" hidden></div></div>
-<button type="button" id="theme" class="theme-btn" title="Theme: auto (follows your system)" aria-label="Change theme">◐</button>
-<button type="button" class="menu-btn" aria-controls="mainnav" aria-expanded="false" aria-label="Menu"><span></span><span></span><span></span></button></div></header>
+<button type="button" id="browse" class="browse-btn" aria-haspopup="dialog" aria-controls="drawer" title="People and library">{icon("browse")}<span>People &amp; library</span></button>
+<button type="button" id="theme" class="theme-btn" title="Theme: auto (follows your system)" aria-label="Change theme">◐</button></div></header>
 <main class="wrap">{body}</main>
 <footer class="wrap foot"><span>Mantis</span>
 <span>Read-only view of the Mantis Markdown files; answers and edits go to the inbox. Built {esc(built)}.</span></footer>
+<nav class="tabbar" aria-label="Main">{tabbar}</nav>
+<aside id="drawer" class="drawer" role="dialog" aria-modal="false" aria-label="People and library" data-base="{base}" hidden></aside>
 <div id="toast" role="status"></div>
 <script src="{base}assets/app.js"></script>
 </body></html>
@@ -327,9 +327,6 @@ def job_btn(job, label, arg="", cls="btn-line", ai=True):
             f'{f" data-arg=\"{esc(arg)}\"" if arg else ""} title="{tip}">{label}</button>')
 
 
-INBOX_STRIP = ('<div class="inbox-strip nocopy" hidden><span class="is-ico" aria-hidden="true"></span><span class="is-what"></span>'
-               + '{btn}</div>')
-
 
 def fresh(c):
     """How current a card's curated summary is."""
@@ -451,7 +448,8 @@ def feature_entities(slug, n=10, kind="feature"):
                      if x["slug"] == slug and x.get("kind", "feature") == kind and e["type"] not in ("concept", "unknown")), key=lambda t: -t[0])[:n]
     if not ranked:
         return ""
-    chips = "".join(f'<a class="chip ent t-{e["type"]}" href="../graph.html#e={quote(e["name"])}">{esc(e["name"])}</a>' for _, e in ranked)
+    chips = "".join(f'<button type="button" class="chip ent t-{e["type"]}" data-person="{esc(e["name"])}">{esc(e["name"])}</button>' if e["type"] == "person"
+                    else f'<span class="chip ent t-{e["type"]}">{esc(e["name"])}</span>' for _, e in ranked)   # a person opens their panel
     return f'<div class="side-h ents-h"><h2>People and systems</h2></div><div class="ent-chips">{chips}</div>'
 
 
@@ -555,8 +553,8 @@ def can_answer(name):
                          ("Might answer", [o for o in mine if o["ask"]["how"] != "named"])):
         if not group:
             continue
-        rows = "".join(f'<li><a href="review.html#k={k(o)}">{esc(plain(re.sub(r" ?[(]MANTIS-[^)]*[)]", "", o["topic"]), 100))}</a></li>' for o in group[:3])
-        more = f'<a class="small" href="review.html#who={quote(name)}">All {len(mine)} on Open items →</a>' if len(group) > 3 else ""
+        rows = "".join(f'<li><a href="questions.html#k={k(o)}">{esc(plain(re.sub(r" ?[(]MANTIS-[^)]*[)]", "", o["topic"]), 100))}</a></li>' for o in group[:3])
+        more = f'<a class="small" href="questions.html#who={quote(name)}">All {len(mine)} on Open items →</a>' if len(group) > 3 else ""
         tip = "" if label == "Can answer" else ' title="Suggested from the sources: not confirmed"'
         out += f'<div class="pp-f pp-ask"><span class="muted small"{tip}>{label}</span><div><ul class="pp-q">{rows}</ul>{more}</div></div>'
     return out
@@ -585,13 +583,6 @@ EV_FOLD = {"summary": "{n} card summaries refreshed", "source": "{n} new sources
 
 EV_GROUPS = (("sources", "Sources"), ("questions", "Questions"), ("answers", "Answers"), ("conflicts", "Conflicts"),
              ("decisions", "Decisions"), ("work", "Pages and Jira"), ("cards", "Cards and diagrams"))
-
-
-def changes_counts_json():
-    """[(date, kind)] for the last 60 days: enough for "since your last visit" on Home, without the text."""
-    from datetime import date as _d, timedelta as _td
-    since = (_d.fromisoformat(CHANGES["today"]) - _td(days=60)).isoformat() if CHANGES.get("today") else ""
-    return json.dumps([[e["date"], e["kind"]] for e in CHANGES["events"] if e["date"] >= since])
 
 
 TL_KINDS = {"source": "New source", "decision": "Decision", "stage": "Stage changed", "possible": "Possible conflict",

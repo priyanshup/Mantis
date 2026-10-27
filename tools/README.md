@@ -9,6 +9,7 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 
 | Tool | What it does | Needs |
 |---|---|---|
+| `pull.py` | Pull: what changed in Jira, Confluence and the inbox since the last pull, digested card by card. | standard library |
 | `build_map.py` | Build Mantis's navigation map and reference graph. | standard library |
 | `serve.py` | Serve the Mantis site at http://localhost:8000 and rebuild it when Markdown changes. | standard library |
 | `tasks.py` | Add to or read the owner's task list from the command line (Claude uses this on request). | standard library |
@@ -59,6 +60,7 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 | `selftest.py` | Self-test for the Mantis engine. Run before every commit (the pre-commit hook does). | standard library |
 | `toollist.py` | Write tools/README.md, the one list of tools, from each tool's own first help line. | standard library |
 | `citations.py` | Citation checks that code can do: do the cited sources exist and belong where they are cited? | standard library |
+| `repeats.py` | Repetition check: what an output says twice. Stdlib, no AI. | standard library |
 | `evaluate.py` | Evaluation set: does Mantis still get known cases right? | standard library |
 | `answered.py` | What the owner has already settled, so Mantis never asks it again. | standard library |
 | `prune_sources.py` | Free space in the source snapshots without losing evidence. Stdlib for planning; pypdf to keep text. | standard library |
@@ -76,6 +78,7 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 | `atl_convert.py` | Turn Confluence storage XHTML and Jira wiki markup into short Markdown, and pull out their links. | standard library |
 | `atl_media.py` | Confluence attachments: download a page's images and diagram previews once, by content hash. | standard library |
 | `atl_store.py` | The local mirror of Jira and Confluence: one Markdown file per item plus an index. | standard library |
+| `atl_updates.py` | What changed in Jira and Confluence since the last pull, per filter. | standard library |
 
 ## Modules (used by the commands)
 
@@ -83,9 +86,10 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 |---|---|---|
 | `build_site.py` | Build the read-only Mantis website from the Markdown files. | markdown |
 | `site_common.py` | Shared parts of the Mantis site: state loaded once per build, Markdown rendering, | markdown |
-| `site_plan.py` | Site pages for planning: Home, Roadmap (with its Timeline view), feature and topic pages, Topics, Epics & stories, Today. | standard library |
+| `site_day.py` | Site pages for the owner's day: Today, Meetings, Sources. | standard library |
+| `site_plan.py` | Site pages for planning: Features (Following, Roadmap with its Timeline view, Ideas, All), feature and topic pages, Epics & stories. | standard library |
 | `site_people.py` | Site pages about people and questions: Open items and People. | standard library |
-| `site_reference.py` | Site pages for reference and housekeeping: Library (pages, diagrams, decisions), Graph, What's new, Health (with the backlog), search. | standard library |
+| `site_reference.py` | Site pages for reference and housekeeping: Library (pages, diagrams, decisions), What's new, the backlog, search. Health lives on Sources (site_day.py). | standard library |
 | `cards.py` | Cards: the reading layer for every subject. | standard library |
 | `changes.py` | What changed, and which card summaries are behind. | standard library |
 | `index_gen.py` | Generate the knowledge index entries (registers/documents/<ID>.md) from digests. | standard library |
@@ -97,12 +101,6 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 | `textcache.py` | Cached file reads for the rebuild. | standard library |
 | `extra.py` | Live data for the Today and People pages: follow-ups, suggested deadlines, meetings, away, briefs. | standard library |
 | `local_config.py` | Read this instance's local settings (mantis/config/settings.json). Never committed. | standard library |
-
-## Other
-
-| Tool | What it does | Needs |
-|---|---|---|
-| `atl_updates.py` | What changed in Jira and Confluence since the last fetch, kept until the owner has it digested. | standard library |
 
 ## Files that are not commands
 

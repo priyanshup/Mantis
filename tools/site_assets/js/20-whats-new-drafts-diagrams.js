@@ -5,22 +5,7 @@
   if (visit.current !== todayISO) { if (visit.current) visit.previous = visit.current; visit.current = todayISO; store.set("mantis.visit", visit); }
   const lastVisit = visit.previous || "";
   const dayName = (iso) => new Date(iso + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
-  const EV_WORDS = { source: ["new source", "new sources"], question: ["new question", "new questions"], answer: ["answer", "answers"],
-    likely: ["likely answer", "likely answers"], possible: ["possible conflict", "possible conflicts"], conflict: ["new conflict", "new conflicts"], decision: ["decision", "decisions"],
-    stage: ["stage change", "stage changes"], jira: ["item moved to Jira", "items moved to Jira"], closed: ["question closed", "questions closed"] };
 
-  const strip = $("#since-strip"), counts = $("#changes-counts");
-  if (strip && counts && lastVisit) {
-    let rows = []; try { rows = JSON.parse(counts.textContent); } catch (e) {}
-    const n = {};
-    rows.filter(([d]) => d >= lastVisit).forEach(([, k]) => { n[k] = (n[k] || 0) + 1; });
-    const order = ["possible", "conflict", "likely", "answer", "closed", "decision", "stage", "jira", "question", "source"];
-    const parts = order.filter((k) => n[k]).map((k) => `${n[k]} ${EV_WORDS[k][n[k] === 1 ? 0 : 1]}`);
-    if (parts.length) {
-      $(".since-t", strip).innerHTML = `<b>Since ${esc(lastVisit === todayISO ? "earlier today" : dayName(lastVisit))}:</b> ${esc(parts.slice(0, 4).join(" · "))}${parts.length > 4 ? " and more" : ""}`;
-      strip.href = "changes.html#visit"; strip.hidden = false;
-    }
-  }
 
   const evFeed = $("#ev-feed");
   if (evFeed) {

@@ -7,7 +7,7 @@ Part of the workflow (index and the rules for every task: `../WORKFLOW.md`). Use
 The owner's tasks live in `mantis/tasks/` and are edited on the site's Today page. Never edit
 `tasks.json` by hand; use `tools/tasks.py`.
 
-- **Once a day** (the session-start hook says when): run `python tools/tasks.py context`, then
+- **Once a day** (the session-start hook asks in the first session of the day; after that only when the owner asks): run `python tools/tasks.py context`, then
   write up to 5 suggestions as a JSON list and save them with `python tools/tasks.py suggest <file>`.
   Each suggestion: `title` (an action, verb first), `why` (one sentence, from the context),
   `who` (a name from the sources), `say` (what to tell them, in two sentences or fewer),
@@ -64,9 +64,10 @@ the site) gets its brief on its day: the session-start hook asks for it once, on
 on the day it was moved to. When a holiday moves one occurrence, `python tools/schedule.py
 move-meeting ID REGULAR_DATE NEW_DATE` (or `skip`); the next week returns to the regular day. A
 meeting's brief starts from its last takeaways and their status now, then what changed on its cards.
-After the meeting, when the owner pastes notes or lists takeaways, write them as JSON (format in
-`tools/brief.py`): decisions, the owner's own actions (`mine`, verb first, a due date only if the owner
-gave one) and actions owed by others (`theirs`). Save with `python tools/brief.py takeaways <file>`:
+After the meeting, when the owner pastes or drops notes (Meetings page, or the inbox for the next
+pull), write the takeaways from `mantis/TEMPLATES/meeting-notes.md`: decisions, the owner's own
+actions (`mine`, verb first, a due date only if the owner gave one) and actions owed by others
+(`theirs`). Save with `python tools/brief.py takeaways <file>`:
 the owner's actions become tasks on Today, the others' become follow-ups, and the next brief lists every
 one of them until it is done. Decisions taken there are reported to the owner; they go into the
 decision register only through `docs/rules/workflow/answers.md` ("Decisions") when the owner confirms.
@@ -83,9 +84,10 @@ From 5 working days before, the daily brief and Today list what needs the owner 
 falls inside the window (`python tools/away.py scan`): dated tasks and steps, chase dates and
 the recurring meetings they will miss. A handover is written per recipient:
 
-1. `python tools/away.py gather "<recipient>"`.
-2. Write it in the brief JSON format with `"kind": "handover"`, framed by the recipient's briefing
-   style: for a BA the steps, contacts and what to do if something happens; for a senior PO the
-   decisions pending and priorities; for a manager status, risks and what may escalate. Same
-   rules as briefs: plain words, sources in words, nothing invented.
-3. `python tools/away.py save <file>`. It opens from the away panel on Today and can be copied.
+1. `python tools/away.py gather "<recipient>"`. It gives each person's usual reply time (from their
+   closed requests, or an assumed 3 working days when there is no history) and what that puts at risk.
+2. Write it from `mantis/TEMPLATES/handover.md` as brief JSON with `"kind": "handover"`, framed by the
+   recipient's briefing style. Plain words, sources in words, nothing invented; an assumed reply
+   time is said to be assumed.
+3. `python tools/away.py save <file>`. It lists anything said twice: fix it and save again. It opens
+   from the away panel on Today and can be copied.
