@@ -1,4 +1,4 @@
-"""Site pages for reference and housekeeping: Library (pages, diagrams, decisions), What's new, the backlog, search. Health lives on Sources (site_day.py)."""
+"""Site pages for reference and housekeeping: Library (pages, diagrams, decisions), What's new, search. Health lives on Sources (site_day.py)."""
 import re
 from site_common import *   # noqa: F401,F403  (shared state and helpers)
 
@@ -170,28 +170,3 @@ def page_diagrams(built, embed=False):
     return shell("Diagrams", body, active="diagrams", built=built)
 
 
-def page_backlog(entries, built, embed=False):
-    val = {"Transformational": 0, "High": 1, "Medium": 2, "Low": 3}
-    size = {"Small": 0, "Medium": 1, "Large": 2, "Very": 3}
-    cls = {"In": "s-build", "Investigating": "s-build", "Proposed": "w-review", "Parked": "s-none", "Adopted": "s-done", "Rejected": "s-ref"}
-
-    def card(e):
-        return (f'<details class="bl" data-status="{esc(e["status"])}"><summary><span class="bl-id">{esc(e["id"].replace("MANTIS-", ""))}</span>'
-                f'<span class="row-t">{esc(e["title"])}</span>{pill("In progress" if e["status"] == "In" else e["status"], cls.get(e["status"], "s-none") + " plain")}'
-                f'<span class="muted small">{esc(e["phase"] + " · ") if e.get("phase") else ""}{esc(e["size"])} · {esc(e["value"])} value</span></summary>'
-                f'<div class="doc">{markdown.markdown(fix_lists(e["body"]), extensions=["tables", "sane_lists"])}</div></details>')
-
-    key = lambda e: (val.get(e["value"], 4), size.get(e["size"], 4), e["id"])
-    active = [e for e in entries if e["status"] in ("In", "Investigating")]
-    # Proposed ideas wait for the owner's go, in the order planned (Priority: Phase 1, 2, 3), then by value
-    proposed = sorted([e for e in entries if e["status"] == "Proposed"], key=lambda e: (e.get("phase") or "Phase 9", key(e)))
-    parked = sorted([e for e in entries if e["status"] == "Parked"], key=key)
-    done = [e for e in entries if e["status"] == "Adopted"]
-    rejected = [e for e in entries if e["status"] == "Rejected"]
-    group = lambda title, xs, open_: (f'<details class="grp-box"{" open" if open_ else ""}><summary><h2>{title} <span class="muted">{len(xs)}</span></h2></summary>'
-                                      f'<section class="panel-box">{"".join(card(e) for e in xs)}</section></details>') if xs else ""
-    body = f"""<div class="page-h"><div><h1>Mantis backlog</h1><p class="lead">Ideas for improving Mantis itself. Open work first, then parked ideas by value and size. Finished ones are folded away.</p></div></div>
-{group("In progress", active, True)}{group("Proposed, waiting for your go", proposed, True)}{group("Parked", parked, True)}{group("Done", done, False)}{group("Rejected", rejected, False)}"""
-    if embed:   # shown inside another page (MANTIS-IMP-068): no page header, no shell
-        return re.sub(r'^<div class="page-h">.*?</div></div>\n?', "", body, count=1, flags=re.S)
-    return shell("Mantis backlog", body, active="backlog", built=built)

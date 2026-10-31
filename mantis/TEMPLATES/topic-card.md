@@ -2,6 +2,7 @@
 topic: <kebab-case-name>
 title: "<Subject in plain words>"
 type: topic
+work: <optional: business, technical or both, when the subject is work the team does; delete the line otherwise>
 match_topics: [<digest topic tags that belong to this subject: specific ones, not broad ones>]
 source_documents: [<digests the summary below already covers>]
 parent: <optional: the broader card this one was split from (MANTIS-IMP-017); delete the line otherwise>

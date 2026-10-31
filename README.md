@@ -51,9 +51,13 @@ behind it. The quotes are checked against the sources before you see them. Ask a
 and, if nothing new has come in, you get the same answer without paying for it twice.
 
 ### ☀️ A Today page that thinks ahead
-Your ranked task list, plus what Mantis suggests you do today and why. Unfinished tasks
-carry over in amber so nothing slips. Undated tasks get a *suggested* deadline with a
-reason, which you accept or decline. Mantis never sets one behind your back.
+Your task list ranks itself: high priority first, then the nearest deadline, then the
+shortest task, so you finish something sooner. Group tasks under a feature or a name of your
+own; a group ranks with its most urgent task and folds away when you don't need it. Drag a
+task or a group to where you want it and it stays there until the task is done. Tasks left
+over from earlier days are flagged so you decide on each one, and undated tasks get a
+*suggested* deadline with a reason, which you accept or decline. Mantis never sets one
+behind your back. Next to the list: what Mantis suggests you do today, and why.
 
 ### 🤝 Walk into every meeting prepared
 Say *"I'm meeting Sam, what should I discuss?"* and get a brief in seconds: what to update

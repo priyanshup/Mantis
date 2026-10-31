@@ -1,59 +1,62 @@
-  // ---- Questions page (IMP-007, MANTIS-IMP-094): To answer / Waiting on others / Closed automatically, then the filters ----
+  // ---- Questions page (IMP-007, 2026-10-31 redesign): For you / Waiting / Answered, grouped by who can answer ----
   const oi = $("#f-oi");
   if (oi) {
-    const who = $("#oi-who");   // who can answer (IMP-046): combines with the chips
     const qs = $("#q-scope");
     let cur = "all", scope = "you";
+    const match = (d, v) => v === "all" || d.dataset.kind === v || (v === "potential" && !/^(Open|Unconfirmed)$/.test(d.dataset.status)) || (v === "possible" && d.dataset.status === "Unconfirmed");
     const apply = (v) => {
       cur = v;
-      $$("button", oi).forEach((b) => b.classList.toggle("on", b.dataset.v === v));
-      const w = who && scope === "others" ? who.value : "";
-      $$("details.oi").forEach((d) => (d.hidden = !((v === "all" || d.dataset.kind === v || (v === "names" && /^(name|term)$/.test(d.dataset.kind)) || (v === "potential" && !/^(Open|Unconfirmed)$/.test(d.dataset.status)) || (v === "priority" && /^(Critical|High)$/.test(d.dataset.priority)) || (v === "possible" && d.dataset.status === "Unconfirmed"))
-        && d.dataset.scope === scope && (!w || d.dataset.ask === w))));
-      $$(".oi-group").forEach((g) => {   // hide empty topics; the count shows what the filter leaves
+      $$("[data-v]", oi).forEach((b) => b.classList.toggle("on", b.dataset.v === v));
+      // "Filter" like the Features page; a narrowed list names what it shows
+      $("#f-oi-l").textContent = v === "all" ? "Filter" : "Filter · " + ($(`[data-v="${v}"]`, oi) || {}).textContent;
+      $$("details.oi").forEach((d) => (d.hidden = !(match(d, v) && d.dataset.scope === scope)));
+      $$(".q-grp").forEach((g) => {   // a person with nothing left under the filter drops out; the count shows what is left
         const n = $$("details.oi", g).filter((d) => !d.hidden).length;
-        g.hidden = !n; $(".oi-n", g).textContent = n;
+        g.hidden = g.dataset.scope !== scope || !n; $(".oi-n", g).textContent = n;
       });
-      const empty = $("#q-empty");
-      if (empty) empty.hidden = scope === "closed" || $$("#oi-flat details.oi").some((d) => !d.hidden);
+      $("#q-empty").hidden = scope === "closed" || $$("details.oi").some((d) => !d.hidden);
     };
     const setScope = (s) => {
       scope = s;
       $$("button", qs).forEach((b) => { b.classList.toggle("on", b.dataset.v === s); b.setAttribute("aria-selected", String(b.dataset.v === s)); });
-      $("#q-closed").hidden = s !== "closed"; $("#q-lists").hidden = s === "closed"; $("#q-tools").hidden = s === "closed";
-      if (who) who.hidden = s !== "others";
+      const t = $('[data-v="tidy"]', qs); if (t) t.hidden = s !== "tidy";
+      $("#q-closed").hidden = s !== "closed"; $("#q-lists").hidden = s === "closed"; $("#f-oi-pop").hidden = s === "closed" || s === "tidy";
+      $("#q-focus").hidden = s !== "you";
       apply(cur);
     };
-    if (qs) qs.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setScope(b.dataset.v); });
-    oi.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) apply(b.dataset.v); });
-    if (who) who.addEventListener("change", () => apply(cur));
-    // A link to one question opens the side it is on; #who= goes to Waiting on others
-    const linked = location.hash.startsWith("#k=") && $(`#oi-flat details.oi[data-k="${CSS.escape(location.hash.slice(3))}"]`);
-    setScope(linked ? linked.dataset.scope : location.hash.startsWith("#who=") ? "others" : location.hash === "#closed" ? "closed" : "you");
-    // One list (each question once) or By topic (grouped; a question linked to several topics repeats there)
-    const view = $("#oi-view");
-    const setView = (v) => {
-      $$("button", view).forEach((b) => b.classList.toggle("on", b.dataset.v === v));
-      $("#oi-flat").hidden = v !== "flat"; $("#oi-topics").hidden = v !== "topic"; $("#oi-topics-bar").hidden = v !== "topic";
-      const n = $$(".oi-group").filter((g) => !g.hidden).length; $("#oi-topics-n").textContent = `${n} topic${n === 1 ? "" : "s"}`;
-      store.set("mantis-oi-view", { v });
+    qs.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setScope(b.dataset.v); });
+    oi.addEventListener("click", (e) => { const b = e.target.closest("[data-v]"); if (b) { apply(b.dataset.v); $("#f-oi-pop").open = false; } });
+    const h = location.hash;
+    const linked = h.startsWith("#k=") ? $(`details.oi[data-k="${CSS.escape(h.slice(3))}"]`) : h.length > 1 && /^#[A-Z]/.test(h) ? document.getElementById(h.slice(1)) : null;
+    setScope(linked && linked.dataset.scope ? linked.dataset.scope : h === "#closed" ? "closed" : h === "#tidy" ? "tidy" : h.startsWith("#who=") ? "others" : "you");
+    if (h === "#waiting") apply("potential");
+    if (h === "#possible") apply("possible");
+    if (linked && linked.tagName === "DETAILS") { linked.open = true; linked.classList.add("hl"); requestAnimationFrame(() => linked.scrollIntoView({ block: "center" })); }
+
+    // Answer one by one (Superhuman-style triage): one question at a time, 1-3 pick the verdict, J and K move
+    const fb = $("#q-focusbar"), lists = $("#q-lists");
+    let fi = -1;
+    const pool = () => $$("details.oi").filter((d) => d.dataset.scope === scope && match(d, cur));
+    const show = (i) => {
+      const p = pool(); if (!p.length) return leave();
+      fi = (i + p.length) % p.length;
+      p.forEach((d, n) => { d.classList.toggle("focus", n === fi); d.open = n === fi; });
+      const d = p[fi]; d.scrollIntoView({ block: "start" }); const ta = $("textarea", d); if (ta) ta.blur();
     };
-    view.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setView(b.dataset.v); });
-    const ex = $("#oi-expand"), groups = () => $$(".oi-group").filter((g) => !g.hidden);
-    const label = () => (ex.textContent = groups().every((g) => g.open) ? "Collapse all" : "Expand all");
-    ex.addEventListener("click", () => { const open = !groups().every((g) => g.open); groups().forEach((g) => (g.open = open)); label(); });
-    $$(".oi-group").forEach((g) => g.addEventListener("toggle", label));
-    setView(location.hash.length > 1 ? "flat" : (store.get("mantis-oi-view").v || "flat"));   // a link to one question always uses the list
-    $$("[data-goto-filter]").forEach((gf) => gf.addEventListener("click", () => { apply(gf.dataset.gotoFilter); oi.scrollIntoView({ block: "start" }); }));
-    if (location.hash === "#waiting") apply("potential");
-    if (location.hash === "#possible") apply("possible");
-    if (location.hash.startsWith("#who=") && who) { who.value = decodeURIComponent(location.hash.slice(5)); apply("all"); }
-    if (location.hash.startsWith("#k=")) {   // a link from What's new: open that question in the one-list view
-      const q = $(`#oi-flat details.oi[data-k="${CSS.escape(location.hash.slice(3))}"]`);
-      if (q) { q.open = true; requestAnimationFrame(() => q.scrollIntoView({ block: "center" })); q.classList.add("hl"); }
-    }
-    const target = location.hash && document.getElementById(location.hash.slice(1));
-    if (target && target.tagName === "DETAILS") { target.open = true; target.scrollIntoView({ block: "center" }); }
+    const enter = () => { lists.classList.add("focusing"); fb.hidden = false; document.body.classList.add("q-focus"); show(0); };
+    const leave = () => { lists.classList.remove("focusing"); fb.hidden = true; document.body.classList.remove("q-focus"); $$("details.oi.focus").forEach((d) => { d.classList.remove("focus"); d.open = false; }); fi = -1; };
+    $("#q-focus").addEventListener("click", enter);
+    $("#q-unfocus").addEventListener("click", leave);
+    $("#q-prev").addEventListener("click", () => show(fi - 1));
+    $("#q-next").addEventListener("click", () => show(fi + 1));
+    document.addEventListener("keydown", (e) => {
+      if (fi < 0 || /input|textarea|select/i.test(document.activeElement.tagName)) return;
+      const d = pool()[fi]; if (!d) return;
+      if (e.key === "j" || e.key === "J") { e.preventDefault(); show(fi + 1); }
+      else if (e.key === "k" || e.key === "K") { e.preventDefault(); show(fi - 1); }
+      else if (e.key === "Escape") leave();
+      else if (/^[1-9]$/.test(e.key)) { const b = $$(".verdict button", d)[+e.key - 1]; if (b) { e.preventDefault(); b.click(); } }
+    });
   }
 
   // ---- Answering open items: drafts kept in the browser, submitted to the inbox via tools/serve.py ----

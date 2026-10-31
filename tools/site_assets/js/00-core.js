@@ -52,23 +52,45 @@
     const b = e.target.closest("button"); if (!b) return;
     if (b.classList.contains("copy-sec")) copyHtml(b.closest(".sec"));
     else if (b.classList.contains("copy-all")) copyHtml($(".doc", b.closest(".tab-panel")));
+    else if (b.classList.contains("copy-ov")) copyHtml($("#p-overview .doc"));   // the card's hidden full copy, not the folded view
     else if (b.classList.contains("copy-text")) copyText(b.dataset.text);
   });
 
-  // ---- Theme: Auto (follow the system) -> Light -> Dark, remembered per browser ----
+  // ---- Something is on its way: an orange sweep along the header's bottom edge (2026-10-31). It shows for any
+  // request slower than 150 ms and while a background job runs; the page's own reload check never trips it.
+  const busyEl = $("#busy");
+  let inflight = 0, busyT = null;
+  const busy = () => busyEl && busyEl.classList.toggle("on", inflight > 0 || document.body.classList.contains("job-running"));
+  if (busyEl && window.fetch) {
+    const f0 = window.fetch.bind(window);
+    window.fetch = (u, ...rest) => {
+      if (String(u).includes("version.txt")) return f0(u, ...rest);
+      inflight++; clearTimeout(busyT); busyT = setTimeout(busy, 150);
+      return f0(u, ...rest).finally(() => { inflight--; clearTimeout(busyT); busy(); });
+    };
+  }
+
+  // ---- Menus (details.pop: Filter, ⋯, Brief me for someone): a click outside or Esc closes them ----
+  // the event's path, not contains(): a click inside may re-render the menu (the bulk buttons) and detach its target
+  document.addEventListener("click", (e) => { const path = e.composedPath(); $$("details.pop[open]").forEach((d) => { if (!path.includes(d)) d.open = false; }); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    $$("details.pop[open]").forEach((d) => { d.open = false; $("summary", d).focus(); });
+  });
+
+  // ---- Theme: two states. It follows the system until the switch is clicked; only a click is remembered ----
   const tb = $("#theme");
   if (tb) {
-    const ICON = { auto: "◐", light: "☀", dark: "☾" }, NAME = { auto: "auto (follows your system)", light: "light", dark: "dark" };
-    const cur = () => { try { return localStorage.getItem("mantis-theme") || "auto"; } catch (e) { return "auto"; } };
-    const apply = (m) => {
-      if (m === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = m;
-      tb.textContent = ICON[m]; tb.title = "Theme: " + NAME[m] + ". Click to change.";
-    };
-    apply(cur());
+    const sys = matchMedia("(prefers-color-scheme: dark)");
+    const saved = () => { try { return localStorage.getItem("mantis-theme"); } catch (e) { return null; } };
+    const dark = () => (saved() || (sys.matches ? "dark" : "light")) === "dark";
+    const paint = () => { tb.setAttribute("aria-checked", String(dark())); tb.title = dark() ? "Dark theme: click for light" : "Light theme: click for dark"; };
+    paint();
+    sys.addEventListener("change", () => { if (!saved()) paint(); });
     tb.addEventListener("click", () => {
-      const next = { auto: "light", light: "dark", dark: "auto" }[cur()];
+      const next = dark() ? "light" : "dark";
       try { localStorage.setItem("mantis-theme", next); } catch (e) {}
-      apply(next); toast("Theme: " + NAME[next]);
+      document.documentElement.dataset.theme = next; paint();
     });
   }
 

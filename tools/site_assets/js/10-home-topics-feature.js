@@ -1,9 +1,8 @@
-  // ---- Home: rank My focus (drag or arrows), saved to focus.json through tools/serve.py ----
+  // ---- Features, Mine: rank what you follow (drag, or Alt+↑/↓ on a row), saved to focus.json through tools/serve.py ----
   const fl = $("#focus-list");
   if (fl) {
-    const renum = () => $$(".f-row", fl).forEach((r, i) => ($(".f-rank", r).textContent = i + 1));
     let saveT = null;
-    const persist = () => { renum(); clearTimeout(saveT); saveT = setTimeout(sendOrder, 500); };
+    const persist = () => { clearTimeout(saveT); saveT = setTimeout(sendOrder, 500); };
     const sendOrder = async () => {
       try {
         const r = await fetch("api/focus", { method: "POST", headers: { "Content-Type": "application/json" },
@@ -12,55 +11,70 @@
         toast("Focus order saved.");
       } catch (e) { toast("Could not save the order. Is the site server running?"); }
     };
-    fl.addEventListener("click", (e) => {
-      const b = e.target.closest("[data-m]"); if (!b) return;
-      const r = b.closest(".f-row"), sib = +b.dataset.m < 0 ? r.previousElementSibling : r.nextElementSibling;
+    fl.addEventListener("keydown", (e) => {   // a row's link focused: Alt+↑/↓ moves it within its group
+      if (!e.altKey || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+      const r = e.target.closest(".f-row"), sib = r && (e.key === "ArrowUp" ? r.previousElementSibling : r.nextElementSibling);
       if (!sib) return;
-      +b.dataset.m < 0 ? sib.before(r) : sib.after(r); persist();
+      e.preventDefault(); e.key === "ArrowUp" ? sib.before(r) : sib.after(r); $("a", r).focus(); persist();
     });
     let drag = null;
     fl.addEventListener("dragstart", (e) => { drag = e.target.closest(".f-row"); if (drag) drag.classList.add("dragging"); });
     fl.addEventListener("dragend", () => { if (drag) drag.classList.remove("dragging"); $$(".f-row", fl).forEach((x) => x.classList.remove("drop-above", "drop-below")); });
     fl.addEventListener("dragover", (e) => {
-      const r = e.target.closest(".f-row"); if (!r || !drag || r === drag) return;
+      const r = e.target.closest(".f-row"); if (!r || !drag || r === drag || r.parentElement !== drag.parentElement) return;
       e.preventDefault(); const above = e.clientY < r.getBoundingClientRect().top + r.offsetHeight / 2;
       $$(".f-row", fl).forEach((x) => x.classList.remove("drop-above", "drop-below")); r.classList.add(above ? "drop-above" : "drop-below");
     });
     fl.addEventListener("drop", (e) => {
-      const r = e.target.closest(".f-row"); if (!r || !drag || r === drag) return;
+      const r = e.target.closest(".f-row"); if (!r || !drag || r === drag || r.parentElement !== drag.parentElement) return;
       e.preventDefault(); const above = e.clientY < r.getBoundingClientRect().top + r.offsetHeight / 2;
       above ? r.before(drag) : r.after(drag); drag = null; persist();
     });
-    const ff = $("#f-filter");
-    if (ff) ff.addEventListener("input", () => { const q = ff.value.toLowerCase(); $$(".f-row", fl).forEach((r) => (r.hidden = q && !r.textContent.toLowerCase().includes(q))); });
+  }
+  // Does a card's work type pass the type filter? Business and Technical each include cards that are both.
+  function workMatch(w, sel) {
+    w = w || "";
+    return !sel || sel === "all" || (sel === "none" ? !w : w === sel || (w === "both" && (sel === "business" || sel === "technical")));
   }
 
-  // ---- Home ----
-  const hello = $("#hello");
-  if (hello) { const h = new Date().getHours(); hello.textContent = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; }
-  // ---- Features: Following / Roadmap / Ideas / All (MANTIS-IMP-094), plus Follow and Roadmap buttons saved via tools/serve.py ----
-  // Following shows the ranked focus list, Roadmap the board, list and timeline; Ideas, All and Archived filter the cards.
+  // ---- Features: Mine / Roadmap / All (2026-10-31 redesign), plus Follow and Roadmap buttons saved via tools/serve.py ----
+  // Mine shows the ranked focus list, Roadmap the board, list and timeline; All lists every card. Ideas only and
+  // Archived are views of All, chosen in the Filter menu.
   const ttab = $("#ttab");
   if (ttab) {
     const PANEL = { focus: "focus", roadmap: "roadmap", ideas: "tiles", all: "tiles", archived: "tiles" };
     const fromHash = () => { const h = location.hash.slice(1); return h === "following" ? "focus" : PANEL[h] ? h : ""; };
     let tab = fromHash() || store.get("mantis-features").tab || "focus";
     if (!PANEL[tab]) tab = "focus";
-    const tq = $("#tq");
+    const tq = $("#tq"), tw = $("#t-work");
+    let work = store.get("mantis-features").work || "all";   // the type filter (front matter "work"), shared with the roadmap
+    const ff = $("#f-filter");
     const show = () => {
       $$("[data-scope-panel]").forEach((p) => (p.hidden = p.dataset.scopePanel !== PANEL[tab]));
       const q = (tq.value || "").toLowerCase(); let n = 0;
-      $$(".topic-tile").forEach((t) => {
+      $$(".all-row").forEach((t) => {
         const arc = t.dataset.archived === "1";
         const inTab = tab === "archived" ? arc : !arc && (tab === "all" || (tab === "ideas" && t.dataset.idea === "1"));
-        t.hidden = !inTab || (q && !t.textContent.toLowerCase().includes(q)); if (!t.hidden) n++;
+        t.hidden = !inTab || !workMatch(t.dataset.work, work) || (q && !t.textContent.toLowerCase().includes(q)); if (!t.hidden) n++;
       });
-      $$("button", ttab).forEach((b) => { b.classList.toggle("on", b.dataset.v === tab); b.setAttribute("aria-selected", String(b.dataset.v === tab)); });
+      const fq = ff ? ff.value.toLowerCase() : "";
+      $$("#focus-list .f-row").forEach((r) => (r.hidden = !workMatch(r.dataset.work, work) || (fq && !r.textContent.toLowerCase().includes(fq))));
+      if (tw) $$("button", tw).forEach((b) => b.classList.toggle("on", b.dataset.v === work));
+      const lit = PANEL[tab] === "tiles" ? "all" : tab;   // Ideas only and Archived are views of All
+      $$("button", ttab).forEach((b) => { b.classList.toggle("on", b.dataset.v === lit); b.setAttribute("aria-selected", String(b.dataset.v === lit)); });
       const ab = $("[data-arch]"); if (ab) ab.classList.toggle("on", tab === "archived");
-      $("#t-empty").hidden = PANEL[tab] !== "tiles" || n > 0; store.set("mantis-features", { tab });
+      const ib = $("[data-ideas]"); if (ib) ib.classList.toggle("on", tab === "ideas");
+      const ro = $(".rd-only"); if (ro) ro.hidden = tab !== "roadmap";
+      const fp = $("#f-pop summary"); if (fp) fp.textContent = work !== "all" || tab === "ideas" || tab === "archived" ? "Filter · on" : "Filter";
+      $("#t-empty").hidden = PANEL[tab] !== "tiles" || n > 0; store.set("mantis-features", { tab, work });
       drawBulk();
     };
     window.addEventListener("hashchange", () => { const h = fromHash(); if (h) { tab = h; show(); } });
+    // Mine: a group of ideas only starts folded; opening or closing it is remembered in this browser
+    $$("#focus-list details.f-fold").forEach((d) => {
+      d.open = !!store.get("mantis-folds")[d.dataset.work];
+      d.addEventListener("toggle", () => { const f = store.get("mantis-folds"); f[d.dataset.work] = d.open; store.set("mantis-folds", f); });
+    });
     // Bulk actions work on the cards shown (so a filter narrows them). Each offers Undo, which survives
     // the page reload that follows the site rebuild.
     const BULK = { ideas: [["follow", "Follow all"], ["roadmap", "Add all to roadmap"]],
@@ -69,24 +83,25 @@
     const INVERSE = { follow: "unfollow", unfollow: "follow", roadmap: "unroadmap", unroadmap: "roadmap", archive: "unarchive", unarchive: "archive" };
     const FIELD = (a) => /archive/.test(a) ? "archived" : /follow/.test(a) ? "following" : "roadmap";
     const bulkEl = $("#t-bulk");
-    const targets = (action) => $$(".topic-tile").filter((t) => !t.hidden && (t.dataset[FIELD(action)] === "1") === /^un/.test(action));
+    const targets = (action) => $$(".all-row").filter((t) => !t.hidden && (t.dataset[FIELD(action)] === "1") === /^un/.test(action));
     function drawBulk() {
       const filtered = !!(tq.value || "").trim();
       bulkEl.innerHTML = (BULK[tab] || []).map(([a, l]) => { const n = targets(a).length;
-        return `<button type="button" class="mini${/^un/.test(a) ? " t-del" : ""}" data-bulk="${a}" ${n ? "" : "disabled"}>${l}${filtered ? " shown" : ""}${n ? ` · ${n}` : ""}</button>`; }).join("");
+        return `<button type="button" data-bulk="${a}" ${n ? "" : "disabled"}>${l}${filtered ? " shown" : ""}${n ? ` · ${n}` : ""}</button>`; }).join("");
+      $("#t-bulk-box").hidden = !bulkEl.innerHTML;   // only in All, Ideas and Archived, inside the Filter menu
     }
-    const LABEL = { following: ["☆ Follow", "★ Following"], roadmap: ["+ Roadmap", "✓ On roadmap"], archived: ["Archive", "Restore"] };
+    const LABEL = { following: ["Follow", "Following"], roadmap: ["Roadmap", "On roadmap"], archived: ["Archive", "Restore"] };
     const BTN = { following: "follow", roadmap: "roadmap", archived: "archive" };
     function setTile(tile, action) {
       const f = FIELD(action), on = !/^un/.test(action), b = $(`.act[data-a="${BTN[f]}"]`, tile);
       tile.dataset[f] = on ? "1" : "0"; b.textContent = LABEL[f][+on]; if (f !== "archived") { b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); }
-      if (f === "roadmap") tile.dataset.idea = !on && ($(".tag", tile) || {}).textContent === "Idea" ? "1" : "0";   // an idea is a topic off the roadmap
+      if (f === "roadmap") tile.dataset.idea = !on && tile.dataset.feat === "0" ? "1" : "0";   // an idea is a topic off the roadmap
       if (action === "archive") { setTile(tile, "unfollow"); setTile(tile, "unroadmap"); }   // the server does the same
     }
     async function bulk(action, slugs) {
       const r = await fetch("api/focus", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "bulk-" + action, order: slugs }) });
       if (!r.ok) throw new Error((await r.json()).error);
-      slugs.forEach((s) => { const t = $(`.topic-tile[data-slug="${s}"]`); if (t) setTile(t, action); });
+      slugs.forEach((s) => { const t = $(`.all-row[data-slug="${s}"]`); if (t) setTile(t, action); });
       show();
     }
     const undoBulk = (u) => () => bulk(u.action, u.slugs).then(() => { try { sessionStorage.removeItem("mantis-undo"); } catch (e) {} }).catch(() => toast("Could not undo: is the site server running?"));
@@ -106,10 +121,13 @@
     } catch (e) {}
     ttab.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { tab = b.dataset.v; show(); } });
     const ab = $("[data-arch]"); if (ab) ab.addEventListener("click", () => { tab = tab === "archived" ? "all" : "archived"; show(); });
+    const ib = $("[data-ideas]"); if (ib) ib.addEventListener("click", () => { tab = tab === "ideas" ? "all" : "ideas"; show(); });
     tq.addEventListener("input", show);
+    if (ff) ff.addEventListener("input", show);
+    if (tw) tw.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { work = b.dataset.v; show(); } });
     document.addEventListener("click", async (e) => {
-      const b = e.target.closest(".tile-acts .act"); if (!b) return;
-      const tile = b.closest(".topic-tile"), f = { follow: "following", roadmap: "roadmap", archive: "archived" }[b.dataset.a];
+      const b = e.target.closest(".row-acts .act"); if (!b) return;
+      const tile = b.closest(".all-row"), f = { follow: "following", roadmap: "roadmap", archive: "archived" }[b.dataset.a];
       const on = tile.dataset[f] === "1", action = (on ? "un" : "") + b.dataset.a;
       try {
         if (!(location.protocol.startsWith("http") && window.fetch)) throw new Error("offline");

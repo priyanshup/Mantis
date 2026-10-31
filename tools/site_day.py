@@ -92,52 +92,56 @@ def row_link(href, text, act=""):
     return f'<a class="row att" href="{href}"><span class="row-t">{esc(text)}</span>{f"<span class=\"tag\">{esc(act)}</span>" if act else ""}</a>'
 
 
+def card_hrefs(features):
+    """Where each card lives, and the owner's ranking, for the parts app.js draws (the pull brief, Today's lead)."""
+    hrefs = {f["slug"]: f"features/{f['slug']}.html" for f in features} | {t["slug"]: f"topics/{t['slug']}.html" for t in TOPICS}
+    return {"href": hrefs, "rank": [s for s in FOCUS.get("following", []) if s in hrefs]}
+
+
 def page_today(features, work, built):
-    """Today (MANTIS-IMP-094): what changed, what is on, what to do; then what waits on you and on others."""
+    """Today (2026-10-31 redesign, after MANTIS-IMP-094): one headline, the day's tasks, what changed, and a quiet
+    side column for meetings, people and leave. Every list has a fixed size; the rest is one click away."""
     mine = yours()
-    top = "".join(f'<a class="row q-row" href="questions.html#k={qkey(o)}"><span class="row-t">{esc(topic_text(o))}</span>'
-                  f'{pill("Decide", "s-build plain") if o["status"] not in ("Open", "Unconfirmed") else pill("Possible conflict", "s-ref plain") if o["status"] == "Unconfirmed" else ""}</a>'
-                  for o in mine[:3])
-    decide = sum(1 for o in mine if o["status"] != "Open")
-    needs = (f'<section class="side-card"><div class="sc-h"><h2>Needs your answer</h2><span class="sc-n" title="To decide: likely answers and possible conflicts">{decide or ""}</span></div>'
-             + (f'{top}<a class="linkish small" href="questions.html">All {len(mine)} on Questions</a>' if mine else '<p class="muted small">Nothing waits for you.</p>')
-             + "</section>")
+    likely = sum(1 for o in mine if o["status"] not in ("Open", "Unconfirmed"))
+    q_line = (f'<a class="ri" href="questions.html#waiting"><span class="ri-v">{n_(likely, "question")} may already be answered</span>'
+              f'<span class="ri-s">Check {"it" if likely == 1 else "them"}</span></a>') if likely else ""
     week = this_week(features)
-    week_box = (f'<section class="panel-box week-box" id="this-week" hidden><div class="box-h"><h2>This week</h2>'
-                f'<span class="muted small">Your Monday look back and ahead</span></div>{"".join(row_link(*r) for r in week)}</section>') if week else ""
-    est = "".join(f'<option value="{v}">{l}</option>' for v, l in (("0", "Time?"), ("15", "15 min"), ("30", "30 min"), ("60", "1 hour"),
-                                                                    ("120", "2 hours"), ("240", "Half day"), ("480", "Full day")))
-    body = f"""<div class="page-h today-h"><div><p class="eyebrow" id="hello">Hello</p><h1 id="t-date">Today</h1><p class="lead" id="t-sum">Loading your day…</p></div>
-<button type="button" class="btn-line" id="away-btn">Going away?</button></div>
+    week_box = (f'<section class="rail-blk" id="this-week" hidden><h2>This week</h2>'
+                + "".join(f'<a class="ri" href="{h}"><span class="ri-v">{esc(t)}</span></a>' for h, t, _ in week) + "</section>") if week else ""
+    # The cards a task can be grouped under (the owner picks; Mantis never guesses): followed ones first
+    followed = set(FOCUS.get("following", []))
+    cards = sorted(([c["slug"], c["title"], int(c["slug"] in followed)] for c in features + TOPICS if not archived(c["slug"])),
+                   key=lambda x: (-x[2], x[1].lower()))
+    lists = "".join(f'<button type="button" data-l="{k}" hidden>{n} <span class="n" id="t-{k}-n"></span></button>'
+                    for k, n in (("sched", "Later"), ("park", "Parked"), ("done", "Done"), ("bin", "Deleted")))
+    body = f"""<div class="page-h today-h"><div><p class="eyebrow" id="t-date"></p><h1 id="t-head">Today</h1><p class="lead" id="t-sum"></p></div></div>
 <p class="empty" id="t-offline" hidden>Your tasks are saved by the Mantis site server. Open the site at http://localhost:8000 (it starts with each Claude Code session, or run <code>python tools/serve.py --open</code>).</p>
+<div class="carry nocopy" id="t-carry" hidden><span id="t-carry-t"></span><button type="button" class="btn-line" data-carry="review">Review</button><button type="button" class="btn" data-carry="keep">Keep all</button></div>
 <div class="today-grid"><div class="today-main">
-<section class="panel-box pull-box" id="pull-box" aria-labelledby="pull-h"><div class="box-h"><h2 id="pull-h">Since last pull</h2><span class="muted small" id="pull-when"></span>
-{job_btn("pull", "Pull now", cls="btn")}</div><div id="pull-body"><p class="muted">Loading…</p></div></section>
-<section class="panel-box" id="t-meet" hidden></section>
-<section class="panel-box do-box" aria-labelledby="do-h"><div class="box-h"><h2 id="do-h">Do today</h2><span class="muted small" id="t-total"></span>
-<button class="mini" id="t-sortp" type="button" title="Order today's list by priority, then due date">Sort by priority</button></div>
-<form id="t-add" class="t-add" autocomplete="off">
-<input id="t-title" type="text" placeholder="Add a task and press Enter" aria-label="New task" maxlength="300">
-<div class="t-add-more"><span class="prio-seg" id="t-prio" role="group" aria-label="Priority" data-value=""><button type="button" data-p="high">High</button><button type="button" data-p="medium">Medium</button><button type="button" data-p="low">Low</button></span>
-<select id="t-est" class="sel sel-sm" aria-label="Estimated time">{est}</select>
-<button type="button" class="dp-btn" id="t-when" data-kind="when" data-value="" aria-haspopup="dialog" title="Which day it shows up on your list">Today</button>
-<button type="button" class="dp-btn" id="t-due" data-kind="due" data-value="" aria-haspopup="dialog" title="Deadline">No due date</button>
-<input id="t-contact" type="text" placeholder="Who to reach out to" maxlength="120" aria-label="Who to reach out to">
-<button class="btn" type="submit">Add</button></div></form>
-<ol id="t-list" class="t-list"></ol>
-<p class="muted small t-hint">Drag to rank, or Alt+↑/↓. Click a task for notes, dates and more.</p>
-<div id="t-brief" class="do-sug"></div>
-<section id="t-due-sug" class="due-sug nocopy" hidden></section></section>
-{week_box}
-<details class="grp-box" id="t-sched-box"><summary><h2>Scheduled for later <span class="muted" id="t-sched-n"></span></h2></summary><section class="panel-box"><p class="muted small t-hint">Each task comes back to Today on its day. Changed your mind? Press <b>Bring to today</b>.</p><ol id="t-sched" class="t-list"></ol></section></details>
-<details class="grp-box" id="t-park-box"><summary><h2>Parked <span class="muted" id="t-park-n"></span></h2></summary><section class="panel-box"><p class="muted small t-hint">Out of the way with no date. Bring them back when they matter again.</p><ol id="t-park" class="t-list"></ol></section></details>
-<details class="grp-box" id="t-done-box"><summary><h2>Done <span class="muted" id="t-done-n"></span></h2></summary><section class="panel-box"><p class="muted small t-hint">Untick to reopen. Done items move to the archive the next day and are deleted after 7 days.</p><ol id="t-done" class="t-list"></ol></section></details>
-<details class="grp-box" id="t-bin-box"><summary><h2>Recently deleted <span class="muted" id="t-bin-n"></span></h2></summary><section class="panel-box"><p class="muted small t-hint">Kept for 7 days, then cleaned up. Restore anything you deleted by mistake.</p><ol id="t-bin" class="t-list"></ol></section></details>
+<section class="blk" aria-labelledby="do-h"><div class="blk-h"><h2 id="do-h">Do today</h2><span class="blk-acts"><button type="button" class="linkish" id="t-sortp" title="Forget the places you dragged tasks and groups to; rank by priority, due date, then shortest first" hidden>Reset to default order</button><button type="button" class="linkish" id="t-more" hidden></button></span></div>
+<ol id="t-list" class="t-list" title="Drag to rank, or Alt+↑/↓. Click a task for notes and dates."><li>{SKEL}</li></ol>
+<form id="t-add" class="t-add" autocomplete="off" data-cards='{esc(json.dumps(cards))}'><span class="pm" aria-hidden="true">+</span>
+<input id="t-title" type="text" placeholder="Add a task" aria-label="New task" maxlength="300">
+<div class="t-add-more"><button type="button" class="pick" id="t-prio" data-pick="prio" data-value="">Priority</button>
+<button type="button" class="pick" id="t-est" data-pick="est" data-value="">Time</button>
+<button type="button" class="pick dp-btn" id="t-when" data-kind="when" data-value="" aria-haspopup="dialog" title="Which day it shows up on your list">Today</button>
+<button type="button" class="pick dp-btn" id="t-due" data-kind="due" data-value="" aria-haspopup="dialog" title="Deadline">Due</button>
+<input id="t-contact" class="pick-in" type="text" placeholder="Ask" maxlength="120" aria-label="Who to reach out to">
+<button type="button" class="pick" id="t-grp" data-pick="group" data-value="">Group</button>
+<button class="key-sm t-go" type="submit">Add</button></div></form>
+<div class="t-other nocopy" id="t-other" role="tablist" aria-label="Other task lists">{lists}</div>
+<ol id="t-sched" class="t-list t-olist" hidden></ol><ol id="t-park" class="t-list t-olist" hidden></ol><ol id="t-done" class="t-list t-olist" hidden></ol><ol id="t-bin" class="t-list t-olist" hidden></ol>
+<section id="t-due-sug" class="due-sug nocopy" hidden></section>
+<div id="t-brief" class="do-sug" hidden></div></section>
+<section class="blk" id="pull-box" aria-labelledby="pull-h" data-cards='{esc(json.dumps(card_hrefs(features)))}'><div class="blk-h"><h2 id="pull-h">Since your last pull</h2><button type="button" class="linkish" id="pull-more" hidden></button></div>
+<div id="pull-body">{SKEL}</div></section>
 </div>
-<aside class="today-side" aria-label="Waiting on you and on others">
-{needs}
-<div id="t-people" class="side-stack nocopy"></div>
-<section id="t-away" class="side-card away-card nocopy" hidden></section>
+<aside class="today-side rail" aria-label="Meetings, people and questions">
+<section class="rail-blk" id="t-next" hidden><h2>Next up</h2><div id="t-next-b"></div></section>
+<section class="rail-blk" id="t-people" hidden></section>
+{f'<section class="rail-blk"><h2>Questions</h2>{q_line}</section>' if q_line else ""}
+{week_box}
+<section id="t-away" class="rail-blk away-card nocopy" hidden></section>
 </aside></div>"""
     return shell("Today", body, active="today", built=built)
 
@@ -145,57 +149,67 @@ def page_today(features, work, built):
 def page_meetings(built):
     """Meetings (MANTIS-IMP-094): each regular meeting with an agenda that builds itself, what was agreed last
     time, and a place to drop the notes or transcript afterwards. Drawn by app.js from GET /api/extra."""
-    body = """<div class="page-h"><div><h1>Meetings</h1><p class="lead">Your regular meetings. Each agenda builds itself from what is open with the people in it and what changed on its subjects, so you walk in prepared.</p></div>
-<details class="add-meet nocopy"><summary class="btn-line">Add a regular meeting</summary><div class="pop-form" id="pp-meetings"></div></details></div>
-<div id="mt-list" class="mt-list"><p class="muted">Loading your meetings…</p></div>
-<section class="panel-box oneoff nocopy" aria-labelledby="oo-h"><div class="box-h"><h2 id="oo-h">Meeting someone else?</h2><span class="muted small">A brief for one conversation</span></div>
-<div class="mb-row"><select id="mb-who" class="sel" aria-label="Meeting with"></select><button type="button" class="btn job ai" data-job="meeting-brief" data-arg-from="#mb-who" title="Uses Claude, on your normal quota">Brief me</button>
-<button type="button" class="btn-line job ai" data-job="status-update" title="Uses Claude, on your normal quota">Write this week's status update</button></div>
-<div class="chips" id="mt-briefs"></div></section>"""
+    # 2026-10-31 redesign: the meetings on the left, one agenda in focus on the right; a one-off brief and the weekly
+    # status sit in the header, so the page holds nothing but the meetings themselves. Both are text links: Prepare
+    # brief is the page's one main button (DESIGN.md rule 1).
+    body = """<div class="page-h"><div><h1>Meetings</h1></div><div class="ph-acts nocopy">
+<details class="pop"><summary class="linkish">Brief me for someone</summary><div class="pop-b"><select id="mb-who" class="sel" aria-label="Meeting with"></select>
+<button type="button" class="btn job ai" data-job="meeting-brief" data-arg-from="#mb-who" title="Uses Claude, on your normal quota">Brief me</button><div class="chips" id="mt-briefs"></div></div></details>
+<button type="button" class="linkish job ai" data-job="status-update" title="Uses Claude, on your normal quota">Weekly status</button></div></div>
+<div class="mt-grid"><div class="mt-side"><nav class="mt-nav nocopy" id="mt-nav" aria-label="Your meetings"></nav>
+<details class="add-meet nocopy" id="add-meet"><summary class="linkish">Add a regular meeting</summary><div class="pop-form" id="pp-meetings"></div></details></div>
+<div id="mt-list" class="mt-list">""" + SKEL + """</div></div>"""
     return shell("Meetings", body, active="meetings", built=built)
 
 
-def health_html(work):
-    """What Mantis noticed, the health report, background jobs and the Mantis backlog, folded into Sources:
-    housekeeping, kept off Today (MANTIS-IMP-094)."""
-    from site_reference import page_backlog
+def health():
     p = M / "knowledge" / "map" / "health.json"
-    h = json.loads(p.read_text(encoding="utf-8")) if p.exists() else {"date": "", "items": []}
-    lab = {"warn": ("Fix", "s-ref plain"), "todo": ("To do", "s-build plain"), "info": ("Note", "s-none plain")}
-    rows = "".join(f'<div class="row health-row">{pill(*lab[i["level"]])}<span class="tag">{esc(i["area"])}</span><span class="row-t health-msg">{esc(i["msg"])}</span></div>' for i in h["items"])
-    warn = sum(1 for i in h["items"] if i["level"] == "warn")
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {"date": "", "items": []}
+
+
+def health_html(work):
+    """What Mantis noticed, the health report and background jobs, folded into Sources: housekeeping, kept off
+    Today (MANTIS-IMP-094). The Mantis backlog is about Mantis itself and lives in docs/project, not here."""
+    h = health()
+    lab = {"warn": "Fix", "todo": "To do", "info": "Note"}
+    rows = "".join(f'<div class="row health-row"><span class="t-meta{" warn-text" if i["level"] == "warn" else ""}">{lab[i["level"]]}</span><span class="row-t health-msg">{esc(plain(i["msg"], 400))}</span><span class="t-meta">{esc(i["area"])}</span></div>' for i in h["items"])
     att = [a for a in attention(work) if a[0] != "sources.html#health"]   # health warnings are listed below already
-    noticed = (f'<section class="panel-box"><div class="box-h"><h2>Mantis noticed</h2><span class="muted small">Plans, drafts and summaries to look at when you have time</span></div>'
-               + "".join(row_link(h_, m, a) for h_, m, a in att) + "</section>") if att else ""
-    return f"""<details class="grp-box" id="health"><summary><h2>Health and jobs</h2><span class="muted small">Last check {esc(h["date"])}{f" · {n_(warn, 'thing')} to fix" if warn else " · all clear"}{f" · {len(att)} noticed" if att else ""}</span></summary>
-{noticed}<section class="panel-box">{rows or '<p class="empty">All clear.</p>'}</section>
-<section class="panel-box jobs-box" id="jobs"><div class="box-h"><h2>Background jobs</h2><span class="muted small" id="job-quota"></span></div>
+    noticed = (f'<h3 class="ag-h">Mantis noticed</h3><div class="rows">' + "".join(row_link(h_, m, a) for h_, m, a in att) + "</div>") if att else ""
+    return f"""<details class="fold fold-panel" id="health"><summary><h2>Health and jobs</h2></summary>
+{noticed}<h3 class="ag-h">Checks, {esc(h["date"])}</h3><div class="rows">{rows or '<p class="empty">All clear.</p>'}</div>
+<section class="jobs-box" id="jobs"><div class="blk-h"><h3 class="ag-h">Background jobs</h3><span class="t-meta" id="job-quota"></span></div>
 <div class="job-acts">{job_btn("rebuild", "Rebuild everything", ai=False)}{job_btn("daily-brief", "Prepare today's brief")}</div>
 <p class="muted small job-note">Buttons marked ✦ use Claude on your normal subscription quota; the others are free. Jobs that hit a rule needing your decision stop and say "needs you" instead of guessing.</p>
-<div id="job-list"></div></section>
-<details class="grp-box backlog-box" id="backlog"><summary><h2>Mantis backlog</h2><span class="muted small">Ideas for Mantis itself</span></summary>{page_backlog(backlog(), "", embed=True)}</details></details>"""
+<div id="job-list"></div></section></details>"""
 
 
 def page_sources(work, built):
-    """Sources (MANTIS-IMP-094): what Mantis reads and when it last did. The filters, the pull, the inbox,
-    past pulls, then health and jobs folded away. Filters and pulls are drawn by app.js."""
-    body = f"""<div class="page-h"><div><h1>Sources</h1><p class="lead">What Mantis reads, and when it last did. A pull runs only when you start it.</p></div></div>
-<section class="panel-box pull-now nocopy" aria-labelledby="pn-h"><div class="pn-t"><h2 id="pn-h">Pull</h2><p class="muted" id="pn-state">Checking…</p></div>
-{job_btn("pull", "Pull now", cls="btn")}</section>
-<section class="panel-box nocopy" id="unmapped" aria-labelledby="um-h" hidden><div class="box-h"><h2 id="um-h">Tickets with no feature</h2>
-<span class="muted small">A pull does not digest them until you say where they belong</span></div><div id="um-list"></div></section>
-<section class="panel-box nocopy" aria-labelledby="flt-h"><div class="box-h"><h2 id="flt-h">Jira and Confluence filters</h2><span class="muted small">A pull reads only the active ones</span>
-<button type="button" class="btn-line" id="flt-add-btn">Add a filter</button></div>
-<div id="flt" class="flt"><p class="muted small">Loading filters…</p></div>
-<p class="muted small flt-note">Jira: JQL that picks the root issues (usually Features); their children are followed. Confluence: a page link or ID for everything under it, or CQL. Pages Mantis already holds are always checked.</p></section>
-<section class="panel-box nocopy" aria-labelledby="ib-h"><div class="box-h"><h2 id="ib-h">Inbox</h2><span class="muted small" id="ib-state"></span></div>
+    """Sources (2026-10-31 redesign, after MANTIS-IMP-094): what Mantis reads, one row per filter, and the inbox.
+    Health, past pulls and names to confirm are one line each beside them; the pull itself sits in the header.
+    Past pulls and Health and jobs stay out of sight until their side line opens them (each said once)."""
+    h = health()
+    warn = sum(1 for i in h["items"] if i["level"] == "warn")
+    att = [a for a in attention(work) if a[0] != "sources.html#health"]
+    tidy = sum(1 for o in OPEN if scope_of(o) == "tidy")
+    body = f"""<div class="page-h"><div><h1>Sources</h1><p class="lead" id="pn-state">Checking…</p></div></div>
+<div class="today-grid"><div class="today-main">
+<section class="blk nocopy" id="unmapped" aria-labelledby="um-h" hidden><div class="blk-h"><h2 id="um-h">Tickets with no feature</h2></div>
+<p class="muted small">A pull leaves them out until you say where they belong.</p><div id="um-list" class="rows"></div></section>
+<section class="blk nocopy" aria-labelledby="flt-h"><div class="blk-h"><h2 id="flt-h">Filters</h2><button type="button" class="linkish" id="flt-add-btn">Add a filter</button></div>
+<div id="flt" class="flt rows">{SKEL}</div></section>
+<section class="blk nocopy" aria-labelledby="ib-h"><div class="blk-h"><h2 id="ib-h">Inbox</h2><span class="t-meta" id="ib-state"></span></div>
 <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add files to the inbox: drop them here or press Enter to choose">
-<p><b>Drop notes, transcripts or documents here</b><span class="muted small">Word, PDF, text, transcripts, web pages, spreadsheets · or <span class="linkish">choose files</span></span></p>
+<span>Drop notes, transcripts or documents. The next pull reads them first.</span><span class="btn-line">Choose files</span>
 <input type="file" id="drop-file" multiple hidden accept=".md,.txt,.vtt,.srt,.docx,.pdf,.html,.htm,.xlsx,.pptx"></div>
-<details class="paste-box"><summary>Or paste text</summary><textarea id="paste-text" rows="5" placeholder="Paste meeting notes, an email or a chat thread"></textarea>
-<div class="mb-row"><input id="paste-name" type="text" placeholder="Name (optional)" aria-label="Name for the pasted text"><button type="button" class="btn" id="paste-save">Add to inbox</button></div></details>
-<p class="muted small">The next pull digests everything waiting here first.</p></section>
-<details class="grp-box" id="history"><summary><h2>Past pulls</h2><span class="muted small">The last ten briefs</span></summary><div id="pull-history" class="panel-box"><p class="muted small">Loading…</p></div>
-<p class="small hist-more"><a href="changes.html">Everything that changed, day by day →</a></p></details>
-{health_html(work)}"""
+<details class="paste-box"><summary class="linkish">Paste text instead</summary><textarea id="paste-text" rows="5" placeholder="Paste meeting notes, an email or a chat thread"></textarea>
+<div class="mb-row"><input id="paste-name" type="text" placeholder="Name (optional)" aria-label="Name for the pasted text"><button type="button" class="btn" id="paste-save">Add to inbox</button></div></details></section>
+<details class="fold fold-panel" id="history"><summary><h2>Past pulls</h2></summary><div id="pull-history">{SKEL}</div>
+<p class="small hist-more"><a href="changes.html">Everything that changed, day by day</a></p></details>
+{health_html(work)}
+</div>
+<aside class="rail" aria-label="Health and history">
+<a class="ri" href="#health" data-open="health"><span class="ri-h">Health</span><span class="ri-v{" warn-text" if warn else ""}">{n_(warn, "thing") + " to fix" if warn else "All clear"}</span><span class="ri-s">{f"{len(att)} noticed · " if att else ""}checked {esc(h["date"])}</span></a>
+<a class="ri" href="#history" data-open="history"><span class="ri-h">History</span><span class="ri-v">The last ten pulls</span></a>
+{f'<a class="ri" href="questions.html#tidy"><span class="ri-h">Names and terms</span><span class="ri-v">{tidy} to confirm</span></a>' if tidy else ""}
+</aside></div>"""
     return shell("Sources", body, active="sources", built=built)

@@ -89,7 +89,7 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 | `site_day.py` | Site pages for the owner's day: Today, Meetings, Sources. | standard library |
 | `site_plan.py` | Site pages for planning: Features (Following, Roadmap with its Timeline view, Ideas, All), feature and topic pages, Epics & stories. | standard library |
 | `site_people.py` | Site pages about people and questions: Open items and People. | standard library |
-| `site_reference.py` | Site pages for reference and housekeeping: Library (pages, diagrams, decisions), What's new, the backlog, search. Health lives on Sources (site_day.py). | standard library |
+| `site_reference.py` | Site pages for reference and housekeeping: Library (pages, diagrams, decisions), What's new, search. Health lives on Sources (site_day.py). | standard library |
 | `cards.py` | Cards: the reading layer for every subject. | standard library |
 | `changes.py` | What changed, and which card summaries are behind. | standard library |
 | `index_gen.py` | Generate the knowledge index entries (registers/documents/<ID>.md) from digests. | standard library |

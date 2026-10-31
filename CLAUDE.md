@@ -2,7 +2,8 @@
 
 The owner's personal assistant and knowledge repository. The repo is the source of truth, not any
 chat. Rules: `docs/rules/PROJECT_VISION.md`. Workflow: `docs/rules/WORKFLOW.md`, an index naming
-the one file in `docs/rules/workflow/` for each task. Writing: `docs/rules/OUTPUTS_GUIDE.md`.
+the one file in `docs/rules/workflow/` for each task. Writing: `docs/rules/OUTPUTS_GUIDE.md`. Screens
+and anything the owner reads: `docs/rules/DESIGN.md`.
 Tools: `docs/system/SKILLS.md`. Where things live: `README.md` and each folder's README; cleanup:
 `docs/system/MAINTENANCE.md`.
 

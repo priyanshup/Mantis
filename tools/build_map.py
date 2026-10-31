@@ -157,6 +157,7 @@ for s in stories:
     if s["epic"] and s["epic"] not in epic_ids:
         print(f"Warning: {s['file']} names epic '{s['epic']}', which has no file in outputs/epics/")
 
+# Front matter "work": business, technical or both (cards.work_of); features default to business
 features = []
 for slug, (p, fm) in cards.items():
     page = OUTP / "confluence" / f"{slug}.md"
@@ -168,6 +169,7 @@ for slug, (p, fm) in cards.items():
         "status_note": fm.get("status_note", ""), "priority": prio if prio in ("P1", "P2", "P3") else "",
         "jira": fm.get("jira", "none"), "estimate": fm.get("estimate_2027", ""), "updated": fm.get("updated", ""),
         "card": p.relative_to(M).as_posix(), "docs": fdocs, "open_gaps": fgaps, "kind": "feature",
+        "work": cards_mod.work_of(fm.get("work"), "business"),
         "new_docs": card_of[slug]["new"], "covered": card_of[slug]["covered"],
         "page": page.relative_to(M).as_posix() if page.exists() else None,
         "epics": [e for e in epics if e["feature"] == slug],
@@ -181,7 +183,8 @@ textcache.write((OUT / "work.json"), json.dumps({"epics": epics, "stories": stor
 
 topics = [{"slug": c["slug"], "title": c["title"], "type": "topic", "kind": "topic", "card": c["path"].relative_to(M).as_posix(),
            "docs": c["linked"], "new_docs": c["new"], "covered": c["covered"], "updated": c["fm"].get("updated", ""),
-           "match": c["fm"].get("match_topics", [])} for c in all_cards if c["folder"] == "topics"]
+           "match": c["fm"].get("match_topics", []), "work": cards_mod.card_work(c)}
+          for c in all_cards if c["folder"] == "topics"]
 topics.sort(key=lambda x: x["title"].lower())
 textcache.write((OUT / "topics.json"), json.dumps(topics, indent=1))
 # Entity graph (tools/kgraph.py): writes entities.json, entities.md, entity-graph.md, entity-candidates.md
@@ -237,9 +240,10 @@ suggest = cards_mod.uncovered_tags(all_cards, docs)
 rows = ["# Cards", "", "Generated. Read a subject's card before any digest: `mantis/knowledge/features/<slug>.md` or",
         "`mantis/knowledge/topics/<slug>.md`. new = linked sources the curated summary does not cover yet;",
         "sources = those listed on the card itself (a parent lists only what its narrower cards do not); KB = size of the generated part.", "",
-        "card | kind | parent | sources | new | KB | match tags", "---|---|---|---|---|---|---"]
+        "card | kind | work | parent | sources | new | KB | match tags", "---|---|---|---|---|---|---|---"]
 for c in sorted(all_cards, key=lambda c: (c["folder"], c["slug"])):
-    rows.append(f"{c['slug']} | {c['folder'][:-1]} | {c['fm'].get('parent', '') or '-'} | {len(c['shown'])} | {len(c['new'])} | "
+    work = cards_mod.card_work(c) or "-"
+    rows.append(f"{c['slug']} | {c['folder'][:-1]} | {work} | {c['fm'].get('parent', '') or '-'} | {len(c['shown'])} | {len(c['new'])} | "
                 f"{c.get('gen_size', 0) / 1024:.1f} | {', '.join(c['fm'].get('match_topics', []))}")
 linked_any = {d for c in all_cards for d in c["linked"]}
 rows += ["", f"{len(linked_any)} of {len(docs)} documents are linked to at least one card.",

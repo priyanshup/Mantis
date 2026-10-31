@@ -2,6 +2,7 @@
 feature: <kebab-case-name>
 title: "<Feature name>"
 jira: <KEY or none>
+work: <business (the default), technical, or both: whether the requirements come from users, from engineering, or from both (e.g. a bug backlog)>
 status: <discovery / refinement / build / live>
 priority: <P1 / P2 / P3>
 estimate_2027: "<complexity, effort or Not estimated>"

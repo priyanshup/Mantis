@@ -104,6 +104,10 @@ def render(text, breaks=False, sections=True):
     body = body.replace("<table>", '<div class="tbl"><table>').replace("</table>", "</table></div>")
     # ![what it shows](asset:MANTIS-AST-001) in a page shows that registered diagram (MANTIS-IMP-008)
     body = re.sub(r'src="asset:(MANTIS-AST-\d+)"', lambda m: f'src="{asset_src(m.group(1))}" class="asset-img"', body)
+    # A card's work type, in its "Work type:" line and its Sources table, shows as the coloured tag
+    body = re.sub(r"<strong>Work type:</strong> (Business \+ technical|Business|Technical)( \([^)]*\))?\.",
+                  lambda m: f'<span class="muted small">Work type</span> {work_tag(WORK_OF_LABEL[m.group(1)])}<span class="muted small">{m.group(2) or ""}</span>', body)
+    body = re.sub(r"<td>(Business \+ technical|Business|Technical)</td>", lambda m: f"<td>{work_tag(WORK_OF_LABEL[m.group(1)])}</td>", body)
     if not sections:
         return body
     parts = [p for p in re.split(r"(?=<h2)", body) if p.strip()]
@@ -136,13 +140,23 @@ def pill(label, cls):
     return f'<span class="pill {cls}">{esc(label)}</span>'
 
 
+WORK_TIP = {"business": "Business work: the requirements come from users and the business",
+            "technical": "Technical work: the requirements come from engineering",
+            "both": "Business and technical work: requirements come from both sides"}
+WORK_OF_LABEL = {"Business": "business", "Technical": "technical", "Business + technical": "both"}
+
+
+def work_tag(w):
+    """The coloured business / technical tag (a card dict or its "work" value); "both" is one split tag."""
+    w = w.get("work", "") if isinstance(w, dict) else (w or "")
+    if w == "both":
+        return f'<span class="wtag wtag-both" title="{WORK_TIP[w]}"><span class="wh wh-b">Business</span><span class="wh wh-t">Technical</span></span>'
+    return f'<span class="wtag wtag-{w}" title="{WORK_TIP[w]}">{w.capitalize()}</span>' if w in WORK_TIP else ""
+
+
 def work_pill(status):
     label, cls = WORK.get(status or "", (status.title() if status else "No status", "w-draft"))
     return pill(label, cls)
-
-
-def prio_pill(p):
-    return pill(p, "p-" + p.lower()) if p else ""
 
 
 # Five tabs, one per recurring moment (MANTIS-IMP-094): every one always visible, no overflow menu (HIG tab bars:
@@ -155,7 +169,6 @@ ICON = {   # 24px outline symbols for the compact tab bar, one visual language, 
     "features": '<path d="M12 3.5 20.5 8 12 12.5 3.5 8z"/><path d="m3.5 12 8.5 4.5 8.5-4.5"/><path d="m3.5 16 8.5 4.5 8.5-4.5"/>',
     "questions": '<path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5h-7l-4.5 3.5V17.5H5A1.5 1.5 0 0 1 3.5 16V7A1.5 1.5 0 0 1 5 5.5z"/><path d="M10 9.6a2 2 0 1 1 2.7 1.9c-.5.2-.7.6-.7 1.1v.3"/><path d="M12 15.2h.01"/>',
     "sources": '<path d="M12 3.5v11m0 0-4-4m4 4 4-4"/><path d="M4.5 14.5v3a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3"/>',
-    "browse": '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M14.5 4.5v15"/><path d="M16.8 8.5h1.7M16.8 11.5h1.7"/>',
 }
 
 
@@ -182,30 +195,39 @@ def shell(title, body, base="", active="", built=""):
     cur = lambda key: ' class="on" aria-current="page"' if key == active else ""
     nav = "".join(f'<a href="{base}{href}"{cur(key)}>{name}{badge(key)}</a>' for key, href, name in NAV)
     tabbar = "".join(f'<a href="{base}{href}"{cur(key)}>{icon(key)}<span>{name}</span>{badge(key)}</a>' for key, href, name in NAV)
+    # One header for every page (2026-10-31 redesign): five tabs, one box that finds or asks (Ctrl K), the pull with
+    # its last time, and a two-state theme switch. People and the library open from the search box.
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#e4e3df" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)">
 <title>{esc(title)} · Mantis</title>
-<link rel="icon" type="image/png" href="{base}assets/mantis.png">
+<link rel="icon" type="image/svg+xml" href="{base}assets/mark.svg?v=4"><link rel="icon" type="image/png" sizes="192x192" href="{base}assets/mark.png?v=4"><link rel="apple-touch-icon" href="{base}assets/mark.png?v=4">
 <script>try{{var m=localStorage.getItem("mantis-theme");if(m==="light"||m==="dark")document.documentElement.dataset.theme=m}}catch(e){{}}</script>
+<link rel="preload" href="{base}assets/fonts/Inter-400-600.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="{base}assets/fonts/ZalandoSansExpanded-600-850.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="{base}assets/fonts/IBMPlexMono-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="{base}assets/fonts/IBMPlexMono-500.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{base}assets/style.css"></head>
 <body>
 <header class="top"><div class="wrap top-in">
-<a class="brand" href="{base}index.html"><img class="logo" src="{base}assets/mantis.png" alt="" width="36" height="36"><span>Mantis</span></a>
+<a class="brand" href="{base}index.html"><img class="mark" src="{base}assets/mark.svg?v=4" alt="" width="26" height="26"><span>Mantis</span></a>
 <nav class="mainnav" id="mainnav" aria-label="Main">{nav}</nav>
-<div class="gsearch"><input id="gsearch" type="search" placeholder="Search Mantis" aria-label="Search all of Mantis" autocomplete="off" data-base="{base}">
-<div id="gresults" class="gresults" hidden></div></div>
-<button type="button" id="browse" class="browse-btn" aria-haspopup="dialog" aria-controls="drawer" title="People and library">{icon("browse")}<span>People &amp; library</span></button>
-<button type="button" id="theme" class="theme-btn" title="Theme: auto (follows your system)" aria-label="Change theme">◐</button></div></header>
+<button type="button" class="kbar" id="kbar" aria-haspopup="dialog" aria-controls="palette"><span>Search or ask</span><kbd>Ctrl K</kbd></button>
+<div class="pullpill nocopy"><span class="pp-when" id="pull-ago" title="Last pull"></span><button type="button" class="key-sm job" data-job="pull" title="Read what changed in Jira, Confluence and your inbox">Pull</button></div>
+<button type="button" id="theme" class="theme-sw" role="switch" aria-checked="false" aria-label="Dark theme"></button></div><div id="busy" aria-hidden="true"></div></header>
 <main class="wrap">{body}</main>
-<footer class="wrap foot"><span>Mantis</span>
-<span>Read-only view of the Mantis Markdown files; answers and edits go to the inbox. Built {esc(built)}.</span></footer>
+<footer class="wrap foot"><span>Mantis</span><span>Built {esc(built)}</span></footer>
 <nav class="tabbar" aria-label="Main">{tabbar}</nav>
+<div id="palette" class="palette" role="dialog" aria-modal="true" aria-label="Search or ask" hidden><div class="pal">
+<div class="pal-in"><input id="gsearch" type="search" placeholder="Find a person, feature or document, or ask a question" aria-label="Search or ask" autocomplete="off" data-base="{base}"><kbd>Esc</kbd></div>
+<div id="gresults" class="gresults"></div>
+<div class="pal-ft"><span>↑↓ move</span><span>Enter open</span><button type="button" class="linkish" data-dopen="people">People</button><button type="button" class="linkish" data-dopen="library">Library</button></div></div></div>
 <aside id="drawer" class="drawer" role="dialog" aria-modal="false" aria-label="People and library" data-base="{base}" hidden></aside>
 <div id="toast" role="status"></div>
 <script src="{base}assets/app.js"></script>
 </body></html>
 """
+
+
+# Where live content is still on its way: three rows that shimmer, the shape of what is coming (2026-10-31)
+SKEL = '<div class="skel" role="status" aria-label="Loading"><i></i><i></i><i></i></div>'
 
 
 def copy_bar(label, edit=""):
@@ -409,23 +431,6 @@ def library_items(features, work):
     return items
 
 
-def backlog():
-    # Open ideas and the done log (MANTIS-IMP-071); local project history, absent on a fresh clone
-    text = "".join(bp.read_text(encoding="utf-8") for bp in (ROOT / "docs" / "project" / "IMPROVEMENT_BACKLOG.md",
-                                                            ROOT / "docs" / "project" / "IMPROVEMENT_DONE.md") if bp.exists())
-    out = []
-    for blk in re.split(r"(?m)^### ", text)[1:]:
-        head, _, body = blk.partition("\n")
-        rid, _, title = head.partition(":")
-        f = lambda k: " ".join((re.search(r"\*\*%s:\*\*\s*(.+?)(?=\n\*\*|\n---|\Z)" % k, body, re.S) or [None, ""])[1].split())
-        status = f("Status")
-        word = status.split(" (")[0].split()[0].strip(",.;") if status else "Parked"
-        out.append({"id": rid.strip(), "title": title.strip(), "status": "In" if word == "In" else word,
-                    "size": f("Complexity").split(" ")[0], "value": f("Expected Value").split(" ")[0], "phase": " ".join(f("Priority").split()[:2]).strip(",;("),
-                    "body": body.replace("\n---", "").strip()})
-    return out
-
-
 def story_list(stories, epics_by_id, base_href=""):
     """Stories grouped by epic, for the side panel."""
     groups = {}
@@ -440,17 +445,6 @@ def story_list(stories, epics_by_id, base_href=""):
 
 
 GRAPH = {}  # filled by build() from map/entities.json
-
-
-def feature_entities(slug, n=10, kind="feature"):
-    """Side-panel chips: the people and systems most often named in this card's sources."""
-    ranked = sorted(((x["docs"], e) for e in GRAPH.get("entities", []) for x in e["features"]
-                     if x["slug"] == slug and x.get("kind", "feature") == kind and e["type"] not in ("concept", "unknown")), key=lambda t: -t[0])[:n]
-    if not ranked:
-        return ""
-    chips = "".join(f'<button type="button" class="chip ent t-{e["type"]}" data-person="{esc(e["name"])}">{esc(e["name"])}</button>' if e["type"] == "person"
-                    else f'<span class="chip ent t-{e["type"]}">{esc(e["name"])}</span>' for _, e in ranked)   # a person opens their panel
-    return f'<div class="side-h ents-h"><h2>People and systems</h2></div><div class="ent-chips">{chips}</div>'
 
 
 def plain(md, limit=6000):

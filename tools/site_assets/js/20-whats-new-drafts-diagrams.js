@@ -67,11 +67,6 @@
     ta.focus(); ta.setSelectionRange(0, 0); ta.scrollTop = 0;   // read it from the greeting down
   }
   document.addEventListener("click", (e) => { const b = e.target.closest("[data-draft]"); if (b) openDraft(b.dataset.draft); });
-  const oiDraft = $("#oi-draft"), oiWho = $("#oi-who");
-  if (oiDraft && oiWho) {
-    const sync = () => { const n = oiWho.value; oiDraft.hidden = !(n && draftData[n]); oiDraft.dataset.draft = n; oiDraft.textContent = n ? `Draft a message to ${n.split(" ")[0]}` : "Draft a message"; };
-    oiWho.addEventListener("change", sync); setTimeout(sync, 0);
-  }
 
   // ---- Diagrams chips (IMP-008) ----
   const dia = $("#f-dia");

@@ -5,6 +5,7 @@ original_title: "[exact original wiki page title]"
 version: 1
 region: [e.g. a market name, or "Global"]
 topics: [tag1, tag2, tag3]
+work: <optional: business, technical or both; delete the line to take the type of the cards it joins>
 key_entities: [Entity1, Entity2, Entity3]
 related_documents: []
 document_confidence: High | Medium | Low | Very Low

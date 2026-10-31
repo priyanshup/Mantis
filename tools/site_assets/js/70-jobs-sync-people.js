@@ -22,10 +22,11 @@
       b.disabled = busy; b.classList.toggle("busy", busy);
     });
     paintInbox(st);
+    document.body.classList.toggle("job-running", active.length > 0); busy();
     if (active.length) {
       const j = active[0], more = active.length - 1;
       h.className = "nocopy show run";
-      h.innerHTML = `<span class="jh-spin" aria-hidden="true"></span><div class="jh-t"><b>${esc(j.label)}</b><span>${j.state === "queued" ? "Waiting to start" : "Working… " + since(j.started || j.created)}${more ? ` · ${more} more waiting` : ""}</span></div>`;
+      h.innerHTML = `<span class="jh-scan" aria-hidden="true"><i></i></span><div class="jh-t"><b>${esc(j.label)}</b><span>${j.state === "queued" ? "Waiting to start" : "Working… " + since(j.started || j.created)}${more ? ` · ${more} more waiting` : ""}</span></div>`;
       return true;
     }
     const fresh = (st.jobs || []).find((j) => j.ended && !seen().includes(j.id) && Date.now() - new Date(j.ended).getTime() < 5 * 60 * 1000 && mine().includes(j.id));
@@ -166,19 +167,22 @@
     const d = X.d; if (!d) return;
     // Away planner
     const aw = $("#t-away");
-    if (aw) {
+    if (aw) {   // Time away: one line until five working days before, then what to do first and the handover
       const a = d.away;
       aw.hidden = false;
       if (a) {
         const before = d.before_away || [], cover = (a.cover || [])[0] || "";
-        aw.innerHTML = `<div class="sc-h"><h2><span class="away-ico" aria-hidden="true"></span>Away ${dShort(a.start)} – ${dShort(a.end)}</h2><button type="button" class="mini icon" data-away-rm="${a.id}" title="Remove this away period" aria-label="Remove">✕</button></div>` +
-          `<p class="muted small">${a.cover.length ? esc(a.cover.join(", ")) + " covers" : "Nobody covering yet"}</p>` +
-          (before.length ? `<p class="away-lbl">Before you go</p><ul class="away-list">${before.map((x) => `<li>${esc(x.title)}${x.due ? ` <span class="muted small">· due ${dShort(x.due)}</span>` : ""}</li>`).join("")}</ul>` : "") +
+        let wd = 0; for (let x = new Date(d.today + "T12:00"); x.toISOString().slice(0, 10) < a.start; x.setDate(x.getDate() + 1)) if (x.getDay() % 6) wd++;
+        const opens = new Date(a.start + "T12:00"); for (let n = 0; n < 5;) { opens.setDate(opens.getDate() - 1); if (opens.getDay() % 6) n++; }
+        const full = wd <= 5;
+        aw.innerHTML = `<details class="away"${full ? " open" : ""}><summary class="ri"><span class="ri-h">Away ${dShort(a.start)} to ${dShort(a.end)}</span>` +
+          `<span class="ri-s">${a.cover.length ? esc(a.cover.map(first).join(", ")) + " covers" : "Nobody covering yet"}${full ? "" : ` · handover opens ${dShort(opens.toISOString().slice(0, 10))}`}</span></summary>` +
+          (before.length ? `<p class="lt-h">Before you go</p><ul class="away-list">${before.map((x) => `<li>${esc(x.title)}${x.due ? ` <span class="t-meta">due ${dShort(x.due)}</span>` : ""}</li>`).join("")}</ul>` : "") +
           `<div class="mb-row"><select id="ho-who" class="sel sel-sm" aria-label="Handover for">${(d.people || []).map((p) => `<option${p.name === cover ? " selected" : ""}>${esc(p.name)}</option>`).join("")}</select>` +
           `<button type="button" class="btn job ai" data-job="handover" data-arg-from="#ho-who" title="Uses Claude, on your normal quota">Handover</button></div>` +
-          (briefLinks("", "handover") ? `<div class="chips sc-chips">${briefLinks("", "handover")}</div>` : "");
+          `<div class="chips sc-chips">${briefLinks("", "handover")}<button type="button" class="linkish" data-away-rm="${a.id}">Remove this leave</button></div></details>`;
       } else {
-        aw.innerHTML = `<details class="away-plan"><summary><span class="away-ico" aria-hidden="true"></span>Plan time away</summary><p class="muted small">Mantis lists what falls inside it, nudges you before you go and writes a handover for whoever covers.</p>` +
+        aw.innerHTML = `<details class="away"><summary class="ri"><span class="ri-s">Plan time away</span></summary>` +
           `<form class="away-form" id="away-form"><label>From <input type="date" name="start" required></label><label>To <input type="date" name="end" required></label>` +
           `<label>Covering <input name="cover" list="pp-names" placeholder="Name"></label><button class="btn" type="submit">Save</button>${peopleList()}</form></details>`;
       }
@@ -197,22 +201,19 @@
     if (mw && !mw.options.length) mw.innerHTML = (d.people || []).map((p) => `<option value="${esc(p.name)}">${esc(p.name)}${p.role ? " · " + esc(p.role.split(/[;,.]/)[0]).slice(0, 48) : ""}</option>`).join("");
     const mbs = $("#mt-briefs");
     if (mbs) mbs.innerHTML = [briefLinks("", "meeting"), briefLinks("", "status")].join("");
-    // Today, side column: follow-ups, then Ask
+    // Today, side column: who you are waiting on, as one line that opens to the follow-ups (asking is in Ctrl K)
     const tp = $("#t-people");
     if (tp) {
-      const g = d.followups || {}, persons = Object.keys(g).sort((a, b) => (g[b].items.length - g[a].items.length) || a.localeCompare(b));
-      const nFu = persons.reduce((n, p) => n + g[p].items.length + g[p].steps.length, 0);
-      const fus = persons.map((p) => `<details class="fu-person"><summary><b>${esc(p)}</b><span class="fu-count">${g[p].items.length + g[p].steps.length}</span></summary>` +
-        `<ul class="fu-list">${g[p].items.map(fuRow).join("")}${g[p].steps.map(stepRow).join("")}</ul></details>`).join("") || '<p class="muted small">Nothing open with anyone.</p>';
-      const addFu = `<details class="fu-new"><summary>+ Add a follow-up</summary><form class="fu-add" id="fu-add"><input name="person" list="pp-names" placeholder="Person" required aria-label="Person"><input name="topic" placeholder="What to raise or chase" required aria-label="Topic">` +
+      const g = d.followups || {}, n = (p) => g[p].items.length + g[p].steps.length;
+      const persons = Object.keys(g).filter((p) => n(p)).sort((a, b) => (n(b) - n(a)) || a.localeCompare(b));
+      const fus = persons.map((p) => `<details class="fu-person"><summary><b>${esc(p)}</b><span class="fu-count">${n(p)}</span></summary>` +
+        `<ul class="fu-list">${g[p].items.map(fuRow).join("")}${g[p].steps.map(stepRow).join("")}</ul></details>`).join("");
+      const addFu = `<details class="fu-new"><summary class="linkish">Add a follow-up</summary><form class="fu-add" id="fu-add"><input name="person" list="pp-names" placeholder="Person" required aria-label="Person"><input name="topic" placeholder="What to raise or chase" required aria-label="Topic">` +
         `<select name="kind" class="sel sel-sm" aria-label="Kind"><option value="raise">Raise with them</option><option value="wait">Waiting on them</option></select><button class="btn-line" type="submit">Add</button>${peopleList()}</form></details>`;
-      const answers = briefLinks("", "answer");   // MANTIS-IMP-081: a question answered from the sources, with the passages it rests on
-      const ask = `<section class="side-card" id="ask"><div class="sc-h"><h2>Ask Mantis</h2></div>` +
-        `<div class="mb-row"><input id="ask-q" class="ask-q" type="text" placeholder="What do the sources say about…" aria-label="Your question" autocomplete="off">` +
-        `<button type="button" id="ask-go" class="btn job ai" data-job="ask" data-arg-from="#ask-q" title="Uses Claude, on your normal quota">Ask</button></div>` +
-        (answers ? `<div class="chips sc-chips">${answers}</div>` : `<p class="muted small sc-hint">Answers come from your sources, each point with the passage it rests on.</p>`) +
-        `<button type="button" class="linkish small job ai" data-job="ask-deep" data-arg-from="#ask-q" title="A wider, slower search (a few minutes, many more tokens): when a quick answer says its passages were not enough">Dig deeper</button></section>`;
-      tp.innerHTML = `<section class="side-card" id="followups"><div class="sc-h"><h2>Follow-ups</h2><span class="sc-n">${nFu || ""}</span></div>${fus}${addFu}</section>` + ask;
+      const top = persons.slice(0, 3).map((p) => `${esc(first(p))} ${n(p)}`).join(" · "), rest = persons.length - 3;
+      tp.hidden = false;
+      tp.innerHTML = `<h2>Waiting on</h2>` + (persons.length ? `<details class="wo" id="followups"><summary class="ri"><span class="ri-v">${top}</span><span class="ri-s">${rest > 0 ? `and ${plural(rest, "other")}` : "Open the list"}</span></summary>${fus}${addFu}</details>`
+        : `<div class="ri-s">Nobody. ${addFu}</div>`);
     }
     // Meetings page: add a regular meeting (the list itself is drawn by paintDay)
     const pm = $("#pp-meetings");
@@ -220,7 +221,8 @@
       pm.innerHTML = `<form class="fu-add meet-form" id="meet-add"><label>Name <input name="name" placeholder="e.g. Sam 1-1" required></label>` +
         `<label>Day <select name="day" class="sel sel-sm">${["Mon", "Tue", "Wed", "Thu", "Fri"].map((x) => `<option>${x}</option>`).join("")}</select></label>` +
         `<label>Time <input name="time" type="time"></label><label>How often <select name="every" class="sel sel-sm"><option value="1">Weekly</option><option value="2">Every 2 weeks</option></select></label>` +
-        `<label class="wide">With <input name="attendees" list="pp-names" placeholder="Names, comma-separated"></label><button class="btn" type="submit">Add meeting</button>${peopleList()}</form>`;
+        `<label class="wide">With <input name="attendees" list="pp-names" placeholder="Names, comma-separated"></label>` +
+        `<div class="mf-acts"><button class="btn" type="submit">Add meeting</button><button type="button" class="linkish" data-meet-cancel>Cancel</button></div>${peopleList()}</form>`;
     }
     if (typeof paintDay === "function") paintDay(d);
     // People page: counts and lists per person
@@ -272,7 +274,8 @@
     document.addEventListener("submit", (e) => {
       const f = e.target, v = (n) => (f.elements[n] || {}).value || "";
       if (f.id === "fu-add") { e.preventDefault(); xPost("api/followups", { action: "add", person: v("person"), topic: v("topic"), kind: v("kind") }, "Follow-up added.").then((j) => j && f.reset()); }
-      if (f.id === "meet-add") { e.preventDefault(); xPost("api/schedule", { action: "add-meeting", name: v("name"), day: v("day"), time: v("time"), attendees: v("attendees"), every: v("every") }, "Meeting added."); }
+      if (f.id === "meet-add") { e.preventDefault(); xPost("api/schedule", { action: "add-meeting", name: v("name"), day: v("day"), time: v("time"), attendees: v("attendees"), every: v("every") }, "Meeting added.")
+        .then((j) => { if (j) { f.reset(); const am = f.closest("details"); if (am) am.open = false; } }); }
       if (f.id === "away-form") { e.preventDefault(); xPost("api/schedule", { action: "add-away", start: v("start"), end: v("end"), cover: v("cover") }, "Away period saved."); }
     });
     const pf = $("#pp-filter");

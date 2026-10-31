@@ -125,10 +125,19 @@ def _path(jid):
 
 
 def _write(job):
+    """Windows refuses to replace a file another program has open (OneDrive syncing it, the site reading
+    it), so a locked file is retried for about two seconds before giving up."""
     DIR.mkdir(parents=True, exist_ok=True)
     tmp = _path(job["id"]).with_suffix(".tmp")
-    tmp.write_text(json.dumps(job, indent=1, ensure_ascii=False), encoding="utf-8")
-    os.replace(tmp, _path(job["id"]))
+    for attempt in range(20):
+        try:
+            tmp.write_text(json.dumps(job, indent=1, ensure_ascii=False), encoding="utf-8")
+            os.replace(tmp, _path(job["id"]))
+            return
+        except PermissionError:
+            if attempt == 19:
+                raise
+            time.sleep(0.1)
 
 
 def load(jid):
@@ -229,13 +238,16 @@ def _work():
             jid = _queue.pop(0)
         job = load(jid)
         if job:
-            run(job)
+            try:
+                run(job)
+            except Exception:   # one job's failure must never stop the jobs queued after it
+                pass
 
 
 def run(job, on_done=None):
     job.update(state="running", started=datetime.now().isoformat(timespec="seconds"))
-    _write(job)
     try:
+        _write(job)
         if job["type"] == "rebuild":
             r = subprocess.run([sys.executable, str(ROOT / "tools" / "build_map.py")], cwd=ROOT, capture_output=True, text=True, timeout=600, **quiet())
             ok = r.returncode == 0
@@ -258,12 +270,17 @@ def run(job, on_done=None):
                                 "cache_write": u["cache_write"], "cost_usd": u["cost_usd"], "seconds": u["wall"], "model": u["model"]}
         else:
             _run_agent(job)
+    except PermissionError:
+        job.update(state="failed", summary="Could not save the job's status: another program (often OneDrive syncing) held the file. Run it again.")
     except subprocess.TimeoutExpired:
         job.update(state="failed", summary="Stopped after 40 minutes. Nothing half-done is lost: run it again or finish in chat.")
     except Exception as e:   # never leave a job stuck as running
         job.update(state="failed", summary=f"Failed: {e}"[:400])
     job["ended"] = datetime.now().isoformat(timespec="seconds")
-    _write(job)
+    try:
+        _write(job)
+    except OSError:   # still locked after retries: the record stays "running" until the next server start marks it interrupted
+        pass
     _prune()
     return job
 

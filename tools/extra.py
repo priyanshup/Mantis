@@ -4,7 +4,7 @@ Used by tools/serve.py (GET /api/extra, POST /api/followups, /api/deadlines, /ap
 data lives in mantis/tasks/ (followups.json, deadlines.json, meetings.json, away.json, briefs/)
 and is read fresh on every request, so the page never needs a rebuild to show it.
 """
-import json, sys
+import json, re, sys
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -28,6 +28,7 @@ def briefs_index():
 
 
 AGENDA_CAP = 5   # items per agenda section; the rest is counted, not listed
+QUIET = re.compile(r"(no (real |new )?change|nothing (changed|new))", re.I)   # a pull line saying nothing happened
 
 
 def _qkey(rid):
@@ -36,10 +37,36 @@ def _qkey(rid):
     return hashlib.sha1(rid.encode("utf-8")).hexdigest()[:10]
 
 
+def _who(m):
+    return {people.find(a)["name"] if people.find(a) else a for a in m.get("attendees", [])}
+
+
+def owners(meetings, open_items):
+    """Each open question goes on one agenda only (2026-10-31): the meeting with the person named to answer it,
+    else the meeting whose subjects match the question's best (shared subjects over all subjects of both, so a
+    question about one product goes to that product's sync and one spanning many features to the weekly sync),
+    the sooner on a tie. {question id: meeting id}"""
+    who = {m["id"]: _who(m) for m in meetings}
+    soon = lambda m: m.get("next") or "9999"
+    out = {}
+    for o in open_items:
+        name = (o.get("ask") or {}).get("name")
+        cand = [m for m in meetings if name and name in who[m["id"]]]
+        if not cand:
+            f = set(o.get("features", []))
+            score = {m["id"]: len(f & set(m.get("cards", []))) / max(1, len(f | set(m.get("cards", [])))) for m in meetings}
+            best = max(score.values(), default=0)
+            cand = [m for m in meetings if best and score[m["id"]] == best]
+        if cand:
+            out[o["id"]] = min(cand, key=soon)["id"]
+    return out
+
+
 def agenda(m, fus, open_items, titles, brief_cards):
     """A regular meeting's agenda, built from what is open (MANTIS-IMP-094): decide, ask, chase, update.
-    Each section lists links, never restated text, so one fact has one home (the question, the follow-up)."""
-    who = {people.find(a)["name"] if people.find(a) else a for a in m.get("attendees", [])}
+    Each section lists links, never restated text, so one fact has one home (the question, the follow-up).
+    `open_items` and `brief_cards` are already narrowed to what this meeting owns (see owners())."""
+    who = _who(m)
     cards = set(m.get("cards", []))
     card = lambda o: titles.get(next((s for s in o.get("features", []) if s in cards), ""), "")
     decide = [o for o in open_items if o["status"] != "Open" and set(o.get("features", [])) & cards]
@@ -51,7 +78,8 @@ def agenda(m, fus, open_items, titles, brief_cards):
     secs = [("Decide", [q(o) for o in decide]),
             ("Ask", [f(x) for x in mine if x["kind"] == "raise"] + [q(o) for o in ask]),
             ("Chase", [f(x) for x in mine if x["kind"] == "wait"]),
-            ("Update them on", [{"text": line, "note": c["title"]} for c in brief_cards if c["slug"] in cards for line in c["lines"]])]
+            ("Update them on", [{"text": line, "note": c["title"]} for c in brief_cards if c["slug"] in cards for line in c["lines"]
+                                if not QUIET.match(line.strip())])]
     if len(cards) <= 3:   # a meeting about one or two subjects: what is still open on them is worth raising too
         seen = {o["id"] for o in decide + ask}
         secs.append(("Still open", [q(o) for o in open_items if o["status"] == "Open" and set(o.get("features", [])) & cards and o["id"] not in seen]))
@@ -87,9 +115,14 @@ def payload():
     ms = []
     for m in schedule.meetings():
         nd = schedule.next_date(m, today)
-        ms.append(dict(m, next=nd.isoformat() if nd else "", agenda=agenda(m, fus, open_items, titles, last.get("cards", [])),
-                       last=last_time(m), key=people.slug(m["name"])))
+        ms.append(dict(m, next=nd.isoformat() if nd else "", key=people.slug(m["name"])))
     ms.sort(key=lambda m: m["next"] or "9999")
+    owner = owners(ms, open_items)
+    for m in ms:   # a change goes to the most specific meeting that covers its card, like a question
+        mine_ = lambda slug: min((x for x in ms if slug in x.get("cards", [])), key=lambda x: (len(x.get("cards", [])), x["next"] or "9999"))["id"] == m["id"]
+        news = [c for c in last.get("cards", []) if c["slug"] in m.get("cards", []) and mine_(c["slug"])]
+        m["agenda"] = agenda(m, fus, [o for o in open_items if owner.get(o["id"]) == m["id"]], titles, news)
+        m["last"] = last_time(m)
     away = schedule.next_away(today)
     before = []
     if away:   # what needs the owner before leaving: own open steps, own dated tasks, waiting follow-ups to chase

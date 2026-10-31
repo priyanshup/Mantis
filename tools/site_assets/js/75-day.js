@@ -21,71 +21,107 @@
     const quiet = !cards && !moves && !fmt && !closed && !needs ? '<p class="muted pb-empty">Nothing new since the pull before.</p>' : "";
     return (cards ? `<div class="pb-cards">${cards}</div>` : "") + quiet + (moves || fmt ? `<div class="pb-noise">${moves}${fmt}</div>` : "") + closed + needs;
   }
+  // Today's version (2026-10-31 redesign): one line per feature that really changed, the owner's followed ones
+  // first, four shown; a feature whose only news is "no real change" is left out. Ticket moves live in Sources.
+  const quiet = (c) => c.lines.every((l) => /^(no (real |new )?change|nothing (changed|new))/i.test(l.trim()));
+  const short = (t) => t.replace(/\s*\([^)]*\)\s*$/, "").split(":")[0];
+  let pullAll = false;
+  function todayBrief(b, meta) {
+    if (!b) return { html: '<p class="muted">No pull yet. Press <b>Pull</b> at the top: Mantis reads what changed in Jira, Confluence and your inbox, and sums it up here.</p>', more: 0 };
+    const rank = (s) => { const i = meta.rank.indexOf(s); return i < 0 ? 999 : i; };
+    const cards = b.cards.filter((c) => !quiet(c)).sort((x, y) => rank(x.slug) - rank(y.slug));
+    const row = (c) => `<details class="pb-row"><summary><span class="pm" aria-hidden="true"></span><span class="pb-t">${esc(short(c.title))}</span><span class="pb-s">${esc(c.lines[0])}</span></summary>` +
+      `<div class="pb-d">${c.lines.length > 1 ? `<ul>${c.lines.slice(1).map((l) => `<li>${esc(l)}</li>`).join("")}</ul>` : ""}${meta.href[c.slug] ? `<a href="${jBase}${meta.href[c.slug]}">Open the card</a>` : ""}</div></details>`;
+    const needs = b.needs.map((x) => `<div class="pb-row pb-needs"><span class="pm" aria-hidden="true">!</span><span class="pb-s">${esc(x)}</span></div>`).join("");
+    const closed = b.closed.length ? `<a class="pb-row pb-closed" href="${jBase}questions.html#closed"><span class="pm" aria-hidden="true">✓</span><span class="pb-s">${plural(b.closed.length, "question")} closed automatically by a new source</span></a>` : "";
+    const shown = pullAll ? cards : cards.slice(0, 4);
+    const html = needs + shown.map(row).join("") + closed || '<p class="muted">Nothing new since the pull before.</p>';
+    return { html: `<div class="rows">${html}</div>`, more: Math.max(0, cards.length - 4) };
+  }
   async function paintPull() {
-    const pb = $("#pull-body"), ps = $("#pn-state"), ph = $("#pull-history");
-    if (!(pb || ps || ph)) return;
+    const pb = $("#pull-body"), ps = $("#pn-state"), ph = $("#pull-history"), pa = $("#pull-ago");
     let j;
     try { j = await api("api/pull-brief"); } catch (e) { if (pb) pb.innerHTML = '<p class="muted">Open Mantis from http://localhost:8000 to see the brief.</p>'; return; }
     const b = j.last, p = j.pending || {};
     const waiting = [p.jira && plural(p.jira, "Jira item"), p.confluence && plural(p.confluence, "Confluence page"), p.files && plural(p.files, "inbox file")].filter(Boolean);
+    const dayOf = (s) => new Date(s).toLocaleDateString(undefined, { weekday: "long" });
+    if (pa) { pa.textContent = b ? new Date(b.at).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "Never"; pa.title = b ? "Last pull " + when(b.at) : "No pull yet"; }
     if (pb) {
-      $("#pull-when").textContent = b ? `${b.since ? when(b.since) + " to " : ""}${when(b.at)}` : "";
-      pb.innerHTML = briefHtml(b) + (waiting.length ? `<p class="muted small pb-wait">Waiting for the next pull: ${waiting.join(", ")}.</p>` : "");
+      const meta = JSON.parse($("#pull-box").dataset.cards || '{"href":{},"rank":[]}'), t = todayBrief(b, meta);
+      $("#pull-h").textContent = b && b.since ? `Changed since ${dayOf(b.since)}` : "Since your last pull";
+      pb.innerHTML = t.html + (waiting.length ? `<p class="muted small pb-wait">Waiting for the next pull: ${waiting.join(", ")}.</p>` : "");
+      const pm = $("#pull-more"); pm.hidden = !t.more; pm.textContent = pullAll ? "Show fewer" : `${t.more} more`;
     }
-    if (ps) ps.textContent = (b ? `Last pull ${when(b.at)}.` : "No pull yet.") + (waiting.length ? ` Waiting now: ${waiting.join(", ")}.` : " Nothing waiting.");
+    if (ps) ps.textContent = (b ? `Last pull ${when(b.at)}.` : "No pull yet.") + (waiting.length ? ` Waiting now: ${waiting.join(", ")}.` : " Nothing waiting in the inbox.");
     if (ph) ph.innerHTML = [b, ...(j.history || [])].filter(Boolean).map((x, i) => `<details class="hist"${i ? "" : " open"}><summary><b>${when(x.at)}</b><span class="muted small">${plural(x.cards.length, "feature")} changed</span></summary>${briefHtml(x)}</details>`).join("") ||
       '<p class="muted small">No pulls yet.</p>';
   }
 
   // ---- Today: meetings today, the Monday look back, Going away ----
-  const agendaItem = (it) => `<li>${it.href ? `<a href="${jBase}${it.href}">${esc(it.text)}</a>` : esc(it.text)}${it.note ? ` <span class="muted small">· ${esc(it.note)}</span>` : ""}` +
+  const agendaItem = (it) => `<li class="ag-row">${it.href ? `<a class="ag-t" href="${jBase}${it.href}">${esc(it.text)}</a>` : `<span class="ag-t">${esc(it.text)}</span>`}${it.note ? `<span class="t-meta">${esc(it.note.replace(/\s*\([^)]*\)\s*$/, ""))}</span>` : ""}` +
     (it.fu ? `<span class="fu-acts" data-fu="${esc(it.fu)}"><button type="button" class="mini" data-fa="raised" title="You brought it up; it stays open">Raised</button><button type="button" class="mini on" data-fa="done">Done</button></span>` : "") + "</li>";
-  const who = (m) => (m.attendees || []).map((a) => `<button type="button" class="chip person-chip" data-person="${esc(a)}">${esc(a)}</button>`).join("");
   const nextLabel = (m, today) => !m.next ? "" : m.next === today ? "Today" : dShort(m.next);
+  const initials = (n) => n.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  const agendaN = (m) => m.agenda.reduce((n, s) => n + s.items.length + s.more, 0);
+  const SECNAME = { Decide: "To decide", Ask: "To ask", Chase: "To chase", "Update them on": "To tell", "Still open": "Still open" };
+  // A meeting has happened (so notes make sense) on its day, or when an earlier one has no saved notes yet
+  const happened = (m, today) => {
+    if (!m.next) return false;
+    if (m.next === today) return true;
+    const prev = new Date(m.next + "T12:00"); prev.setDate(prev.getDate() - 7 * (m.every || 1));
+    return !m.last || m.last.date < prev.toISOString().slice(0, 10);
+  };
   function paintDay(d) {
-    const tm = $("#t-meet");
-    if (tm) {
-      const ms = (d.meetings || []).filter((m) => m.next === d.today);
-      tm.hidden = !ms.length;
-      tm.innerHTML = ms.length ? `<div class="box-h"><h2>Meetings today</h2><a class="small" href="${jBase}meetings.html">All meetings</a></div>` + ms.map((m) => {
-        const items = m.agenda.flatMap((s) => s.items.map((it) => ({ ...it, sec: s.name }))).slice(0, 3);
-        return `<div class="tm-row"><div class="tm-h"><b>${esc(m.name)}</b><span class="muted small">${m.time ? esc(m.time) + " · " : ""}with ${esc((m.attendees || []).join(", "))}</span></div>` +
-          (items.length ? `<ul class="tm-list">${items.map((it) => agendaItem({ ...it, note: it.sec })).join("")}</ul>` : '<p class="muted small">Nothing open with them.</p>') +
-          `<a class="small" href="${jBase}meetings.html#m-${esc(m.key)}">Open the agenda</a></div>`;
-      }).join("") : "";
+    const tn = $("#t-next");   // Today's side column: the next two meetings, each one line
+    if (tn) {
+      const ms = (d.meetings || []).filter((m) => m.next).slice(0, 2);
+      tn.hidden = !ms.length;
+      $("#t-next-b").innerHTML = ms.map((m) => `<a class="ri" href="${jBase}meetings.html#m-${esc(m.key)}"><span class="ri-h">${m.next === d.today ? "Today" : dShort(m.next)}${m.time ? ", " + esc(m.time) : ""}</span>` +
+        `<span class="ri-v">${esc(m.name)}</span><span class="ri-s">${agendaN(m) ? plural(agendaN(m), "thing") + " to raise" : "Nothing open with them"}</span></a>`).join("");
     }
     const ml = $("#mt-list");
     if (ml) {
-      ml.innerHTML = (d.meetings || []).map((m) => {
-        const agenda = m.agenda.length ? m.agenda.map((s) => `<div class="ag-sec"><h4>${esc(s.name)}</h4><ul>${s.items.map(agendaItem).join("")}</ul>` +
-          (s.more ? `<a class="small" href="${jBase}questions.html">${s.more} more on Questions</a>` : "") + "</div>").join("")
-          : `<p class="muted">Nothing open with ${esc((m.attendees || []).map((a) => a.split(" ")[0]).join(" or ") || "them")}. A quiet one.</p>`;
-        const l = m.last;
-        const last = !l ? '<p class="muted small">No notes saved yet. After the meeting, add the notes or transcript below; the next pull turns them into your actions and their follow-ups.</p>'
-          : `<p class="muted small">${dShort(l.date)}</p>` + (l.decisions.length ? `<p class="lt-h">Decided</p><ul>${l.decisions.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "") +
-            (l.actions.length ? `<p class="lt-h">Actions</p><ul class="lt-acts">${l.actions.map((a) => `<li><span class="pill ${a.state === "done" ? "w-done" : "w-review"} plain">${a.state === "done" ? "Done" : "Open"}</span><span><b>${esc(a.who)}</b>: ${esc(a.text)}</span></li>`).join("")}</ul>` : "");
-        return `<article class="meet panel-box" id="m-${esc(m.key)}"><header class="meet-h"><div><h2>${esc(m.name)}</h2>` +
-          `<p class="muted small">${esc(m.day)}${m.time ? " " + esc(m.time) : ""} · ${m.every > 1 ? `every ${m.every} weeks` : "weekly"}</p><div class="meet-who">${who(m)}</div>` +
-          (m.purpose ? `<p class="meet-purpose">${esc(m.purpose)}</p>` : "") + `</div><span class="meet-next${m.next === d.today ? " today" : ""}">${nextLabel(m, d.today)}</span></header>` +
-          `<div class="meet-grid"><section aria-label="Agenda"><h3>Agenda</h3>${agenda}</section><section class="meet-last" aria-label="Last time"><h3>Last time</h3>${last}</section></div>` +
-          `<footer class="meet-f nocopy"><button type="button" class="btn job ai" data-job="meeting-brief" data-arg="${esc(m.name)}" title="Uses Claude, on your normal quota">Prepare brief</button>` +
-          `<details class="notes-drop"><summary class="btn-line">Add notes or transcript</summary><div class="nd-body"><textarea rows="5" placeholder="Paste the notes or transcript" aria-label="Notes or transcript"></textarea>` +
-          `<div class="mb-row"><input type="file" accept=".md,.txt,.vtt,.srt,.docx,.pdf" aria-label="Or choose a file"><button type="button" class="btn" data-notes="${esc(m.name)}">Save for the next pull</button></div></div></details>` +
-          `<span class="chips">${briefLinks(m.name)}</span><button type="button" class="mini icon meet-rm" data-meet-rm="${m.id}" aria-label="Remove ${esc(m.name)}" title="Remove this meeting">✕</button></footer></article>`;
-      }).join("") || '<p class="empty">No regular meetings yet. Add the ones you have every week: each gets an agenda that builds itself.</p>';
-      if (location.hash.startsWith("#m-")) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView({ block: "start" }); }
+      const ms = d.meetings || [];
+      const want = location.hash.startsWith("#m-") ? location.hash.slice(3) : "";
+      const sel = ms.find((m) => m.key === want) || ms[0];
+      $("#mt-nav").innerHTML = ms.map((m) => { const nd = m.next ? new Date(m.next + "T12:00") : null;
+        return `<a class="mi${m === sel ? " on" : ""}" href="#m-${esc(m.key)}"${m === sel ? ' aria-current="true"' : ""}><span class="mi-day">${nd ? nd.getDate() : "–"}<small>${nd ? nd.toLocaleDateString(undefined, { weekday: "short" }) : ""}</small></span>` +
+          `<span class="mi-n">${esc(m.name)}</span><span class="mi-s">${m.time ? esc(m.time) + " · " : ""}${esc((m.attendees || []).map((a) => a.split(" ")[0]).join(", "))}</span></a>`; }).join("") +
+        `<button type="button" class="mi mi-add" data-add-meet><span class="mi-day">+</span><span class="mi-n">Add a regular meeting</span></button>`;
+      if (!sel) { ml.innerHTML = '<p class="empty">No regular meetings yet. Add the ones you have every week: each gets an agenda that builds itself.</p>'; return; }
+      const m = sel, l = m.last;
+      const agenda = m.agenda.length ? m.agenda.map((s) => `<h3 class="ag-h">${esc(SECNAME[s.name] || s.name)}</h3><ul class="rows ag-rows">${s.items.map(agendaItem).join("")}</ul>`).join("")
+        : `<p class="muted">Nothing open with ${esc((m.attendees || []).map((a) => a.split(" ")[0]).join(" or ") || "them")}. A quiet one.</p>`;
+      const more = m.agenda.reduce((n, s) => n + s.more, 0);
+      const last = !l ? "" : `<details class="meet-last"><summary>Last time, ${dShort(l.date)}</summary>` + (l.decisions.length ? `<p class="lt-h">Decided</p><ul>${l.decisions.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "") +
+        (l.actions.length ? `<p class="lt-h">Actions</p><ul class="lt-acts">${l.actions.map((a) => `<li><span class="t-meta">${a.state === "done" ? "Done" : "Open"}</span><span><b>${esc(a.who)}</b>: ${esc(a.text)}</span></li>`).join("")}</ul>` : "") + "</details>";
+      const lb = (X.d.briefs || []).find((b) => b.for === m.name && b.kind === "meeting");   // the latest brief only
+      const brief = lb ? `<button type="button" class="linkish" data-brief="${lb.id}">Last brief, ${dShort(lb.date)}` : "";
+      ml.innerHTML = `<article class="meet" id="m-${esc(m.key)}"><p class="eyebrow">${m.next ? new Date(m.next + "T12:00").toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" }) : esc(m.day)}${m.time ? ", " + esc(m.time) : ""} · ${m.every > 1 ? `every ${m.every} weeks` : "weekly"}</p>` +
+        `<header class="meet-h"><h2>${esc(m.name)}</h2><span class="faces">${(m.attendees || []).map((a) => `<button type="button" class="face" data-person="${esc(a)}" title="${esc(a)}">${esc(initials(a))}</button>`).join("")}</span>` +
+        // Removing a meeting lives behind ⋯ (it still asks first), away from Prepare brief
+        `<details class="pop pop-r meet-menu nocopy"><summary aria-label="Meeting options" title="Meeting options">⋯</summary><div class="pop-b">` +
+        `<button type="button" class="linkish t-del" data-meet-rm="${m.id}" aria-label="Remove ${esc(m.name)}">Remove this meeting</button></div></details></header>` +
+        (m.purpose ? `<p class="meet-purpose">${esc(m.purpose)}</p>` : "") + `<section class="agenda" aria-label="Agenda">${agenda}</section>${last}` +
+        `<footer class="meet-f nocopy"><button type="button" class="btn job ai" data-job="meeting-brief" data-arg="${esc(m.name)}" title="Uses Claude, on your normal quota">Prepare brief</button>` +
+        (brief ? brief + "</button>" : "") +
+        (happened(m, d.today) ? `<details class="notes-drop"><summary class="linkish">Add notes</summary><div class="nd-body"><textarea rows="5" placeholder="Paste the notes or transcript" aria-label="Notes or transcript"></textarea>` +
+          `<div class="mb-row"><input type="file" accept=".md,.txt,.vtt,.srt,.docx,.pdf" aria-label="Or choose a file"><button type="button" class="btn" data-notes="${esc(m.name)}">Save for the next pull</button></div></div></details>` : "") +
+        (more ? `<span class="meet-more"><a href="${jBase}questions.html">${more} more in Questions</a></span>` : "") + "</footer></article>";
     }
     if (dr && !dr.hidden && dr.dataset.person) showPerson(dr.dataset.person);   // the panel's live parts follow the data
   }
+  if ($("#mt-list")) {   // Meetings: the list on the left picks the agenda on the right
+    window.addEventListener("hashchange", () => { if (X.d && location.hash.startsWith("#m-")) paintDay(X.d); });
+    document.addEventListener("click", (e) => {
+      const cancel = e.target.closest("[data-meet-cancel]");
+      if (cancel) { const f = cancel.closest("form"); f.reset(); f.closest("details").open = false; return; }
+      if (!e.target.closest("[data-add-meet]")) return;
+      const am = $("#add-meet"); am.open = true; am.scrollIntoView({ block: "center", behavior: "smooth" }); const f = $("input", am); if (f) f.focus();
+    });
+  }
   const wk = $("#this-week");
   if (wk && (new Date().getDay() === 1 || location.hash === "#week")) wk.hidden = false;
-  const ab = $("#away-btn");
-  if (ab) ab.addEventListener("click", () => {
-    const a = $("#t-away"); if (!a) return;
-    const plan = $("details.away-plan", a); if (plan) plan.open = true;
-    a.scrollIntoView({ block: "center", behavior: "smooth" });
-    const f = $("input, select", a); if (f) setTimeout(() => f.focus(), 300);
-  });
 
   // ---- Files and notes to the inbox: Meetings (per meeting) and Sources (drop zone, paste) ----
   const TEXT = /\.(md|txt|vtt|srt|html?)$/i;
@@ -145,13 +181,17 @@
   async function paintFilters(list) {
     if (!flt) return;
     try { list = list || (await api("api/filters")).filters; } catch (e) { flt.innerHTML = `<p class="muted small">${esc(e.message)}</p>`; return; }
+    // One row per filter: on or off, its name, where, and what the last run found; Edit opens the query itself
     flt.innerHTML = list.map((f) => { const n = f.last_counts || {};
-      return `<div class="flt-row${f.active ? "" : " off"}" data-id="${esc(f.id)}"><label class="switch" title="${f.active ? "Active: a pull reads it" : "Off: a pull skips it"}"><input type="checkbox" data-ft="active"${f.active ? " checked" : ""}><span aria-hidden="true"></span><span class="sr-only">Active</span></label>` +
-        `<div class="flt-main"><div class="flt-top"><input class="flt-label" value="${esc(f.label)}" aria-label="Label"><span class="pill ${f.type === "jira" ? "w-jira" : "s-disc"} plain">${f.type === "jira" ? "Jira" : "Confluence"}</span></div>` +
+      const found = !f.last_run ? "Not run yet" : n.new === undefined ? "" : n.new || n.changed ? `${n.new} new · ${n.changed} changed` : "No change";
+      return `<div class="flt-row${f.active ? "" : " off"}" data-id="${esc(f.id)}"><div class="flt-view"><label class="switch" title="${f.active ? "On: a pull reads it" : "Off: a pull skips it"}"><input type="checkbox" data-ft="active"${f.active ? " checked" : ""}><span aria-hidden="true"></span><span class="sr-only">Read on the next pull</span></label>` +
+        `<span class="row-t">${esc(f.label)}</span><span class="t-meta flt-type">${f.type === "jira" ? "Jira" : "Confluence"}</span><span class="t-meta flt-found" title="${f.last_run ? "Last run " + esc(when(f.last_run)) : ""}">${found}</span>` +
+        `<button type="button" class="linkish" data-ft="edit" aria-expanded="false">Edit</button></div>` +
+        `<div class="flt-main" hidden><input class="flt-label" value="${esc(f.label)}" aria-label="Label">` +
         `<textarea class="flt-value" rows="2" aria-label="${f.type === "jira" ? "JQL" : "Page link, ID or CQL"}" spellcheck="false">${esc(f.value)}</textarea>` +
-        `<p class="muted small flt-meta">${f.last_run ? `Last run ${when(f.last_run)}` + (n.new !== undefined ? ` · ${n.new} new, ${n.changed} changed` : "") : "Not run yet"}</p><p class="small flt-test" hidden></p></div>` +
-        `<div class="flt-acts"><button type="button" class="btn" data-ft="save" hidden>Save</button><button type="button" class="mini" data-ft="test">Test</button><button type="button" class="mini icon" data-ft="remove" aria-label="Remove ${esc(f.label)}" title="Remove">✕</button></div></div>`;
-    }).join("") || '<p class="muted small">No filters yet. Add one: a pull reads only what a filter selects.</p>';
+        `<p class="small flt-test" hidden></p><div class="flt-acts"><button type="button" class="btn" data-ft="save" hidden>Save</button><button type="button" class="btn-line" data-ft="test">Test</button>` +
+        `<button type="button" class="linkish t-del" data-ft="remove">Remove</button></div></div></div>`;
+    }).join("") || '<p class="muted small">No filters yet. Add one: a pull reads only what a filter selects (Jira JQL, or a Confluence page link, ID or CQL).</p>';
   }
   if (flt) {
     paintFilters(); paintInboxState();
@@ -165,6 +205,7 @@
     flt.addEventListener("click", async (e) => {
       const b = e.target.closest("[data-ft]"); if (!b || b.dataset.ft === "active") return;
       const r = b.closest(".flt-row"), id = r.dataset.id;
+      if (b.dataset.ft === "edit") { const m = $(".flt-main", r); m.hidden = !m.hidden; b.setAttribute("aria-expanded", String(!m.hidden)); b.textContent = m.hidden ? "Edit" : "Close"; if (!m.hidden) $(".flt-value", r).focus(); return; }
       try {
         if (b.dataset.ft === "save") { const j = await api("api/filters", { action: "set", id, label: $(".flt-label", r).value, value: $(".flt-value", r).value }); paintFilters(j.filters); toast("Saved. A changed value starts fresh on the next pull."); }
         if (b.dataset.ft === "remove" && confirm(`Remove the filter "${$(".flt-label", r).value}"? Pulls stop reading it.`)) { const j = await api("api/filters", { action: "remove", id }); paintFilters(j.filters); toast("Filter removed."); }
@@ -213,9 +254,15 @@
       catch (err) { toast(err.message); }
     });
   }
+  const pmore = $("#pull-more"); if (pmore) pmore.addEventListener("click", () => { pullAll = !pullAll; paintPull(); });
   const hh = location.hash;
-  if (["#health", "#jobs", "#backlog"].includes(hh) && $("#health")) { $("#health").open = true; if (hh === "#backlog") $("#backlog").open = true; setTimeout(() => $(hh).scrollIntoView({ block: "start" }), 100); }
+  if (["#health", "#jobs"].includes(hh) && $("#health")) { $("#health").open = true; setTimeout(() => $(hh).scrollIntoView({ block: "start" }), 100); }
   if (hh === "#history" && $("#history")) $("#history").open = true;
+  document.addEventListener("click", (e) => {   // Sources' side lines open their section in place
+    const o = e.target.closest("[data-open]"); if (!o) return;
+    const t = document.getElementById(o.dataset.open); if (!t) return;
+    e.preventDefault(); t.open = true; t.scrollIntoView({ block: "start", behavior: "smooth" });
+  });
   paintPull();
 
   // ---- People & library: one side panel from any page. A name anywhere opens that person ----
@@ -279,18 +326,20 @@
     inp.addEventListener("input", () => { const s = inp.value.toLowerCase(); $$(".dr-row", dr).forEach((r) => (r.hidden = s && !r.textContent.toLowerCase().includes(s))); });
   }
   if (dr) {
-    $("#browse").addEventListener("click", () => (dr.hidden ? openDrawer(view) : closeDrawer()));
     dr.addEventListener("click", (e) => {
       if (e.target.closest(".dr-x")) closeDrawer();
       const t = e.target.closest("[data-dv]"); if (t) openDrawer(t.dataset.dv);
       if (e.target.closest("[data-dv-back]")) openDrawer("people");
     });
     document.addEventListener("click", (e) => {   // any name with data-person opens that person (search results included)
-      const p = e.target.closest("[data-person]:not(.pp-add)");
+      const p = e.target.closest("[data-person]:not(.pp-add):not(#drawer)");   // the panel itself carries data-person while it shows someone
       if (!p) return;
       e.preventDefault(); e.stopPropagation();
-      const gr = $("#gresults"); if (gr) gr.hidden = true;
+      closePalette();
       openDrawer("people", p.dataset.person);
     }, true);
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !dr.hidden && !document.querySelector(".modal-wrap")) closeDrawer(); });
+    document.addEventListener("click", (e) => {   // a click anywhere outside the panel closes it (a name elsewhere opens that person instead)
+      if (!dr.hidden && !e.composedPath().includes(dr) && !e.target.closest("[data-person], [data-dopen], .modal-wrap, #palette, #toast")) closeDrawer();
+    });
   }

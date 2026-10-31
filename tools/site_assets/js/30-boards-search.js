@@ -34,23 +34,23 @@
   const rd = $("#data");
   if (rd) {
     const { items, labels } = JSON.parse(rd.textContent);
-    const cls = { none: "s-none", discovery: "s-disc", refinement: "s-ref", build: "s-build", live: "s-done" };
     const order = ["none", "discovery", "refinement", "build", "live"];
     const prio = { P1: 1, P2: 2, P3: 3 };
-    const st = { q: "", status: "all", prio: "all", view: "board", sort: "prio", asc: true };
-    $("#f-status").dataset.k = "status"; $("#f-prio").dataset.k = "prio";
-    const pp = (p) => (p ? pill(p, "p-" + p.toLowerCase()) : "");
+    const st = { q: "", status: "all", prio: "all", view: "board", sort: "prio", asc: true, work: store.get("mantis-features").work || "all" };
+    $("#f-status").dataset.k = "status"; $("#f-prio").dataset.k = "prio";   // the type chips (#t-work, data-k "work") sit above the tabs
     const href = (i) => i.url || `features/${i.slug}.html`;
     const visible = () => {
       const q = (st.q || "").trim().toLowerCase();
-      return items.filter((i) => (st.status === "all" || i.status === st.status) && (st.prio === "all" || i.priority === st.prio) &&
+      return items.filter((i) => (st.status === "all" || i.status === st.status) && (st.prio === "all" || i.priority === st.prio) && (!i.slug || workMatch(i.work, st.work)) &&
         (!q || (i.title + " " + i.summary).toLowerCase().includes(q)));
     };
-    const facts = (i) => !i.slug ? "" : `<div class="facts"><span>${i.epics ? `Epic${i.epics > 1 ? "s" : ""} <b>${i.epics}</b>` : "No epic"}</span><span>Stories <b>${i.storiesDone}/${i.stories}</b></span>` +
-      (i.open ? `<span><b>${i.open}</b> open question${i.open > 1 ? "s" : ""}</span>` : "") + (i.jira && i.jira !== "none" ? `<span>${esc(i.jira)}</span>` : "") + `</div>`;
+    // A roadmap card (2026-10-31 redesign): the name, two lines of summary, then one mono line of facts
+    const facts = (i) => [i.priority, i.jira && i.jira !== "none" ? i.jira : "", i.open ? `${i.open} question${i.open > 1 ? "s" : ""}` : "",
+      i.stories ? `${i.storiesDone}/${i.stories} stories in Jira` : ""].filter(Boolean).join(" · ");
     const tile = (i) => i.slug
-      ? `<a class="tile st-${i.status || "none"}" href="${href(i)}"><h3><span>${esc(i.title)}</span>${pp(i.priority)}</h3>${i.type === "workstream" ? '<span class="tag">Platform workstream</span>' : ""}<p>${esc(i.summary)}</p>${facts(i)}</a>`
-      : `<div class="tile ghost"><h3><span>${esc(i.title)}</span></h3><p>${esc(i.summary)}</p></div>`;
+      ? `<a class="rd-card" href="${href(i)}"><span class="rd-t">${esc(i.title)}</span><span class="rd-s">${esc(i.summary)}</span>${i.workTag || ""}<span class="rd-m">${esc(facts(i))}</span></a>`
+      : `<div class="rd-card ghost"><span class="rd-t">${esc(i.title)}</span><span class="rd-s">${esc(i.summary)}</span></div>`;
+    const stageH = (s, n) => `<p class="rd-h"><span class="st st-${s}">${esc(labels[s])}</span><span class="n">${n}</span></p>`;
     const byPrio = (a, b) => (prio[a.priority] || 9) - (prio[b.priority] || 9) || a.title.localeCompare(b.title);
     const draw = () => {
       const v = visible();
@@ -58,20 +58,21 @@
         let out;
         if (st.status !== "all") {
           const xs = v.sort(byPrio);
-          out = `<h2 class="section-h">${pill(labels[st.status], cls[st.status])} <span class="muted">${xs.length}</span></h2><div class="later">${xs.map(tile).join("") || '<p class="empty">Nothing here with these filters.</p>'}</div>`;
+          out = stageH(st.status, xs.length) + `<div class="rd-grid">${xs.map(tile).join("") || '<p class="empty">Nothing here with these filters.</p>'}</div>`;
         } else {
-          out = `<div class="board">` + ["discovery", "refinement", "build", "live"].map((s) => {
+          out = `<div class="rd-board">` + ["discovery", "refinement", "build", "live"].map((s) => {
             const xs = v.filter((i) => i.status === s).sort(byPrio);
-            return `<div class="col st-${s}"><div class="col-h">${pill(labels[s], cls[s])}<span class="n">${xs.length}</span></div>${xs.map(tile).join("") || `<p class="empty">${s === "live" ? "A topic moves here when it goes live." : "Nothing here."}</p>`}</div>`;
+            return `<div class="rd-col">${stageH(s, xs.length)}${xs.map(tile).join("") || `<p class="rd-empty">${s === "live" ? "Nothing live yet." : "Nothing here."}</p>`}</div>`;
           }).join("") + `</div>`;
           const later = v.filter((i) => i.status === "none");
-          if (later.length) out += `<h2 class="section-h">${pill(labels.none, cls.none)} <span class="muted">${later.length} on the roadmap with no detail yet</span></h2><div class="later">${later.map(tile).join("")}</div>`;
+          if (later.length) out += `<p class="grp-l rd-later-h">Not started · ${later.length} on the roadmap with no detail yet</p><div class="rows">` +
+            later.map((i) => `<div class="row"><span class="row-t">${esc(i.title)}</span><span class="f-sum rd-later-s">${esc(i.summary)}</span></div>`).join("") + "</div>";
         }
         $("#board").innerHTML = out;
       } else {
-        const keys = { prio: (i) => prio[i.priority] || 9, title: (i) => i.title.toLowerCase(), status: (i) => order.indexOf(i.status), epics: (i) => i.epics, stories: (i) => i.stories, open: (i) => i.open, updated: (i) => i.updated };
-        $("#list").innerHTML = table([["title", "Topic"], ["prio", "Priority"], ["status", "Status"], ["epics", "Epics"], ["stories", "Stories"], ["open", "Open questions"], ["", "Jira"], ["updated", "Updated"]],
-          sortBy(v, keys, st).map((i) => `<tr><td>${i.slug ? `<a href="${href(i)}">${esc(i.title)}</a>` : esc(i.title)}${i.type === "workstream" ? ' <span class="tag">Workstream</span>' : ""}</td><td>${pp(i.priority) || "–"}</td><td>${pill(labels[i.status], cls[i.status])}</td>` +
+        const keys = { work: (i) => i.work || "z", prio: (i) => prio[i.priority] || 9, title: (i) => i.title.toLowerCase(), status: (i) => order.indexOf(i.status), epics: (i) => i.epics, stories: (i) => i.stories, open: (i) => i.open, updated: (i) => i.updated };
+        $("#list").innerHTML = table([["title", "Topic"], ["work", "Type"], ["prio", "Priority"], ["status", "Status"], ["epics", "Epics"], ["stories", "Stories"], ["open", "Open questions"], ["", "Jira"], ["updated", "Updated"]],
+          sortBy(v, keys, st).map((i) => `<tr><td>${i.slug ? `<a href="${href(i)}">${esc(i.title)}</a>` : esc(i.title)}</td><td>${{ business: "Business", technical: "Technical", both: "Both" }[i.work] || "–"}</td><td>${esc(i.priority) || "–"}</td><td><span class="st st-${i.status}">${esc(labels[i.status])}</span></td>` +
             `<td>${i.slug ? i.epics : "–"}</td><td>${i.slug ? i.storiesDone + "/" + i.stories : "–"}</td><td>${i.open || "–"}</td><td>${i.jira && i.jira !== "none" ? esc(i.jira) : "–"}</td><td class="muted">${esc(i.updated) || "–"}</td></tr>`), st);
       }
     };
@@ -134,11 +135,13 @@
     sync();
   }
 
-  // ---- Search across all of Mantis (IMP-006); index built with the site, searched here ----
-  const gs = $("#gsearch"), gr = $("#gresults");
+  // ---- Search or ask (IMP-006, 2026-10-31 redesign): one box over any page, Ctrl K or / opens it ----
+  // Finds people, features and documents from the index built with the site; the first row asks Mantis instead.
+  const gs = $("#gsearch"), gr = $("#gresults"), pal = $("#palette");
+  let openPalette = () => {}, closePalette = () => {};
   if (gs) {
     const base = gs.dataset.base || "";
-    let idx = null, sel = -1;
+    let idx = null, sel = 0;
     const load = () => idx ? Promise.resolve(idx) : fetch(base + "search.json").then((r) => r.json()).then((d) => (idx = d)).catch(() => (idx = []));
     const norm = (s) => s.toLowerCase();
     const snip = (x, terms) => {
@@ -146,9 +149,17 @@
       const s = Math.max(0, i - 60), out = (s ? "…" : "") + x.slice(s, s + 170) + (x.length > s + 170 ? "…" : "");
       return terms.reduce((h, t) => h.replace(new RegExp("(" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig"), "<mark>$1</mark>"), esc(out));
     };
+    const KIND = ["Feature", "Idea", "Person"];   // groups in this order, then the rest as the index names them
+    const pick = (i) => { const rows = $$(".gr", gr); sel = Math.max(0, Math.min(rows.length - 1, i)); rows.forEach((l, n) => l.classList.toggle("on", n === sel)); if (rows[sel]) rows[sel].scrollIntoView({ block: "nearest" }); };
     function run() {
-      const q = gs.value.trim(); sel = -1;
-      if (q.length < 2) { gr.hidden = true; return; }
+      const q = gs.value.trim(); sel = 0;
+      const ask = q.length > 2 ? `<p class="gr-h">Ask Mantis</p><button type="button" class="gr gr-ask" data-ask="${esc(q)}"><span class="gr-t">${esc(q.endsWith("?") ? q : q + "?")}</span><span class="gr-w">a sourced answer</span></button>` : "";
+      if (q.length < 2) {   // before typing: the answers Mantis gave lately (MANTIS-IMP-081), each opening in place
+        const answers = X.d ? briefLinks("", "answer") : "";
+        gr.innerHTML = '<p class="gr-more">Type a name, a feature or a few words from a document. A longer phrase can go to Mantis as a question.</p>' +
+          (answers ? `<p class="gr-h">Recent answers</p><div class="chips gr-chips">${answers}</div>` : "");
+        return;
+      }
       load().then((d) => {
         const terms = norm(q).split(/\s+/).filter(Boolean);
         const hits = [];
@@ -163,30 +174,46 @@
           hits.push([sc, r]);
         }
         hits.sort((a, b) => b[0] - a[0]);
-        const top = hits.slice(0, 14).map(([, r]) => r);
-        gr.innerHTML = top.length ? top.map((r, i) => {
-          const inner = `<span class="gr-k">${esc(r.k)}</span><span class="gr-t">${esc(r.t)}</span>${r.w ? `<span class="gr-w">${esc(r.w)}</span>` : ""}` +
-            (r.x ? `<span class="gr-x">${snip(r.x, terms)}</span>` : "");
-          return r.p ? `<a class="gr" data-i="${i}" href="${base}${r.u}" data-person="${esc(r.p)}">${inner}</a>` : r.u ? `<a class="gr" data-i="${i}" href="${base}${r.u}">${inner}</a>` : `<div class="gr gr-src" data-i="${i}">${inner}</div>`;
-        }).join("") + (hits.length > 14 ? `<p class="gr-more">${hits.length - 14} more: add a word to narrow it down.</p>` : "")
-          : `<p class="gr-more">Nothing found for "${esc(q)}".</p>`;
-        gr.hidden = false;
+        const top = hits.slice(0, 12).map(([, r]) => r);
+        const kinds = [...new Set([...KIND.filter((k) => top.some((r) => r.k === k)), ...top.map((r) => r.k)])];
+        const row = (r) => {   // one line: the name, and where it lives; documents add a matching snippet below
+          const inner = `<span class="gr-t">${esc(r.t)}</span>${r.w ? `<span class="gr-w">${esc(r.w)}</span>` : ""}` + (r.x && !KIND.includes(r.k) ? `<span class="gr-x">${snip(r.x, terms)}</span>` : "");
+          return r.p ? `<a class="gr" href="${base}${r.u}" data-person="${esc(r.p)}">${inner}</a>` : r.u ? `<a class="gr" href="${base}${r.u}">${inner}</a>` : `<div class="gr gr-src">${inner}</div>`;
+        };
+        const found = kinds.map((k) => `<p class="gr-h">${esc(k === "Person" ? "People" : k === "Idea" ? "Ideas" : k + "s")}</p>` + top.filter((r) => r.k === k).map(row).join("")).join("");
+        gr.innerHTML = (found ? ask + found : `<p class="gr-more">Nothing found for "${esc(q)}".</p>` + ask) +
+          (hits.length > 12 ? `<p class="gr-more">${hits.length - 12} more: add a word to narrow it down.</p>` : "");
+        pick(found ? (ask ? 1 : 0) : 0);   // a match comes first; Tab or ↑ reaches the question
       });
     }
+    openPalette = () => {
+      if (!pal) return; pal.hidden = false; document.body.classList.add("pal-open"); gs.select(); gs.focus(); load().then(run);
+      if (xOn && !X.d) loadX().then(() => { if (gs.value.trim().length < 2) run(); });
+    };
+    closePalette = () => { if (!pal || pal.hidden) return; pal.hidden = true; document.body.classList.remove("pal-open"); };
+    const go = (el) => {
+      if (!el) return;
+      if (el.dataset.ask) { closePalette(); startJob("ask", el.dataset.ask, "Ask Mantis"); toast("Asking Mantis. The answer opens from the corner when it is ready."); return; }
+      el.click(); closePalette();
+    };
     gs.addEventListener("input", run);
-    gs.addEventListener("focus", () => { load(); if (gs.value.trim().length > 1) run(); });
     gs.addEventListener("keydown", (e) => {
-      const links = $$(".gr", gr);
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        e.preventDefault(); sel = Math.max(0, Math.min(links.length - 1, sel + (e.key === "ArrowDown" ? 1 : -1)));
-        links.forEach((l, i) => l.classList.toggle("on", i === sel));
-      } else if (e.key === "Enter" && links[Math.max(sel, 0)] && links[Math.max(sel, 0)].href) {
-        e.preventDefault(); links[Math.max(sel, 0)].click(); gr.hidden = true;   // a person opens their panel (see the drawer)
-      } else if (e.key === "Escape") { gr.hidden = true; gs.blur(); }
+      const rows = $$(".gr", gr);
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); pick(sel + (e.key === "ArrowDown" ? 1 : -1)); }
+      else if (e.key === "Tab" && $(".gr-ask", gr)) { e.preventDefault(); pick(0); }
+      else if (e.key === "Enter") { e.preventDefault(); go(rows[sel]); }
+      else if (e.key === "Escape") closePalette();
     });
-    document.addEventListener("click", (e) => { if (!e.target.closest(".gsearch")) gr.hidden = true; });
+    gr.addEventListener("click", (e) => { const a = e.target.closest(".gr-ask"); if (a) go(a); else if (e.target.closest("a.gr, [data-brief]")) closePalette(); });
+    pal.addEventListener("click", (e) => {
+      if (e.target === pal) closePalette();
+      const d = e.target.closest("[data-dopen]"); if (d) { closePalette(); openDrawer(d.dataset.dopen); }
+    });
+    const kb = $("#kbar"); if (kb) kb.addEventListener("click", openPalette);
     document.addEventListener("keydown", (e) => {
-      if (e.key === "/" && !/input|textarea|select/i.test(document.activeElement.tagName)) { e.preventDefault(); gs.focus(); }
+      const typing = /input|textarea|select/i.test(document.activeElement.tagName) || document.activeElement.isContentEditable;
+      if ((e.key === "k" || e.key === "K") && (e.ctrlKey || e.metaKey)) { e.preventDefault(); pal.hidden ? openPalette() : closePalette(); }
+      else if (e.key === "/" && !typing && pal.hidden) { e.preventDefault(); openPalette(); }
     });
   }
 

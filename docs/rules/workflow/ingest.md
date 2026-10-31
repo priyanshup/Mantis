@@ -37,7 +37,8 @@ Part of the workflow (index and the rules for every task: `../WORKFLOW.md`). Use
    cited. The Summary comes first and stands alone in 120 words or fewer; its first sentence
    becomes the document's one-liner on every card, so make it say what the document is. Give
    it at least one topic tag a card matches (step 2 lists them), or a card cannot find it.
-   Leave out sections with nothing to say. Confidence: rules, Confidence Rules.
+   Set `work:` (business, technical or both) only when the document's own type differs from
+   its cards'; otherwise it takes theirs. Leave out sections with nothing to say. Confidence: rules, Confidence Rules.
    Transcripts and dictated notes: `python tools/mishear.py <source file>` lists words the
    glossary knows are misheard ("MTs" for empties). Write the meaning in the digest and add
    "(transcript: MTs)" the first time, so the correction is visible. A new mishearing the owner

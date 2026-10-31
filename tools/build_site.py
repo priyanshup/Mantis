@@ -57,7 +57,7 @@ def build():
     if fp.exists():
         FOCUS.update(json.loads(fp.read_text(encoding="utf-8")))
     # The tab's badge counts only what blocks progress until the owner decides: likely answers and possible conflicts
-    BADGES["questions"] = sum(1 for o in yours() if o["status"] != "Open")
+    BADGES["questions"] = len(yours())   # the same number the Questions page and Today show
     items = library_items(features, work)
     # Pages are built in memory; only files whose content changed are written (MANTIS-IMP-016).
     out = {}
@@ -85,8 +85,8 @@ def build():
     w("changes.html", page_changes(built))
     for t in TOPICS:
         w(f"topics/{t['slug']}.html", page_topic(t, TOPICS, built))
-    bl = backlog()
-    w("search.json", json.dumps(search_index(features, work, items, bl), ensure_ascii=False))
+    # The Mantis backlog is about Mantis itself (docs/project), so search finds only the owner's work (2026-10-31)
+    w("search.json", json.dumps(search_index(features, work, items, []), ensure_ascii=False))
     for f in features:
         w(f"features/{f['slug']}.html", page_feature(f, features, epics_by_id, built))
     for x in work:

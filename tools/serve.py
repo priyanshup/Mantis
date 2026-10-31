@@ -271,7 +271,7 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
         if self.path.split("?")[0] == "/api/tasks":
             try:
                 st = tasks_store.load()
-                return self.reply(200, {"today": tasks_store.today(), "rev": st["rev"], "tasks": st["tasks"],
+                return self.reply(200, {"today": tasks_store.today(), "rev": st["rev"], "tasks": st["tasks"], "groups": st.get("groups", []),
                                         "dismissed": st.get("dismissed", []), "suggestions": tasks_store.suggestions()})
             except OSError as e:
                 return self.reply(503, {"error": str(e)})
@@ -383,11 +383,11 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
         if self.path == "/api/tasks":
             try:
                 body = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", "0")), 3_000_000)).decode("utf-8"))
-                st = tasks_store.save(body.get("tasks", []), body.get("rev", -1), body.get("dismissed"))
-                return self.reply(200, {"rev": st["rev"], "tasks": st["tasks"], "dismissed": st.get("dismissed", [])})
+                st = tasks_store.save(body.get("tasks", []), body.get("rev", -1), body.get("dismissed"), body.get("groups"))
+                return self.reply(200, {"rev": st["rev"], "tasks": st["tasks"], "groups": st.get("groups", []), "dismissed": st.get("dismissed", [])})
             except RuntimeError:
                 st = tasks_store.load()
-                return self.reply(409, {"error": "changed elsewhere", "rev": st["rev"], "tasks": st["tasks"], "dismissed": st.get("dismissed", [])})
+                return self.reply(409, {"error": "changed elsewhere", "rev": st["rev"], "tasks": st["tasks"], "groups": st.get("groups", []), "dismissed": st.get("dismissed", [])})
             except (ValueError, OSError, TypeError) as e:
                 return self.reply(400, {"error": str(e)})
         if self.path == "/api/focus":

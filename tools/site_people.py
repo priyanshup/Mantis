@@ -63,14 +63,7 @@ def auto_closed(days=30):
 
 def page_review(features, built):
     from site_day import scope_of, yours
-    names = {f["slug"]: f["title"] for f in features}
-    groups = {}
-    for o in OPEN:
-        for s in (["~names"] if o["kind"] in ("name", "term") else o["features"] or [""]):
-            groups.setdefault(s, []).append(o)
-    order = [f["slug"] for f in features if f["slug"] in groups] + [s for s in ("", "~names") if s in groups]
-    names["~names"] = "Names and terms to confirm"
-    cls = {"Open": "s-ref", "Potential resolution": "s-build", "Unconfirmed": "s-ref"}
+    names = {f["slug"]: f["title"] for f in features} | {t["slug"]: t["title"] for t in TOPICS}
 
     FIRST = ("What's missing", "Statement A", "Statement B", "Statement", "Claim")
 
@@ -83,68 +76,88 @@ def page_review(features, built):
         evid = [(k, v) for k, v in det if k.startswith(EVID)] if likely_ans else []
         rest = [(k, v) for k, v in det if k.split(" (")[0] not in FIRST and (k, v) not in evid]
         strength = next((v for k, v in o.get("detail", []) if k.startswith("Evidence Strength")), "")
-        html_ = "".join(f'<div class="oi-q"><b>{esc(k)}</b><p>{esc(v)}</p></div>' for k, v in main)
+        def said(v):   # the statement, then where it comes from on its own small line; no Mantis IDs or Markdown
+            parts = re.split(r"\s*[—–-]{0,2}\s*\*\*Sources?:?\*\*:?\s*", v, maxsplit=1)
+            text, src = plain(parts[0], 1200), plain(parts[1] if len(parts) > 1 else "", 300).strip(" ;.")
+            return f'<p>{esc(text)}</p>' + (f'<small class="oi-src">{esc(src)}</small>' if src else "")
+        html_ = "".join(f'<div class="oi-q"><b>{esc(k)}</b>{said(v)}</div>' for k, v in main)
         if likely_ans:
             likely = o["status_full"].split("(", 1)[1].rstrip(")") if "(" in o["status_full"] else ""
-            ev = "".join(f'<p><b>{esc(k)}:</b> {esc(v)}</p>' for k, v in evid)
-            html_ += (f'<div class="oi-likely"><b>Likely answer</b>{f"<p>{esc(likely)}</p>" if likely else ""}{ev or ("" if likely else "<p>See the evidence below.</p>")}'
+            ev = "".join(f'<p><b>{esc(plain(k, 200))}:</b> {esc(plain(v, 2000))}</p>' for k, v in evid)
+            html_ += (f'<div class="oi-likely"><b>Likely answer</b>{f"<p>{esc(plain(likely, 1200))}</p>" if likely else ""}{ev or ("" if likely else "<p>See the evidence below.</p>")}'
                       f'<button type="button" class="btn quick-confirm nocopy" data-q="{esc(o["id"])}">✓ Confirm and close</button>'
                       f'<span class="muted small"> or answer below if it is not right.</span></div>')
         if rest:
             html_ += '<details class="oi-more"><summary>Notes and evidence so far</summary>' + "".join(
-                f'<p><b>{esc(k)}:</b> {esc(v)}</p>' for k, v in rest) + "</details>"
+                f'<p><b>{esc(plain(k, 200))}:</b> {esc(plain(v, 2000))}</p>' for k, v in rest) + "</details>"
         if strength:
             html_ += f'<p class="muted small">Evidence strength: {esc(strength)}</p>'
         return html_ or f'<p>{esc(o["status_full"])}</p>'
 
-    def row(o, flat=False):
-        docs = "".join(f"<li>{esc(d['id'].replace('MANTIS-', ''))} {esc(d['title'])}</li>" for d in o["docs"])
-        tops = [names.get(s, "No topic") for s in (o["features"] if o["kind"] not in ("name", "term") else ["~names"])]
-        more = f'<span class="tag oi-where" title="{esc(", ".join(tops[3:]))}">+{len(tops) - 3} more</span>' if len(tops) > 3 else ""
-        where = (f'<span class="oi-tags">{"".join(f"<span class=\"tag oi-where\">{esc(x)}</span>" for x in tops[:3])}{more}</span>') if flat else ""
-        anchor = f'id="{esc(o["id"])}" ' if flat else ""   # only the one-list copy carries the id, so links land once
-        return (f'<details class="bl oi" {anchor}data-qid="{esc(o["id"])}" data-k="{hashlib.sha1(o["id"].encode("utf-8")).hexdigest()[:10]}" data-scope="{scope_of(o)}" data-kind="{o["kind"]}" data-status="{esc(o["status"])}" data-priority="{esc(o.get("priority", ""))}" data-ask="{esc((o.get("ask") or {}).get("name", ""))}"><summary>'
-                f'<span class="bl-id">{"" if o["kind"] in ("name", "term") else esc(o["id"].replace("MANTIS-", ""))}</span><span class="oi-main"><span class="row-t">{esc(re.sub(r" ?[(]MANTIS-[A-Z]+-[0-9]+(?:[,;] ?MANTIS-[A-Z]+-[0-9]+)*[)]", "", o["topic"]))}</span>{where}{ask_chip(o)}</span>'
-                f'{pill(o["priority"] + " priority", PRIO_CLS[o["priority"]] + " plain") if o.get("priority") else ""}'
-                f'{pill("Possible conflict" if o["status"] == "Unconfirmed" else "Likely answer" if o["status"].lower().startswith("potential") else o["status"], cls.get(o["status"], "s-none") + " plain") if o["status"] != "Open" else ""}<span class="muted small oi-date">{esc(o["raised"])}</span></summary>'
-                f'<div class="doc">{context(o)}'
-                f'{"<p class=oi-named><b>Named in:</b></p><ul>" + docs + "</ul>" if docs else ""}'
-                f'<p class="muted small">Full entry: <code>python tools/entry.py show {esc(o["id"])}</code></p>'
+    def row(o):
+        """One line per question (2026-10-31 redesign): the question, an exception worth seeing (a likely answer,
+        a high priority), and its main feature. IDs, dates and the other features open with it."""
+        docs = "".join(f"<li>{esc(d['title'])}</li>" for d in o["docs"])
+        tops = [names.get(s, "") for s in o["features"]] if o["kind"] not in ("name", "term") else []
+        tops = [t for t in tops if t]
+        # the feature the question is most about first: the one whose name shares the most words with it
+        words = lambda t: {w for w in re.findall(r"[a-z]{4,}", t.lower())}
+        tops.sort(key=lambda t: -len(words(t) & words(o["topic"])))
+        flag = ("Likely answer" if o["status"].lower().startswith("potential") else "")
+        prio = o.get("priority", "") if o.get("priority") in ("Critical", "High") else ""
+        short = lambda t: re.sub(r"\s*\([^)]*\)\s*$", "", t).split(":")[0]
+        # The row's feature tag fits whole: a long name keeps the part before " and " when that is two words or more
+        # ("Customer groups and group pricing" -> "Customer groups"); the full names stay in the tooltip
+        def tag(t):
+            t = short(t); head = t.split(" and ")[0]
+            return head if len(t) > 26 and " and " in t and len(head.split()) >= 2 else t
+        return (f'<details class="bl oi" id="{esc(o["id"])}" data-qid="{esc(o["id"])}" data-k="{hashlib.sha1(o["id"].encode("utf-8")).hexdigest()[:10]}" data-scope="{scope_of(o)}" data-kind="{o["kind"]}" data-status="{esc(o["status"])}" data-priority="{esc(o.get("priority", ""))}" data-ask="{esc((o.get("ask") or {}).get("name", ""))}"><summary>'
+                f'<span class="row-t">{esc(re.sub(r" ?[(]MANTIS-[A-Z]+-[0-9]+(?:[,;] ?MANTIS-[A-Z]+-[0-9]+)*[)]", "", o["topic"]))}</span>'
+                f'{f"<span class=\"t-meta flag-info\">{flag}</span>" if flag else ""}{f"<span class=\"t-meta warn-text\">{prio}</span>" if prio else ""}'
+                f'<span class="t-meta oi-where" title="{esc(", ".join(tops))}">{esc(tag(tops[0])) if tops else ""}</span></summary>'
+                f'<div class="doc oi-body">{context(o)}'
+                f'<p class="muted small oi-meta">{"Possible conflict · " if o["status"] == "Unconfirmed" else ""}Raised {esc(o["raised"])}'
+                f'{" · " + esc(", ".join(short(t) for t in tops[:3])) if tops else ""}{f" and {len(tops) - 3} more" if len(tops) > 3 else ""}</p>'
+                f'{"<details class=oi-more><summary>Named in " + n_(len(o["docs"]), "source") + "</summary><ul>" + docs + "</ul></details>" if docs else ""}'
                 f'<div class="answer" data-id="{esc(o["id"])}" data-topic="{esc(o["topic"][:300])}"><p class="answer-sent" hidden>Answer sent. Mantis will process it in the next session.</p>'
                 f'<div class="answer-form"><div class="seg verdict">{verdicts("possible" if o["status"] == "Unconfirmed" else o["kind"])}</div>'
                 f'<textarea rows="3" placeholder="{esc(PLACEHOLDER.get("possible" if o["status"] == "Unconfirmed" else o["kind"], PLACEHOLDER["gap"]))}" data-ph-later="When or how it will be decided, e.g. after the spike, at the next steering meeting (optional)"></textarea>'
                 f'<input class="who" type="text" placeholder="Who should answer it? (name or role)" hidden>'
                 f'<button type="button" class="btn-line answer-discard" hidden>Discard this answer</button></div></div></div></details>')
 
-    secs = "".join(f'<details class="grp-box oi-group" data-group="{esc(s)}"><summary><h2>{esc(names.get(s, "Not linked to a roadmap topic"))} '
-                   f'<span class="muted oi-n">{len(groups[s])}</span></h2></summary><div class="panel-box">{"".join(row(o) for o in groups[s])}</div></details>' for s in order)
-    # One list: yours first (to decide, possible conflicts, names, then the rest), then those waiting on others
+    # Grouped by who can answer (2026-10-31 redesign): the next step on a question is asking that person, so each
+    # group carries the message to send. Each question is listed once; tidy-up (names and terms) is reached from
+    # Sources and has no tab of its own.
     others = sorted((o for o in OPEN if scope_of(o) == "others"), key=lambda o: (o.get("raised", ""), o["id"]), reverse=True)
     others.sort(key=lambda o: ((o.get("ask") or {}).get("how") != "named", PRIO_RANK[o.get("priority", "")]))
     tidy = [o for o in OPEN if scope_of(o) == "tidy"]
-    flat = f'<section class="oi-flat" id="oi-flat"><div class="panel-box">{"".join(row(o, flat=True) for o in yours() + others + tidy)}</div></section>'
-    n_you, n_oth = len(yours()), len(others)
-    n_pot = sum(1 for o in OPEN if o["status"] not in ("Open", "Unconfirmed"))
-    n_pos = sum(1 for o in OPEN if o["status"] == "Unconfirmed")
     closed = auto_closed()
-    whos = {}
-    for o in others:
-        whos[o["ask"]["name"]] = whos.get(o["ask"]["name"], 0) + 1
-    who_sel = ('<select id="oi-who" class="sel sel-sm" aria-label="Who can answer"><option value="">Anyone</option>'
-               + "".join(f'<option value="{esc(n)}">{esc(n)} · {c}</option>' for n, c in sorted(whos.items(), key=lambda x: (-x[1], x[0]))) + "</select>") if whos else ""
+    NOONE = "No one named yet"
+
+    def grouped(scope, items):
+        by = {}
+        for o in items:
+            by.setdefault((o.get("ask") or {}).get("name") or (NOONE if scope != "tidy" else "Names and terms to confirm"), []).append(o)
+        order = sorted(by, key=lambda p: (p in (NOONE,), -len(by[p]), p))
+        return "".join(f'<section class="q-grp" data-scope="{scope}"><div class="blk-h"><h2>{esc(p)} <span class="n oi-n">{len(by[p])}</span></h2>'
+                       f'{draft_button(p, "linkish") if p in DRAFTS else ""}</div><div class="rows">{"".join(row(o) for o in by[p])}</div></section>' for p in order)
+
     closed_rows = "".join(f'<div class="row closed-row" data-closed="{esc(x["id"])}"><span class="row-t">{esc(re.sub(r" ?[(]MANTIS-[^)]*[)]", "", x["topic"]))}'
                           f'<span class="muted small">{esc(x["date"])} · {esc(plain(x["why"], 220))}</span></span>'
-                          f'<button type="button" class="btn-line" data-reopen="{esc(x["id"])}">Undo</button></div>' for x in closed)
-    body = f"""<div class="page-h"><div><h1>Questions</h1><p class="lead">What Mantis needs from you, what waits on someone else, and what a new source answered by itself. Open one to answer it; answer several, then submit them together.</p></div></div>
-<div class="answers-strip oi-banner nocopy" hidden><b>Your submitted answers wait for the next pull.</b> {job_btn("pull", "Pull now", cls="btn")}</div>
-<div class="seg seg-lg" id="q-scope" role="tablist" aria-label="Questions"><button data-v="you" class="on" role="tab">To answer <span class="muted">{n_you}</span></button><button data-v="others" role="tab">Waiting on others <span class="muted">{n_oth}</span></button><button data-v="tidy" role="tab" title="Names and terms Mantis cannot place: housekeeping, not decisions">Tidy-up <span class="muted">{len(tidy)}</span></button><button data-v="closed" role="tab">Closed automatically <span class="muted">{len(closed)}</span></button></div>
-<div class="toolbar" id="q-tools"><div class="chips" id="f-oi"><button data-v="all" class="on">All</button>{f'<button data-v="potential">Likely answer · {n_pot}</button>' if n_pot else ""}{f'<button data-v="possible">Possible conflicts · {n_pos}</button>' if n_pos else ""}<button data-v="gap">Gaps</button><button data-v="conflict">Conflicts</button></div>{who_sel}{'<button type="button" class="btn-line nocopy" id="oi-draft" hidden>Draft a message</button>' if who_sel else ""}
-<div class="seg" id="oi-view" aria-label="Layout"><button data-v="flat" class="on">One list</button><button data-v="topic">By topic</button></div></div>
-<div class="oi-topics-bar nocopy" id="oi-topics-bar" hidden><span class="muted small" id="oi-topics-n"></span><button type="button" class="mini" id="oi-expand">Expand all</button></div>
+                          f'<button type="button" class="linkish" data-reopen="{esc(x["id"])}">Undo</button></div>' for x in closed)
+    kinds = [("all", "Everything"), ("potential", "Likely answer"), ("possible", "Possible conflicts"), ("gap", "Gaps"), ("conflict", "Conflicts")]
+    body = f"""<div class="page-h"><div><h1>Questions</h1></div><div class="ph-acts nocopy"><button type="button" class="btn" id="q-focus">Answer one by one</button></div></div>
+<div class="answers-strip oi-banner nocopy" hidden><b>Your submitted answers wait for the next pull.</b> Press Pull at the top when you are ready.</div>
+<div class="tabs-row"><div class="tabs-u" id="q-scope" role="tablist" aria-label="Questions"><button data-v="you" class="on" role="tab">For you <span class="n">{len(yours())}</span></button><button data-v="others" role="tab">Waiting <span class="n">{len(others)}</span></button>
+{f'<button data-v="closed" role="tab">Answered <span class="n">{len(closed)}</span></button>' if closed else ""}<button data-v="tidy" role="tab" hidden>Names and terms <span class="n">{len(tidy)}</span></button></div>
+<details class="pop nocopy" id="f-oi-pop"><summary class="btn-line" id="f-oi-l">Filter</summary><div class="pop-b"><p class="grp-l">Show</p>
+<div class="chipset" id="f-oi">{"".join(f'<button type="button" data-v="{v}"{" class=\"on\"" if v == "all" else ""}>{l}</button>' for v, l in kinds)}</div></div></details></div>
 <script type="application/json" id="draft-data">{json.dumps(DRAFTS, ensure_ascii=False).replace("</", "<\\/")}</script>
-<p class="empty" id="q-empty" hidden>Nothing here. When a question needs you, it shows up first on Today.</p>
-<div id="q-lists">{flat if OPEN else ""}<div id="oi-topics" hidden>{secs}</div></div>
-<section class="panel-box" id="q-closed" hidden><p class="muted small closed-note">A new source answered these clearly, so Mantis closed them and cited the source. Undo opens one again.</p>
-{closed_rows or '<p class="empty">Nothing closed automatically in the last 30 days.</p>'}</section>
-<div class="answer-bar" id="answer-bar" hidden><span id="answer-count"></span><button class="btn-ghost" id="answer-clear" type="button">Clear drafts</button><button class="btn" id="answer-submit" type="button">Submit answers</button></div>"""
+<p class="empty" id="q-empty" hidden>Nothing here. When a question needs you, it shows up here and on the Questions tab badge.</p>
+<div id="q-lists" class="stack">{grouped("you", yours())}{grouped("others", others)}{grouped("tidy", tidy)}</div>
+<section id="q-closed" hidden><p class="muted small closed-note">A new source answered these clearly, so Mantis closed them and cited the source. Undo opens one again.</p>
+<div class="rows">{closed_rows}</div></section>
+<div class="answer-bar" id="answer-bar" hidden><span id="answer-count"></span><button class="btn-ghost" id="answer-clear" type="button">Clear drafts</button><button class="btn" id="answer-submit" type="button">Submit answers</button></div>
+<div class="q-focusbar nocopy" id="q-focusbar" hidden><button type="button" class="btn-line" id="q-prev" title="Previous question (K)">← Back</button>
+<button type="button" class="btn-line" id="q-next" title="Next question (J)">Next →</button><span class="t-meta">Keys 1 2 3 choose · J K move</span><button type="button" class="linkish" id="q-unfocus" title="Esc">Leave</button></div>"""
     return shell("Questions", body, active="questions", built=built)
