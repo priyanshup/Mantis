@@ -8,8 +8,8 @@ updated: YYYY-MM-DD
 ---
 
 <!-- Jira epic. Format from the team's reference epic (named in mantis/config/voice.md). A starting point: adapt to
-the feature. Each fact once: the problem is not restated in the jobs, and a job's detail lives in its criteria. -->
-
+the feature. Each fact once: the problem is not restated in the jobs, and a job's detail lives in its criteria.
+Sources go in a comment like this one, never in the text: Jira readers never see a Mantis ID or a file path. -->
 
 Confluence: <link to the feature page>
 
@@ -17,7 +17,7 @@ Confluence: <link to the feature page>
 <Two or three sentences: who struggles, with what, and what it costs.>
 
 **Target persona**
-Primary persona: <role> (see `mantis/knowledge/personas.md`)
+Primary persona: <role, as named in the personas register>
 Responsibilities:
 - <responsibility>
 
@@ -39,6 +39,9 @@ Given <context>, when <action>, then:
 
 **Out of scope**
 - <one line each>
+
+**Open questions**
+- <question> (<who answers it>)
 
 **Technical notes**
 - <Only what engineers need and the sections above leave out: systems, APIs, data. Drop it if nothing.>

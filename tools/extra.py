@@ -51,12 +51,14 @@ def owners(meetings, open_items):
     out = {}
     for o in open_items:
         name = (o.get("ask") or {}).get("name")
-        cand = [m for m in meetings if name and name in who[m["id"]]]
+        f = set(o.get("features", []))
+        # a question for an attendee goes to a meeting that draws on its people, or on the subject it sits on
+        cand = [m for m in meetings if name and name in who[m["id"]] and ("people" in m["draws"] or "subjects" in m["draws"] and f & set(m.get("cards", [])))]
         if not cand:
-            f = set(o.get("features", []))
-            score = {m["id"]: len(f & set(m.get("cards", []))) / max(1, len(f | set(m.get("cards", [])))) for m in meetings}
+            subj = [m for m in meetings if "subjects" in m["draws"]]
+            score = {m["id"]: len(f & set(m.get("cards", []))) / max(1, len(f | set(m.get("cards", [])))) for m in subj}
             best = max(score.values(), default=0)
-            cand = [m for m in meetings if best and score[m["id"]] == best]
+            cand = [m for m in subj if best and score[m["id"]] == best]
         if cand:
             out[o["id"]] = min(cand, key=soon)["id"]
     return out
@@ -65,22 +67,27 @@ def owners(meetings, open_items):
 def agenda(m, fus, open_items, titles, brief_cards):
     """A regular meeting's agenda, built from what is open (MANTIS-IMP-094): decide, ask, chase, update.
     Each section lists links, never restated text, so one fact has one home (the question, the follow-up).
-    `open_items` and `brief_cards` are already narrowed to what this meeting owns (see owners())."""
+    `open_items` and `brief_cards` are already narrowed to what this meeting owns (see owners()).
+    What it draws on (schedule.DRAWS) keeps a topic meeting to its subjects, or to the owner's written agenda alone."""
+    dr = m["draws"]
+    if not dr:
+        return []
     who = _who(m)
     cards = set(m.get("cards", []))
+    on_subj = lambda feats: "subjects" in dr and bool(set(feats) & cards)
     card = lambda o: titles.get(next((s for s in o.get("features", []) if s in cards), ""), "")
-    decide = [o for o in open_items if o["status"] != "Open" and set(o.get("features", [])) & cards]
-    ask = [o for o in open_items if o["status"] == "Open" and (o.get("ask") or {}).get("name") in who]
+    decide = [o for o in open_items if o["status"] != "Open" and on_subj(o.get("features", []))]
+    ask = [o for o in open_items if o["status"] == "Open" and (o.get("ask") or {}).get("name") in who and ("people" in dr or on_subj(o.get("features", [])))]
     ask.sort(key=lambda o: o["ask"]["how"] != "named")
     q = lambda o: {"text": o["topic"].split(" (MANTIS-")[0][:200], "href": f"questions.html#k={_qkey(o['id'])}", "note": card(o)}
     f = lambda x: {"text": x["topic"], "fu": x["id"], "note": x["person"].split()[0] + (f", chase {x['chase']}" if x.get("chase") else "")}
-    mine = [x for p in who for x in fus.get(p, {}).get("items", [])]
+    mine = [x for p in who for x in fus.get(p, {}).get("items", []) if "people" in dr or on_subj([x.get("card")])]
     secs = [("Decide", [q(o) for o in decide]),
             ("Ask", [f(x) for x in mine if x["kind"] == "raise"] + [q(o) for o in ask]),
             ("Chase", [f(x) for x in mine if x["kind"] == "wait"]),
             ("Update them on", [{"text": line, "note": c["title"]} for c in brief_cards if c["slug"] in cards for line in c["lines"]
-                                if not QUIET.match(line.strip())])]
-    if len(cards) <= 3:   # a meeting about one or two subjects: what is still open on them is worth raising too
+                                if not QUIET.match(line.strip())] if "subjects" in dr else [])]
+    if len(cards) <= 3 and "subjects" in dr:   # a meeting about one or two subjects: what is still open on them is worth raising too
         seen = {o["id"] for o in decide + ask}
         secs.append(("Still open", [q(o) for o in open_items if o["status"] == "Open" and set(o.get("features", [])) & cards and o["id"] not in seen]))
     return [{"name": n, "items": items[:AGENDA_CAP], "more": max(0, len(items) - AGENDA_CAP)} for n, items in secs if items]
@@ -115,12 +122,15 @@ def payload():
     ms = []
     for m in schedule.meetings():
         nd = schedule.next_date(m, today)
-        ms.append(dict(m, next=nd.isoformat() if nd else "", key=people.slug(m["name"])))
+        written = schedule.agenda_for(m, nd)
+        ms.append(dict(m, next=nd.isoformat() if nd else "", key=people.slug(m["name"]), draws=schedule.draws(m),
+                       written=written, set_cards=m.get("cards", []), cards=schedule.subject_cards(m, written, titles)))
     ms.sort(key=lambda m: m["next"] or "9999")
     owner = owners(ms, open_items)
+    takes = [x for x in ms if "subjects" in x["draws"]]
     for m in ms:   # a change goes to the most specific meeting that covers its card, like a question
-        mine_ = lambda slug: min((x for x in ms if slug in x.get("cards", [])), key=lambda x: (len(x.get("cards", [])), x["next"] or "9999"))["id"] == m["id"]
-        news = [c for c in last.get("cards", []) if c["slug"] in m.get("cards", []) and mine_(c["slug"])]
+        mine_ = lambda slug: min((x for x in takes if slug in x.get("cards", [])), key=lambda x: (len(x.get("cards", [])), x["next"] or "9999"))["id"] == m["id"]
+        news = [c for c in last.get("cards", []) if c["slug"] in m.get("cards", []) and mine_(c["slug"])] if "subjects" in m["draws"] else []
         m["agenda"] = agenda(m, fus, [o for o in open_items if owner.get(o["id"]) == m["id"]], titles, news)
         m["last"] = last_time(m)
     away = schedule.next_away(today)
@@ -141,6 +151,7 @@ def payload():
             "followups": followups.grouped(),
             "deadlines": deadlines.compute(),
             "meetings": ms,
+            "subjects": sorted(({"slug": s, "title": t} for s, t in titles.items()), key=lambda x: x["title"].lower()),
             "away": away, "away_periods": schedule.periods(), "before_away": before,
             "briefs": briefs_index()}
 
@@ -160,9 +171,12 @@ def act_deadline(b):
 def act_schedule(b):
     a = str(b.get("action", ""))
     split = lambda v: [x.strip() for x in (v if isinstance(v, list) else str(v or "").split(",")) if x.strip()]
-    if a == "add-meeting":
-        return schedule.add_meeting(str(b.get("name", "")), str(b.get("day", "")), str(b.get("time", "")), split(b.get("attendees")),
-                                    str(b.get("purpose", "")), split(b.get("cards")), int(b.get("every", 1) or 1))
+    if a in ("add-meeting", "edit-meeting"):
+        args = (str(b.get("name", "")), str(b.get("day", "")), str(b.get("time", "")), split(b.get("attendees")),
+                str(b.get("purpose", "")), split(b.get("cards")), int(b.get("every", 1) or 1), split(b.get("draws")))
+        return schedule.add_meeting(*args) if a == "add-meeting" else schedule.edit_meeting(str(b.get("id", "")), *args)
+    if a == "set-agenda":
+        return schedule.set_agenda(str(b.get("id", "")), str(b.get("date", "")), str(b.get("text", "")))
     if a == "add-away":
         return schedule.add_away(str(b.get("start", "")), str(b.get("end", "")), split(b.get("cover")), str(b.get("note", "")))
     if a in ("remove-meeting", "remove-away"):

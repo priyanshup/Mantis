@@ -14,7 +14,7 @@ Templates: `mantis/TEMPLATES/epic.md` and `mantis/TEMPLATES/user-story.md`. Refe
 
 **Stories**
 1. One story per job. Split a job if it fails Small or Testable.
-2. Use "As a <persona>, I want to <action>, so that <outcome>", then Background (link the epic, don't repeat it), criteria, edge cases, out of scope and open questions.
+2. Use "As a <persona>, I want to <action>, so that <outcome>", then Background and problem statement (link the epic, don't repeat it), criteria, edge cases, out of scope and open questions. Story criteria are plain one-liners with no Given/When/Then stem, as in the team's live story; the stem is for the epic only (owner, 2026-11-02).
 3. Keep criteria inside the story's job: a download story carries no upload criteria.
 4. Check INVEST: Independent, Negotiable, Valuable, Estimable, Small, Testable. Say which letter fails and how to fix it.
 5. Run pm-edge-cases on every story.

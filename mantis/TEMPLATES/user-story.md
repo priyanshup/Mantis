@@ -8,7 +8,7 @@ status: draft   # draft / review / in-jira / done
 updated: YYYY-MM-DD
 ---
 
-<!-- Jira user story. Format from the team's reference story (named in CLAUDE.local.md). One screen. A starting point: adapt to the story. -->
+<!-- Jira user story. Format from the team's reference story (named in mantis/config/voice.md). One screen. A starting point: adapt to the story. -->
 
 **<Short title, verb first>**
 
@@ -16,12 +16,11 @@ As a <persona from the register>
 I want to <action>
 So that <outcome>
 
-**Background**
+**Background and problem statement**
 <Why this matters, in two or three sentences. Link the epic; don't repeat it.>
 
 **Acceptance criteria**
-Given <context>, when <action>, then:
-- <one checkable outcome per line>
+- <one checkable outcome per line, no Given/When/Then stem (that belongs to the epic)>
 
 **Edge cases**
 - <only the checklist items that apply, each with the expected behaviour>
@@ -32,7 +31,9 @@ Given <context>, when <action>, then:
 **Open questions**
 - <question> (owner)
 
-Epic: <KEY> | Source: <MANTIS-DOC IDs>
+Epic: <KEY>
+
+<!-- Sources: <MANTIS-DOC IDs>. They stay in this comment: Jira readers never see a Mantis ID or a file path. -->
 
 <!-- Checks: INVEST (independent, negotiable, valuable, estimable, small, testable).
 Keep each criterion inside this story's job: a download story doesn't carry upload criteria. -->

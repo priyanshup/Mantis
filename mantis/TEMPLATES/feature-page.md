@@ -8,17 +8,19 @@ updated: YYYY-MM-DD
 <!-- Feature page (Confluence). A starting point, not a form: drop or merge sections that
 don't help this feature. Rules: docs/rules/OUTPUTS_GUIDE.md. Reference: mantis/config/voice.md.
 Each fact lives in one section. Status lives in the header line only. Plain words everywhere;
-what only engineers need goes under Technical detail, never into the plain sections. -->
+what only engineers need goes under Technical detail, never into the plain sections.
+Each *Source:* line names sources in words the reader knows (a meeting, a page, a person),
+never a Mantis ID or a file path. -->
 
 # <Feature name>
 
-Status | Product owner | Jira <KEY> | Updated <date>
+**Status:** <stage> | **Product owner:** <name> | **Jira:** <KEY> | **Updated:** <date>
 
 ## At a glance
 
 | | |
 |---|---|
-| Persona | <who, one line; link to personas register> |
+| Persona | <who, one line, as named in the personas register> |
 | Problem | <one sentence> |
 | Primary job | When <situation>, I want to <action>, so I can <outcome> |
 | Hypothesis | If <change>, then <result>, measured by <primary metric> |
@@ -26,7 +28,7 @@ Status | Product owner | Jira <KEY> | Updated <date>
 | Decision needed | <what, from whom, by when> |
 
 ## Persona
-*Source: <doc IDs>*
+*Source: <named in words>*
 Role, where they work, goal, main pain, today's workaround, digital comfort.
 Mark the card **assumed** or **interviewed**.
 
@@ -61,7 +63,8 @@ One line per point; skip a letter if nothing applies.
 
 ## Jobs to be done
 *Source:*
-Numbered list, MVP or Later on each. Acceptance criteria live in the epic, not here.
+The primary job first, then the numbered jobs, each marked MVP or Later. Acceptance criteria live
+in the epic, not here.
 
 ## Success metrics
 *Source:*
@@ -87,5 +90,5 @@ with the obligation, how it is accepted and the evidence of completion.
 ## Appendix
 - RICE: Reach, Impact, Confidence, Effort, with the scale, the unit and the total.
 - Contacts (named people).
-- Glossary: link to `mantis/knowledge/glossary.md`; add only terms new to this page.
+- Glossary: only the terms new to this page, one line each.
 - Sources and change log.

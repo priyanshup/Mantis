@@ -100,6 +100,7 @@ that matters later, capture it with the session's source document (WORKFLOW, "Be
 | User story (Jira) | `mantis/TEMPLATES/user-story.md` | `mantis/outputs/user-stories/<slug or other>/<nn>-<name>.md`; `epic: none` if it stands alone |
 | Brief before drafting | `mantis/TEMPLATES/brief.md` | shown in chat, not saved |
 | Feature card (knowledge) | `mantis/TEMPLATES/feature-card.md` | `mantis/knowledge/features/<slug>.md` |
+| Feature kickoff (deck or page that starts a feature) | `mantis/TEMPLATES/feature-kickoff.md` | `mantis/outputs/confluence/<slug>-kickoff.md` |
 | Discovery brief (topic with no requirements yet) | `mantis/TEMPLATES/discovery-brief.md` | `mantis/outputs/confluence/<slug>.md` |
 | Handover (time away) | `mantis/TEMPLATES/handover.md` | brief JSON, `tools/away.py save` |
 | Meeting notes and transcripts | `mantis/TEMPLATES/meeting-notes.md` | takeaways JSON, `tools/brief.py takeaways` |
@@ -140,8 +141,8 @@ Spell out every acronym on first use or link the glossary.
 - [ ] No empty sections; nothing copied from the glossary or persona register.
 - [ ] Persona: one card, marked assumed or interviewed, with its source.
 - [ ] Every metric has a baseline (or "baseline unknown"), a target, a date and a data source.
-- [ ] Every story passes INVEST; acceptance criteria follow the epic format and are
-      checkable one by one.
+- [ ] Every story passes INVEST; its acceptance criteria are plain one-liners (no
+      Given/When/Then, which is for the epic), checkable one by one.
 - [ ] Edge-case checklist run on each story (`.claude/skills/pm-edge-cases`).
 - [ ] Sources are present once per section; contradictions are in a ⚠️ callout.
 - [ ] Humanizer has run, and every citation survived it.

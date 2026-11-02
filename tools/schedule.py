@@ -1,7 +1,8 @@
 """The owner's recurring meetings and away periods (MANTIS-IMP-037, MANTIS-IMP-038).
 
     python tools/schedule.py meetings                         list meetings with their next date
-    python tools/schedule.py add-meeting "Name" DAY [--time HH:MM] [--with "A, B"] [--purpose TEXT] [--cards a,b] [--every 1|2]
+    python tools/schedule.py add-meeting "Name" DAY [--time HH:MM] [--with "A, B"] [--purpose TEXT] [--cards a,b] [--every 1|2] [--draws people,subjects|""]
+    python tools/schedule.py agenda "Meeting" "TEXT" [--date YYYY-MM-DD]   the agenda of one occurrence (default: the next); "" removes it
     python tools/schedule.py remove-meeting ID
     python tools/schedule.py move-meeting ID REGULAR_DATE NEW_DATE|skip   one occurrence only (a holiday); NEW = REGULAR undoes it
     python tools/schedule.py away                             list away periods
@@ -97,17 +98,81 @@ def move_meeting(mid, regular, new=""):
     return m
 
 
-def add_meeting(name, day, time="", attendees=(), purpose="", cards=(), every=1):
+# What a meeting's agenda draws on besides the owner's written agenda (2026-11-02), any of: "people" = what is
+# open with the attendees (follow-ups, questions they can answer), "subjects" = what is open on its subjects.
+# None of them = only the written agenda. A 1-1 takes both.
+DRAWS = ("people", "subjects")
+
+
+def draws(m):
+    """The meeting's draws; meetings saved with the older single "scope" map onto them."""
+    if isinstance(m.get("draws"), list):
+        return [x for x in m["draws"] if x in DRAWS]
+    return {"people": ["people", "subjects"], "subjects": ["subjects"], "none": []}.get(m.get("scope") or "people", list(DRAWS))
+
+
+def _fields(name, day, time, attendees, purpose, cards, every, draw):
     if day[:3].lower() not in DAYS:
         raise ValueError("day must be Mon..Sun")
+    return {"name": " ".join(name.split())[:80], "day": day[:3].title(), "time": time[:5],
+            "attendees": [a.strip() for a in attendees if a.strip()][:12], "purpose": purpose.strip()[:600],
+            "cards": [c.strip() for c in cards if c.strip()][:12], "every": max(1, min(int(every or 1), 4)),
+            "draws": [x for x in DRAWS if x in draw]}
+
+
+def add_meeting(name, day, time="", attendees=(), purpose="", cards=(), every=1, draw=DRAWS):
     d = _read(MEET, "meetings")
-    m = {"id": uuid.uuid4().hex[:6], "name": " ".join(name.split())[:80], "day": day[:3].title(), "time": time[:5],
-         "attendees": [a.strip() for a in attendees if a.strip()][:12], "purpose": purpose[:300],
-         "cards": [c.strip() for c in cards if c.strip()][:12], "every": max(1, min(int(every or 1), 4)),
-         "anchor": date.today().isoformat()}
+    m = dict(_fields(name, day, time, attendees, purpose, cards, every, draw), id=uuid.uuid4().hex[:6], anchor=date.today().isoformat())
     d["meetings"].append(m)
     _write(MEET, d)
     return m
+
+
+def edit_meeting(mid, name, day, time="", attendees=(), purpose="", cards=(), every=1, draw=DRAWS):
+    """Change a meeting's settings; its id, moves and agendas stay. A new weekday or rhythm restarts the fortnight count."""
+    d = _read(MEET, "meetings")
+    m = next((x for x in d["meetings"] if x["id"] == mid), None)
+    if not m:
+        raise ValueError(f"no meeting {mid}")
+    new = _fields(name, day, time, attendees, purpose, cards, every, draw)
+    m.pop("scope", None)   # the older single setting
+    if (new["day"], new["every"]) != (m.get("day"), int(m.get("every", 1) or 1)):
+        m["anchor"], m["moves"] = date.today().isoformat(), {}
+    m.update(new)
+    _write(MEET, d)
+    return m
+
+
+def set_agenda(mid, day, text):
+    """The owner's agenda for one occurrence (day = YYYY-MM-DD); empty text removes it. Old ones drop off after 30 days."""
+    if not parse(day):
+        raise ValueError("day is YYYY-MM-DD")
+    d = _read(MEET, "meetings")
+    m = next((x for x in d["meetings"] if x["id"] == mid), None)
+    if not m:
+        raise ValueError(f"no meeting {mid}")
+    ag = {k: v for k, v in (m.get("agendas") or {}).items() if k >= (date.today() - timedelta(days=30)).isoformat()}
+    if text.strip():
+        ag[day] = text.strip()[:2000]
+    else:
+        ag.pop(day, None)
+    m["agendas"] = ag
+    _write(MEET, d)
+    return m
+
+
+def agenda_for(m, day):
+    """The owner's written agenda for that occurrence, or ""."""
+    return (m.get("agendas") or {}).get(iso(day) if day else "", "")
+
+
+def subject_cards(m, written, titles):
+    """The meeting's subjects: the cards it is set to, plus any card its purpose or this time's agenda names, by its
+    title, the title's head ("Pricing" of "Pricing (rules and lists)") or its short name (the slug as words)."""
+    text = m.get("purpose", "") + "\n" + written
+    names = lambda s, t: {t, re.split(r"\s*[(,:]", t)[0], s.replace("-", " ")}
+    hit = lambda s, t: any(len(n) > 3 and re.search(rf"(?i)\b{re.escape(n)}\b", text) for n in names(s, t))
+    return m.get("cards", []) + [s for s, t in titles.items() if s not in m.get("cards", []) and hit(s, t)]
 
 
 def remove(kind, mid):
@@ -171,8 +236,16 @@ if __name__ == "__main__":
             nd = next_date(m)
             print(f"[{m['id']}] {m['name']} ({m['day']} {m['time']}, with {', '.join(m['attendees']) or '-'}): next {nd or '-'}")
     elif a[0] == "add-meeting" and len(a) >= 3:
-        m = add_meeting(a[1], a[2], arg(a, "--time"), arg(a, "--with").split(","), arg(a, "--purpose"), arg(a, "--cards").split(","), arg(a, "--every", "1"))
+        m = add_meeting(a[1], a[2], arg(a, "--time"), arg(a, "--with").split(","), arg(a, "--purpose"), arg(a, "--cards").split(","), arg(a, "--every", "1"),
+                        arg(a, "--draws", ",".join(DRAWS)).split(","))
         print(f"Added meeting {m['name']} [{m['id']}], next {next_date(m)}")
+    elif a[0] == "agenda" and len(a) >= 3:
+        m = find_meeting(a[1])
+        if not m:
+            sys.exit(f"No meeting '{a[1]}'")
+        day = arg(a, "--date") or iso(next_date(m) or "")
+        set_agenda(m["id"], day, a[2])
+        print(f"{m['name']} on {day}: agenda " + ("saved" if a[2].strip() else "removed"))
     elif a[0] == "move-meeting" and len(a) >= 4:
         m = move_meeting(a[1], a[2], "" if a[3] == "skip" else a[3])
         print(f"{m['name']}: {a[2]} " + ("skipped" if a[3] == "skip" else f"moved to {a[3]}") + f"; next {next_date(m)}")

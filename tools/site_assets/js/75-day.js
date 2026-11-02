@@ -90,8 +90,17 @@
         `<button type="button" class="mi mi-add" data-add-meet><span class="mi-day">+</span><span class="mi-n">Add a regular meeting</span></button>`;
       if (!sel) { ml.innerHTML = '<p class="empty">No regular meetings yet. Add the ones you have every week: each gets an agenda that builds itself.</p>'; return; }
       const m = sel, l = m.last;
-      const agenda = m.agenda.length ? m.agenda.map((s) => `<h3 class="ag-h">${esc(SECNAME[s.name] || s.name)}</h3><ul class="rows ag-rows">${s.items.map(agendaItem).join("")}</ul>`).join("")
+      // The owner's own agenda for the next occurrence leads; what is open follows, within the meeting's scope
+      const day = m.next ? dShort(m.next) : "next time";
+      const own = m.next ? `<details class="ag-own"><summary>${m.written ? `<h3 class="ag-h">Agenda, ${day}</h3><p class="ag-text">${esc(m.written)}</p><span class="linkish">Edit the agenda</span>`
+        : `<span class="linkish">Write the agenda for ${day}</span>`}</summary><form class="nd-body" data-agenda="${esc(m.id)}" data-date="${esc(m.next)}">` +
+        `<textarea name="text" rows="4" maxlength="2000" placeholder="What this one is about, one point per line" aria-label="Agenda for ${day}">${esc(m.written || "")}</textarea>` +
+        `<div class="mb-row"><button class="btn-line" type="submit">Save the agenda</button></div></form></details>` : "";
+      const auto = m.agenda.length ? (m.written ? `<h3 class="ag-h">Also open on its subjects</h3>` : "") +
+          m.agenda.map((s) => `<h3 class="ag-h">${esc(SECNAME[s.name] || s.name)}</h3><ul class="rows ag-rows">${s.items.map(agendaItem).join("")}</ul>`).join("")
+        : !(m.draws || []).length ? "" : !m.draws.includes("people") ? `<p class="muted">Nothing open on its subjects.</p>`
         : `<p class="muted">Nothing open with ${esc((m.attendees || []).map((a) => a.split(" ")[0]).join(" or ") || "them")}. A quiet one.</p>`;
+      const agenda = own + auto;
       const more = m.agenda.reduce((n, s) => n + s.more, 0);
       const last = !l ? "" : `<details class="meet-last"><summary>Last time, ${dShort(l.date)}</summary>` + (l.decisions.length ? `<p class="lt-h">Decided</p><ul>${l.decisions.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "") +
         (l.actions.length ? `<p class="lt-h">Actions</p><ul class="lt-acts">${l.actions.map((a) => `<li><span class="t-meta">${a.state === "done" ? "Done" : "Open"}</span><span><b>${esc(a.who)}</b>: ${esc(a.text)}</span></li>`).join("")}</ul>` : "") + "</details>";
@@ -101,6 +110,7 @@
         `<header class="meet-h"><h2>${esc(m.name)}</h2><span class="faces">${(m.attendees || []).map((a) => `<button type="button" class="face" data-person="${esc(a)}" title="${esc(a)}">${esc(initials(a))}</button>`).join("")}</span>` +
         // Removing a meeting lives behind ⋯ (it still asks first), away from Prepare brief
         `<details class="pop pop-r meet-menu nocopy"><summary aria-label="Meeting options" title="Meeting options">⋯</summary><div class="pop-b">` +
+        `<button type="button" class="linkish" data-meet-edit="${m.id}">Edit this meeting</button>` +
         `<button type="button" class="linkish t-del" data-meet-rm="${m.id}" aria-label="Remove ${esc(m.name)}">Remove this meeting</button></div></details></header>` +
         (m.purpose ? `<p class="meet-purpose">${esc(m.purpose)}</p>` : "") + `<section class="agenda" aria-label="Agenda">${agenda}</section>${last}` +
         `<footer class="meet-f nocopy"><button type="button" class="btn job ai" data-job="meeting-brief" data-arg="${esc(m.name)}" title="Uses Claude, on your normal quota">Prepare brief</button>` +
@@ -115,9 +125,13 @@
     window.addEventListener("hashchange", () => { if (X.d && location.hash.startsWith("#m-")) paintDay(X.d); });
     document.addEventListener("click", (e) => {
       const cancel = e.target.closest("[data-meet-cancel]");
-      if (cancel) { const f = cancel.closest("form"); f.reset(); f.closest("details").open = false; return; }
-      if (!e.target.closest("[data-add-meet]")) return;
-      const am = $("#add-meet"); am.open = true; am.scrollIntoView({ block: "center", behavior: "smooth" }); const f = $("input", am); if (f) f.focus();
+      if (cancel) { const f = cancel.closest("form"); fillMeetForm(f, null); f.closest("details").open = false; return; }
+      const ed = e.target.closest("[data-meet-edit]");
+      if (!ed && !e.target.closest("[data-add-meet]")) return;
+      const am = $("#add-meet"), form = $("#meet-add", am);
+      if (ed) { const mn = ed.closest("details"); if (mn) mn.open = false; }
+      fillMeetForm(form, ed ? (X.d.meetings || []).find((m) => m.id === ed.dataset.meetEdit) : null);
+      am.open = true; am.scrollIntoView({ block: "center", behavior: "smooth" }); const f = $("input[name=name]", am); if (f) f.focus();
     });
   }
   const wk = $("#this-week");

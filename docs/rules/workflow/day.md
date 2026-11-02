@@ -59,6 +59,14 @@ or the Brief me button runs the job:
 3. `python tools/brief.py save <file>`. It shows on Today and on the person's card; each bullet
    expands. In chat, also give the bullets in a few lines.
 
+**What a meeting is for.** A recurring meeting has an objective ("What it is for"), subjects (cards) and,
+per occurrence, the owner's written agenda (Meetings page, or `python tools/schedule.py agenda`). The
+written agenda always leads; besides it, the agenda and brief draw on any of: what is open with the
+attendees, what is open on its subjects (a 1-1 takes both; neither means only the written agenda). A
+card named in the objective or agenda counts as a subject.
+When an objective or agenda is set, the brief is built around it, one section per agenda point; the
+gather output lists out-of-scope items apart, and they stay out unless the agenda touches one.
+
 **Recurring meetings and their takeaways.** A recurring meeting (`tools/schedule.py add-meeting`, or
 the site) gets its brief on its day: the session-start hook asks for it once, on the regular day or
 on the day it was moved to. When a holiday moves one occurrence, `python tools/schedule.py

@@ -106,9 +106,25 @@ def gather(who):
     names = [a["name"] for a in attendees]
     title = meeting["name"] if meeting and not person else (f"Meeting with {person['name']}" if person else who)
     print(f"BRIEF for: {title}. Today {today.isoformat()} ({today.strftime('%A')}).")
-    if meeting:
+    # What the meeting is for decides what goes in (2026-11-02): a topic meeting keeps to its subjects, so the
+    # attendees' unrelated open items stay out; a 1-1 draws on both its people and its subjects
+    dr, written = list(schedule.DRAWS), ""
+    if meeting and not person:
         nd = schedule.next_date(meeting, today)
-        print(f"Meeting: {meeting['name']}, {meeting['day']} {meeting['time']}, attendees {', '.join(meeting['attendees'])}; purpose: {meeting['purpose'] or '-'}; next {nd}.")
+        dr, written = schedule.draws(meeting), schedule.agenda_for(meeting, nd)
+        titles = {c["slug"]: c["title"] for c in _json(K / "map" / "features.json", []) + _json(K / "map" / "topics.json", [])}
+        subjects = schedule.subject_cards(meeting, written, titles)
+        print(f"Meeting: {meeting['name']}, {meeting['day']} {meeting['time']}, attendees {', '.join(meeting['attendees'])}; next {nd}.")
+        print(f"OBJECTIVE: {meeting.get('purpose') or 'not set'}")
+        print(f"AGENDA FOR {nd}: " + (("\n  " + written.replace("\n", "\n  ")) if written else "none written"))
+        print(f"SUBJECTS: {', '.join(subjects) or 'none'}. DRAWS ON: the written agenda"
+              + ("; what is open with the attendees" if "people" in dr else "") + ("; what is open on the subjects" if "subjects" in dr else "")
+              + ("." if "people" in dr else ". Items outside that are listed apart and stay out unless the agenda touches them."))
+        meeting = dict(meeting, cards=subjects)
+    elif meeting:
+        print(f"Meeting: {meeting['name']}, {meeting['day']} {meeting['time']}, attendees {', '.join(meeting['attendees'])}; purpose: {meeting['purpose'] or '-'}.")
+    keep = lambda card: "people" in dr or ("subjects" in dr and card in meeting["cards"])
+    aside = []   # out of scope: one line each, so Claude can still use one the written agenda names
     shared_cards = set(meeting["cards"] if meeting else [])
     last = latest(meeting["name"]) if meeting and not person else (latest(names[0]) if names else None)
     since = (last or {}).get("date", (today - timedelta(days=14)).isoformat())
@@ -121,38 +137,57 @@ def gather(who):
             print(f"  Briefing style: {a['briefing']}")
         if a.get("notes"):
             print(f"  Owner's notes: {a['notes']}")
-        for m in schedule.meetings_with(a["name"]):
-            print(f"  Regular meeting: {m['name']} ({m['day']}), next {schedule.next_date(m, today)}")
-            shared_cards |= set(m["cards"])
+        if "people" in dr:
+            for m in schedule.meetings_with(a["name"]):
+                print(f"  Regular meeting: {m['name']} ({m['day']}), next {schedule.next_date(m, today)}")
+                shared_cards |= set(m["cards"])
         g = followups.grouped().get(a["name"], {"items": [], "steps": []})
         for f in g["items"]:
+            if not keep(f["card"]):
+                aside.append(f"{a['name']} follow-up [{f['id']}] {f['kind']}: {f['topic']}")
+                continue
             age = (today - date.fromisoformat(f["created"])).days
             shared_cards |= {f["card"]} if f["card"] else set()
             print(f"  FOLLOW-UP [{f['id']}] {f['kind']}: {f['topic']} (open {age} days, raised {len(f['raised'])}x"
                   + (f", last {f['raised'][-1]}" if f["raised"] else "") + (f", chase {f['chase']}" if f["chase"] else "")
                   + (f", card {f['card']}" if f["card"] else "") + ")" + (f" - {f['detail'][:200]}" if f["detail"] else ""))
         for s in g["steps"]:
+            if not keep(s["card"]):
+                aside.append(f"{a['name']} owes a step on {s['card']}: {s['step']}")
+                continue
             shared_cards.add(s["card"])
             print(f"  WAITING ON THEM (card {s['card']}): {s['step']} - status {s['status'] or 'open'}" + (f", due {s['due']}" if s["due"] else ""))
         st = tasks_store.load()
         for t in st["tasks"]:
             if t["status"] in ("todo", "blocked") and t["contact"] and people.find(t["contact"], ps) is a if people.find(t["contact"], ps) else False:
+                if "people" not in dr:
+                    aside.append(f"Owner's task naming {a['name']}: {t['title']}")
+                    continue
                 print(f"  TASK naming them: {t['title']}" + (f" (due {t['due']})" if t["due"] else "") + (f" - note: {t['comments'][-1]['text'][:150]}" if t["comments"] else ""))
-        done_recent = [f for f in followups.for_person(a["name"], include_done=True) if f["status"] == "done" and f["done_at"] >= since]
+        done_recent = [f for f in followups.for_person(a["name"], include_done=True) if f["status"] == "done" and f["done_at"] >= since and keep(f["card"])]
         for f in done_recent:
             print(f"  Closed since last brief: {f['topic']}")
-    # Questions this person can answer (MANTIS-IMP-046), whatever card they sit on
+    # Questions this person can answer (MANTIS-IMP-046), whatever card they sit on (in a 1-1)
     asked = [o for o in _json(K / "map" / "open-items.json", []) if (o.get("ask") or {}).get("name") in names]
     for o in sorted(asked, key=lambda o: o["ask"]["how"] != "named"):
+        if not any(keep(c) for c in o["features"] or [""]):
+            aside.append(f"Question for {o['ask']['name']} on {', '.join(o['features']) or 'no card'}: {o['topic'][:120]}")
+            continue
         print(f"QUESTION THEY CAN ANSWER ({'named in a note' if o['ask']['how'] == 'named' else 'suggested: ' + o['ask']['why'].lower()}) "
               f"[{o['status']}] on {', '.join(o['features']) or 'no card'}: {o['topic'][:170]}")
     asked_ids = {o["id"] for o in asked}
     mine = [s for s in steps.load() if not s["done"] and people.is_owner(s["who"]) and s["card"] in shared_cards]
     for s in mine:
         print(f"OWNER'S OWN STEP (card {s['card']}): {s['step']} - {s['status'] or 'open'}" + (f", due {s['due']}" if s["due"] else ""))
-    if not shared_cards:   # nothing shared (a manager, a 1-1): the owner's followed cards give the status picture
+    if aside:
+        print(f"\nOUTSIDE THIS MEETING'S SCOPE ({len(aside)}): leave out unless the objective or written agenda touches one.")
+        for x in aside[:25]:
+            print(f"  - {x}")
+    # nothing shared (a manager, a 1-1), or a meeting with no subjects (a team check-in on the owner's own space):
+    # the owner's followed cards give the status picture
+    if not shared_cards and ("people" in dr or (meeting and not person and not meeting["cards"])):
         shared_cards = set(_json(K / "focus.json", {}).get("following", [])[:10])
-        print("\nNo cards shared with them; the owner's followed cards follow (status picture for a 1-1).")
+        print("\nNo cards shared with them; the owner's followed cards follow (the status picture of the owner's own space).")
     if shared_cards:
         print("\nSHARED CARDS: " + "; ".join(card_lines(sorted(c for c in shared_cards if c))))
         for o in [x for x in open_items(sorted(shared_cards), names[0] if names else None) if x["id"] not in asked_ids]:
@@ -165,9 +200,19 @@ def gather(who):
     away = schedule.next_away(today)
     if away:
         print(f"OWNER AWAY: {away['start']} to {away['end']}, cover {', '.join(away['cover']) or 'not set'}.")
-    print("\nWrite the brief as JSON (format in tools/brief.py) with sections like 'Update <first name> on', 'Ask <first name>', "
-          "'Decide together', 'Chase', 'Personal'. One short line per bullet, a 'detail' with the background and a 'source' in words. "
-          "Order by what matters most to this person (briefing style). Put new topics worth tracking in new_followups. Save with: python tools/brief.py save <file>")
+    if meeting and not person and (written or meeting.get("purpose")):
+        print("\nWrite the brief as JSON (format in tools/brief.py) around the OBJECTIVE and the AGENDA: one section per agenda point "
+              "(named after it) with what the owner needs to know, ask or decide on it, then 'Also worth raising' only for in-scope items "
+              "that serve the objective. Leave out anything that does not serve it, however open it is. One short line per bullet, a "
+              "'detail' with the background and a 'source' in words. Put new topics worth tracking in new_followups. Save with: python tools/brief.py save <file>")
+    elif meeting and not person:
+        print("\nNO OBJECTIVE OR AGENDA is set for this meeting. Start the brief with one bullet saying so (the owner can add one on the "
+              "Meetings page), then write it as JSON (format in tools/brief.py) from what is in scope above, sections like 'Update them on', "
+              "'Ask', 'Decide together', 'Chase'. One short line per bullet, a 'detail' and a 'source' in words. Save with: python tools/brief.py save <file>")
+    else:
+        print("\nWrite the brief as JSON (format in tools/brief.py) with sections like 'Update <first name> on', 'Ask <first name>', "
+              "'Decide together', 'Chase', 'Personal'. One short line per bullet, a 'detail' with the background and a 'source' in words. "
+              "Order by what matters most to this person (briefing style). Put new topics worth tracking in new_followups. Save with: python tools/brief.py save <file>")
 
 
 CHANGE_LABEL = {"source": "NEW SOURCE", "question": "NEW QUESTION", "assumption": "NEW ASSUMPTION", "answer": "ANSWERED",

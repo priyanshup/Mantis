@@ -1528,6 +1528,36 @@ a.ri:hover .ri-v { text-decoration: underline; text-underline-offset: 3px; }
 .add-meet { margin-top: 32px; }
 .add-meet > summary { display: none; }
 .pop-form .meet-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-top: 12px; }
+.meet-form .wide { grid-column: 1 / -1; }
+.meet-form textarea { width: 100%; resize: vertical; font: 14px/1.45 var(--font); color: var(--ink); }
+.mf-f { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.mf-l { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }   /* same as the form's labels */
+/* The owner's written agenda: the text reads as content; the editor opens under it */
+.ag-own { margin: 0 0 8px; }
+.ag-own > summary { list-style: none; cursor: pointer; }
+.ag-own > summary::-webkit-details-marker { display: none; }
+.ag-text { white-space: pre-line; margin: 0 0 6px; max-width: 65ch; color: var(--ink); }
+.ag-own[open] .ag-text, .ag-own[open] > summary .linkish { display: none; }
+.ag-own[open] > summary::before { content: "Agenda"; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.ag-own[open] > summary:has(.ag-h)::before { content: none; }
+.ag-own[open] > summary .ag-h { margin-bottom: 0; }
+
+/* ---------- Multi-pick box (attendees, subjects) ---------- */
+.pick { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 40px; padding: 5px 8px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--surface); cursor: text; }
+.pick:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.pick-chips { display: contents; }
+.pick-chip { display: inline-flex; align-items: center; gap: 2px; padding: 2px 4px 2px 10px; border-radius: 999px; background: var(--fill); color: var(--ink); font-size: 13px; }
+.pick-chip button { border: 0; background: none; color: var(--muted); font-size: 12px; width: 24px; height: 24px; border-radius: 50%; padding: 0; cursor: pointer; }
+.pick-chip button:hover { background: var(--fill-2); color: var(--ink); }
+.pick .pick-in, .pick .pick-in:focus { flex: 1 1 120px; min-width: 120px; width: auto; height: 30px; border: 0; background: transparent; padding: 0 2px; box-shadow: none; font-size: 14px; }
+.pick-list { position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px); margin: 0; padding: 4px; list-style: none; max-height: 280px; overflow-y: auto;
+  background: var(--surface); border-radius: 12px; box-shadow: var(--shadow-pop); }
+.pick-list li { display: grid; gap: 1px; padding: 8px 10px; border-radius: 8px; font-size: 14px; color: var(--ink); cursor: pointer; }
+.pick-list li small { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pick-list li.on, .pick-list li:hover { background: var(--fill); }
+.pick-list .pick-none { color: var(--muted); cursor: default; }
+.pick-list .pick-none:hover { background: none; }
 
 /* ---------- Tabs with an underline (Features, Questions, a card) ---------- */
 .tabs-row { display: flex; align-items: flex-end; gap: 16px; border-bottom: 1px solid var(--line); margin-bottom: 32px; }
