@@ -270,7 +270,7 @@
         `<label>Day <select name="day" class="sel sel-sm">${["Mon", "Tue", "Wed", "Thu", "Fri"].map((x) => `<option>${x}</option>`).join("")}</select></label>` +
         `<label>Time <input name="time" type="time"></label><label>How often <select name="every" class="sel sel-sm"><option value="1">Weekly</option><option value="2">Every 2 weeks</option></select></label>` +
         `<div class="wide mf-f"><span class="mf-l" id="mf-with">With</span>${pickBox("attendees", "Pick or type names", "With")}</div>` +
-        `<label class="wide">What it is for <textarea name="purpose" rows="2" maxlength="600" placeholder="The objective, e.g. agree next quarter's buckets with Primary"></textarea></label>` +
+        `<label class="wide">What it is for <textarea name="purpose" rows="2" maxlength="600" placeholder="The objective, e.g. agree next quarter's priorities with the other team"></textarea></label>` +
         `<div class="wide mf-f"><span class="mf-l">Subjects</span>${pickBox("cards", "Features or topics it covers", "Subjects")}</div>` +
         `<div class="wide mf-f"><span class="mf-l">Besides your written agenda, it draws on</span>${pickBox("draws", "Nothing else: only your agenda", "Besides your written agenda, it draws on")}</div>` +
         `<div class="mf-acts"><button class="btn" type="submit">Add meeting</button><button type="button" class="linkish" data-meet-cancel>Cancel</button></div></form>`;
