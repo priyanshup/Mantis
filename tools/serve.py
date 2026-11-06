@@ -33,6 +33,7 @@ import jobs
 import extra
 import buildlock
 import pull
+import growth
 PORT = 8000
 URL = f"http://localhost:{PORT}/"
 PIDFILE = (Path(os.environ["LOCALAPPDATA"]) / "Mantis" if os.environ.get("LOCALAPPDATA") else ROOT) / "serve.pid"
@@ -272,7 +273,7 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
             try:
                 st = tasks_store.load()
                 return self.reply(200, {"today": tasks_store.today(), "rev": st["rev"], "tasks": st["tasks"], "groups": st.get("groups", []),
-                                        "dismissed": st.get("dismissed", []), "suggestions": tasks_store.suggestions()})
+                                        "dismissed": st.get("dismissed", []), "suggestions": tasks_store.suggestions(st["tasks"])})
             except OSError as e:
                 return self.reply(503, {"error": str(e)})
         if self.path.split("?")[0] == "/api/edits/pending":
@@ -294,6 +295,11 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
                 return self.reply(200, {"items": pull.unmapped(), "cards": [{"slug": k, "title": v["title"]} for k, v in pull.cards().items()]})
             except (OSError, ValueError) as e:
                 return self.reply(500, {"error": str(e)})
+        if self.path.split("?")[0] == "/api/growth":   # the Growth tab (tools/growth.py)
+            try:
+                return self.reply(200, growth.payload())
+            except (OSError, ValueError) as e:
+                return self.reply(500, {"error": str(e)})
         if self.path.split("?")[0] == "/api/pull-brief":
             return self.reply(200, {**pull.load_brief(), "pending": pull.pending_counts()})
         if self.path.startswith("/api/brief?id="):
@@ -306,9 +312,15 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         # Only the site itself may post (blocks other web pages from writing to the inbox).
         origin = self.headers.get("Origin", "")
-        if self.path not in ("/api/answers", "/api/edits", "/api/focus", "/api/tasks", "/api/jobs", "/api/followups", "/api/deadlines", "/api/schedule", "/api/published", "/api/filters", "/api/inbox", "/api/reopen", "/api/mapping") \
+        if self.path not in ("/api/answers", "/api/edits", "/api/focus", "/api/tasks", "/api/jobs", "/api/followups", "/api/deadlines", "/api/schedule", "/api/published", "/api/filters", "/api/inbox", "/api/reopen", "/api/mapping", "/api/growth") \
                 or origin not in (f"http://localhost:{PORT}", f"http://127.0.0.1:{PORT}"):
             return self.reply(403, {"error": "not allowed"})
+        if self.path == "/api/growth":   # {"action", "id", ...}: one change on the Growth tab
+            try:
+                body = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", "0")), 50_000)).decode("utf-8"))
+                return self.reply(200, {"result": growth.act(body), **growth.payload()})
+            except (ValueError, OSError, TypeError, KeyError) as e:
+                return self.reply(400, {"error": str(e)[:300]})
         if self.path == "/api/mapping":   # {"root": "<Jira key>", "card": "<slug>" or "skip"}
             try:
                 b = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", "0")), 5_000)).decode("utf-8"))

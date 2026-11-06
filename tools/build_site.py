@@ -22,6 +22,7 @@ from site_plan import *     # noqa: F401,F403
 from site_people import *   # noqa: F401,F403
 from site_reference import *   # noqa: F401,F403
 from site_day import *   # noqa: F401,F403
+from site_growth import page_growth
 
 
 # ---------- Build ----------
@@ -67,12 +68,13 @@ def build():
             out["assets/" + p.relative_to(assets).as_posix()] = p.read_bytes()
     out["assets/app.js"] = app_js()
     w = lambda rel, s: out.__setitem__(rel, s.encode("utf-8"))
-    # The five tabs (MANTIS-IMP-094), then the pages they lead to
+    # The six tabs (MANTIS-IMP-094; Growth 2026-11-04), then the pages they lead to
     w("index.html", page_today(features, work, built))
     w("meetings.html", page_meetings(built))
     w("features.html", page_features(features, later, built))
     w("questions.html", page_review(features, built))
     w("sources.html", page_sources(work, built))
+    w("growth.html", page_growth(features, built))
     w("work.html", page_work(work, features, built))
     w("library.html", page_library(items, built))
     w("people.html", page_people(built))

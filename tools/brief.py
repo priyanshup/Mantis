@@ -197,6 +197,8 @@ def gather(who):
     if meeting and shared_cards:
         for e in changes_since(since, shared_cards):
             print(f"CHANGED {e}")
+    import growth   # the owner stepping up: opportunities on these cards, and wins the manager has not heard (Growth tab)
+    growth.for_meeting(shared_cards, names)
     away = schedule.next_away(today)
     if away:
         print(f"OWNER AWAY: {away['start']} to {away['end']}, cover {', '.join(away['cover']) or 'not set'}.")
@@ -268,6 +270,10 @@ def save_takeaways(path):
                            a.get("chase", ""), f"Takeaway: {src}")
         out["theirs"].append({"person": fu["person"], "topic": fu["topic"], "followup": fu["id"], "card": fu["card"]})
         print(f"Follow-up added for {fu['person']}: {fu['topic']}")
+    import growth   # chances to step up raised in the meeting: proposed on the Growth tab, never saved as the owner's
+    opp = [dict(o, meeting=m["name"]) for o in t.get("opportunities", [])[:5] if isinstance(o, dict)]
+    for o in growth.propose(opp, src)[0] if opp else []:
+        print(f"Growth opportunity proposed: {o['title']}")
     DIR.mkdir(parents=True, exist_ok=True)
     (DIR / f"{day}-{people.slug(m['name'])}-takeaways.json").write_text(json.dumps(out, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"Saved the takeaways of {m['name']} ({day}). The next brief for it lists what is still open.")

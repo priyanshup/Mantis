@@ -38,6 +38,8 @@ Tools: `docs/system/SKILLS.md`. Where things live: `README.md` and each folder's
 - "I'm meeting X": a meeting brief; "follow up with X on Y": `python tools/followups.py add`; time
   away: a handover. All in `docs/rules/workflow/day.md`, as are tasks (`python tools/tasks.py`).
 - A question about the product or the work: a sourced answer (`docs/rules/workflow/questions.md`).
+- "Note this as a win", "X said …", "what should I step up on?": the growth record
+  (`python tools/growth.py`, `docs/rules/workflow/growth.md`). Mantis proposes; only the owner adds.
 - Site buttons run the same work as background jobs (`tools/jobs.py`); results: Sources, Health and jobs.
 
 ## Session start
@@ -49,7 +51,7 @@ them, and only the owner starts a pull.
 
 ## The site
 
-http://localhost:8000: Today, Meetings, Features, Questions, Sources; people and the library in a
+http://localhost:8000: Today, Meetings, Features, Questions, Sources, Growth; people and the library in a
 side panel. It changes no knowledge directly: answers, page edits and dropped files go to the inbox;
 filters, tasks, follow-ups, meetings and Undo are the owner's settings. It strips Mantis IDs and repo
 paths, but outputs should not contain them anyway.

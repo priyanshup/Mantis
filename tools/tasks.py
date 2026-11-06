@@ -7,6 +7,8 @@
     python tools/tasks.py context                       compact input for writing today's suggestions
 
 Dates are YYYY-MM-DD. --day plans it for that date (default: today; "backlog" for no date).
+A task or suggestion that matches one already on the list (same words, or a suggestion's task_id) updates that
+task instead of adding a copy; the owner's title, priority and day are kept.
 """
 import json, sys
 from pathlib import Path
@@ -42,7 +44,16 @@ def cmd_add(title):
         t["comments"] = [{"at": T.today(), "text": arg("--note")}]
     if t["remind_on"] and not arg("--day"):
         t["day"] = t["remind_on"]   # a reminder for a later day lands on that day
-    print("Added:", T.add(t)["title"])
+
+    def same(st):   # already on the list: update that one task instead of adding a copy
+        hit = T.match(title, st["tasks"])
+        if hit:
+            T.merge(hit, t["contact"], [c["text"] for c in t.get("comments", [])])
+            for k in ("due", "remind_on"):
+                hit[k] = hit[k] or t[k]
+        return hit
+    hit = T.edit(same)
+    print(f"Already on the list, updated: {hit['title']} ({hit['day'] or 'backlog'})" if hit else f"Added: {T.add(t)['title']}")
 
 
 def cmd_suggest(path, add=False):
@@ -56,9 +67,20 @@ def cmd_suggest(path, add=False):
                       "who": str(s.get("who", ""))[:120], "say": str(s.get("say", ""))[:1200],
                       "questions": [str(q)[:300] for q in s.get("questions", [])[:6]],
                       "estimate": int(s.get("estimate", 15) or 15), "priority": s.get("priority", "medium") if s.get("priority") in T.PRIO else "medium",
-                      "source": str(s.get("source", ""))[:160]})
+                      "source": str(s.get("source", ""))[:160], "task_id": str(s.get("task_id", ""))[:40]})
+
+    def link(st):   # a suggestion for a task already on the list brings its new details into that task
+        n = 0
+        for s in clean:
+            hit = T.match(s["title"], st["tasks"], s["task_id"])
+            s["task_id"] = hit["id"] if hit else ""
+            notes = [s["say"] and "What to say: " + s["say"], s["questions"] and "Questions: " + " / ".join(s["questions"])]
+            n += bool(hit and hit["status"] != "done" and T.merge(hit, s["who"], notes))
+        return n
+    merged = T.edit(link)
     T._write(T.SUGGEST, {"date": T.today(), "items": clean})
-    print(f"Saved {len(clean)} suggestion(s) for {T.today()}.")
+    linked = sum(1 for s in clean if s["task_id"])
+    print(f"Saved {len(clean)} suggestion(s) for {T.today()}; {linked} already on the list ({merged} updated with new details).")
 
 
 def cmd_context():
@@ -109,6 +131,10 @@ def cmd_context():
     for s in deadlines.compute():
         print(f"Suggested deadline (shown on Today): {s['title']} -> {s['date']} ({s['why']})")
     print("Write up to 5 suggestions (who to contact, what to say, questions to ask) and save them with: python tools/tasks.py suggest <file>")
+    import growth   # opportunities to step up (Growth tab): proposed apart from the suggestions, never as tasks
+    print()
+    growth.context()
+    print("Then propose up to 3 growth opportunities (docs/rules/workflow/growth.md) with: python tools/growth.py propose <file>")
 
 
 if __name__ == "__main__":

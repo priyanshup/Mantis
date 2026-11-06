@@ -13,6 +13,7 @@ Takeaways JSON for `brief.py takeaways`:
  "decisions": ["<what was decided, one line, with the reason if given>"],
  "mine": [{"title": "<verb first: what the owner does>", "due": "YYYY-MM-DD or empty", "priority": "high|medium|low", "card": "<slug>", "note": ""}],
  "theirs": [{"person": "<full name>", "topic": "<what they owe the owner>", "detail": "", "card": "<slug>", "chase": "YYYY-MM-DD or empty"}],
+ "opportunities": [{"title": "<verb first: what the owner could offer or lead, unasked>", "why": "<what it changes>", "areas": ["<strength key>"], "card": "<slug>"}],
  "notes": "<anything else worth keeping, two or three lines>"}
 ```
 
@@ -26,5 +27,6 @@ What goes where:
 | The answer to an open question | close or update it (`entry.py close`, or Potential Resolution); not a decision |
 | A new unknown | a new question (ingest step 6) |
 | A date said aloud | the `due` or `chase` it belongs to, nowhere else |
+| A problem nobody took on, that the owner could lead | `opportunities` (proposed on the Growth tab, `docs/rules/workflow/growth.md`) |
 
 The digest of the notes cites them as "<meeting>, <date>". Misheard words: `python tools/mishear.py <file>`.

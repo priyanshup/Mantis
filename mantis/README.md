@@ -12,6 +12,7 @@ document IDs and citations depend on these paths, so they do not change.
 | `knowledge/` | The working layer: cards, registers, glossary, personas, entities, focus. | See below. |
 | `outputs/` | Pages, epics and stories written for Confluence and Jira. | Written from `TEMPLATES/`; edited on the site or by Claude. |
 | `tasks/` | The owner's task list and daily brief; follow-ups, meetings, away periods, suggested deadlines, and saved briefs (`briefs/`). | Through the site or the tools (`tasks.py`, `followups.py`, `schedule.py`, `brief.py`, `away.py`) only. |
+| `growth/` | The owner's growth record toward the next role: the role's strengths quoted from its job description (`framework.json`, `sources/`), and every opportunity, win, learning and recognition (`growth.json`). About the owner, not the product: never cited in cards or outputs. | The Growth tab or `tools/growth.py` only; `framework.json` with the owner. |
 | `mirror/` | A read-only copy of Jira issues and Confluence pages as Markdown, with indexes, diffs and comparison reports. Not a source: nothing in it is cited until it is ingested. | `tools/atl.py` only; safe to delete (the next sync refills it). |
 | `jobs/` | Records of background jobs started from the site's buttons (the newest 60 are kept). | `tools/jobs.py` |
 | `config/` | This instance's local settings and the leak-check denylist. Never committed. | By hand, with the owner |

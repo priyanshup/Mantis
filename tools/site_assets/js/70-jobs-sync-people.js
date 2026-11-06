@@ -347,7 +347,7 @@
     document.addEventListener("click", (e) => {
       const un = e.target.closest("[data-unpick]");
       if (un) { const b = un.closest(".pick"); pickSet(b, pickVals(b).filter((x) => x !== un.dataset.unpick)); $(".pick-in", b).focus(); return; }
-      const b = e.target.closest(".pick"); if (b && !e.target.closest(".pick-list")) { $(".pick-in", b).focus(); pickOpen(b); }
+      const b = e.target.closest(".pick"); if (b && $(".pick-in", b) && !e.target.closest(".pick-list")) { $(".pick-in", b).focus(); pickOpen(b); }   // a multi-pick box, not a picker button (Today, Growth)
     });
     document.addEventListener("keydown", (e) => {
       const inp = e.target.closest(".pick-in"); if (!inp) return;

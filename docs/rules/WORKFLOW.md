@@ -17,6 +17,7 @@ Read this index, then the one file for the task:
 | Owner edits from the site, Exports of our own pages | `workflow/edits.md` |
 | Daily brief and the owner's tasks, People, follow-ups and next steps, Meeting briefs, Away planner and handover | `workflow/day.md` |
 | Answering a question (the Ask box, or a question in chat that needs the knowledge base) | `workflow/questions.md` |
+| The owner's growth record: opportunities to step up, wins, learnings, recognition, the appraisal record | `workflow/growth.md` |
 
 ## Buttons on the site (background jobs)
 

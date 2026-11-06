@@ -15,6 +15,8 @@ The owner's tasks live in `mantis/tasks/` and are edited on the site's Today pag
   open item it comes from, in words). Base them only on the context output: blocked tasks,
   due items, reminders, carried-over tasks, and open items on cards the owner follows, with
   items waiting for a decision first. No suggestion without a named person or a clear next step.
+  A suggestion for a task already on the list may carry its `task_id`; without one, `suggest` matches
+  by title in code. A match updates that one task and never adds a copy (`tasks.py add` does the same).
   The context also lists follow-ups, steps waiting on people, an upcoming away period (nudge on
   what must happen before it) and undated tasks (save any date a source states as a suggested deadline).
   It also lists launch reviews due or overdue and features about to be decided without a
@@ -51,7 +53,8 @@ or the Brief me button runs the job:
    briefing style, notes, open follow-ups (with IDs), steps waiting on them, the owner's own steps,
    shared cards, open questions, decisions since the last brief, away dates.
 2. Write the brief as JSON (format in `tools/brief.py`): sections "Update <first name> on", "Ask
-   <first name>", "Decide together", "Chase", "Personal". One short line per bullet; the
+   <first name>", "Decide together", "Chase", "Personal", plus "Step up" and "Wins to share" when the
+   gather output has STEP UP or WIN TO SHARE lines (`growth.md`). One short line per bullet; the
    background in `detail`; the source in words (never a Mantis ID or path); the follow-up ID in
    `followup` when the bullet is one, so the owner can tick it off; the card slug in `card`.
    Order by the person's briefing style. Use only what the gather output or the cards say;

@@ -102,6 +102,13 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 | `extra.py` | Live data for the Today and People pages: follow-ups, suggested deadlines, meetings, away, briefs. | standard library |
 | `local_config.py` | Read this instance's local settings (mantis/config/settings.json). Never committed. | standard library |
 
+## Other
+
+| Tool | What it does | Needs |
+|---|---|---|
+| `growth.py` | The owner's growth record (Growth tab): opportunities to step up, what came of them, learnings, recognition. | standard library |
+| `site_growth.py` | The Growth tab: the owner's opportunities to step up, what came of them, learnings and recognition, toward the | standard library |
+
 ## Files that are not commands
 
 | File | Role |

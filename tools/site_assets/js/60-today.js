@@ -196,15 +196,21 @@
         <button type="button" class="btn-line t-del" data-a="delete">Delete</button></div></div>`;
     }
 
+    // A suggestion for a task already on the list (the server links it by task_id; 2026-11-03): hidden while
+    // that task is on Today (or done), otherwise offered as a move of that one task, never a copy.
+    const linked = (s) => { const t = s.task_id && task(s.task_id); return t && t.status !== "deleted" ? t : null; };
+    const onToday = (t) => t.status === "done" || (t.status !== "parked" && t.day && t.day <= S.today);
+    const where = (t) => t.status === "parked" ? "parked" : t.day ? "for " + dayName(t.day) : "in your backlog";
     function brief() {
-      const sug = (S.suggestions.items || []).filter((s) => !S.dismissed.includes(s.id));
+      const sug = (S.suggestions.items || []).filter((s) => !S.dismissed.includes(s.id) && !(linked(s) && onToday(linked(s))));
       const box = $("#t-brief"); box.hidden = !sug.length;   // only when Mantis has something to suggest
       if (!sug.length) { box.innerHTML = ""; return; }
       const body = sug.map((s) => `<details class="sug"><summary><b>${esc(s.title)}</b>${s.who ? `<span class="muted small">${esc(s.who)}</span>` : ""}</summary>
           <div class="sug-body">${s.why ? `<p>${esc(s.why)}</p>` : ""}${s.say ? `<p><b>What to say:</b> ${esc(s.say)}</p>` : ""}
           ${(s.questions || []).length ? `<p><b>Questions to ask:</b></p><ul>${s.questions.map((q) => `<li>${esc(q)}</li>`).join("")}</ul>` : ""}
           ${s.source ? `<p class="muted small">From: ${esc(s.source)}</p>` : ""}
-          <div class="t-acts"><button type="button" class="btn" data-s="${s.id}" data-sa="add">Add to today</button><button type="button" class="btn-line" data-s="${s.id}" data-sa="later">Tomorrow</button>
+          ${linked(s) ? `<p class="muted small">Already on your list ${esc(where(linked(s)))}: ${esc(linked(s).title)}</p>` : ""}
+          <div class="t-acts"><button type="button" class="btn" data-s="${s.id}" data-sa="add">${linked(s) ? "Move to today" : "Add to today"}</button><button type="button" class="btn-line" data-s="${s.id}" data-sa="later">Tomorrow</button>
           <button type="button" class="btn-line" data-s="${s.id}" data-sa="copy">Copy</button><button type="button" class="btn-line" data-s="${s.id}" data-sa="dismiss">Dismiss</button></div></div></details>`).join("");
       box.innerHTML = `<div class="blk-h"><h2>Mantis suggests</h2></div>${body}`;
     }
@@ -383,6 +389,16 @@
       if (sb) {
         const s = (S.suggestions.items || []).find((x) => x.id === sb.dataset.s); if (!s) return;
         if (sb.dataset.sa === "copy") { copyText([s.title, s.why, s.who && "Who: " + s.who, s.say && "What to say: " + s.say, ...(s.questions || []).map((q) => "- " + q)].filter(Boolean).join("\n")); return; }
+        const had = linked(s), when = sb.dataset.sa === "later" ? tomorrow() : S.today;
+        if (had && sb.dataset.sa !== "dismiss") {   // move the one task; its details were merged when the pull saved the suggestion
+          const before = JSON.parse(JSON.stringify(had));
+          schedule(had, when); S.dismissed.push(s.id); change();
+          toast(`Moved to ${when === S.today ? "today" : "tomorrow"}.`, () => {
+            S.dismissed = S.dismissed.filter((x) => x !== s.id);
+            const i = S.tasks.findIndex((x) => x.id === before.id); i < 0 ? S.tasks.push(before) : (S.tasks[i] = before); change();
+          });
+          return;
+        }
         let added = null;
         if (sb.dataset.sa !== "dismiss") {
           added = { id: uid(), title: s.title, status: "todo", priority: s.priority || "medium", estimate: s.estimate || 15, due: "", remind_on: "", day: S.today, contact: s.who || "",

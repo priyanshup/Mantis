@@ -185,9 +185,73 @@ def add(task):
     return _locked(go)
 
 
-def suggestions():
+def edit(fn):
+    """Change the stored list in place under the lock; fn changes the state and returns something truthy
+    when it did (only then is the list saved). Returns fn's result."""
+    def go():
+        st = _read(TASKS, {"rev": 0, "rollover": today(), "dismissed": [], "tasks": []})
+        out = fn(st)
+        if out:
+            st["rev"] = st.get("rev", 0) + 1
+            _write(TASKS, st)
+        return out
+    return _locked(go)
+
+
+# Same task, different wording (2026-11-03): a suggestion or a new task matches a task already on the list
+# when, leaving out filler words, at least 60% of their words are shared (and at least two). Code only, no AI.
+FILLER = {"a", "an", "the", "and", "or", "to", "with", "for", "of", "on", "in", "at", "by", "about", "from",
+          "whether", "if", "is", "be", "can", "it", "this", "that"}
+SAME = 0.6
+
+
+def _words(title):
+    return set(re.findall(r"[a-z0-9]+", str(title).lower())) - FILLER
+
+
+def match(title, tasks, task_id=""):
+    """The task already on the list that `title` (or `task_id`) stands for, or None. Deleted tasks never match;
+    an open or parked one wins over one done today."""
+    live = [t for t in tasks if t.get("status") != "deleted"]
+    if task_id:
+        hit = next((t for t in live if t["id"] == task_id), None)
+        if hit:
+            return hit
+    w, best = _words(title), (0, 0, None)
+    for t in live:
+        o = _words(t["title"])
+        shared = len(w & o)
+        if shared < 2:
+            continue
+        score = shared / len(w | o)
+        if score >= SAME and (t["status"] != "done", score) > best[:2]:
+            best = (t["status"] != "done", score, t)
+    return best[2]
+
+
+def merge(t, contact="", notes=()):
+    """Bring a newer source's details into the existing task: notes it lacks, and a contact if it has none.
+    The owner's title, priority and day are kept. Returns True when something changed."""
+    changed = False
+    if contact and not t.get("contact"):
+        t["contact"], changed = " ".join(str(contact).split())[:120], True
+    have = {c.get("text", "") for c in t.get("comments", [])}
+    for n in notes:
+        if n and n not in have:
+            t.setdefault("comments", []).append({"at": today(), "text": str(n)[:2000]})
+            changed = True
+    return changed
+
+
+def suggestions(tasks=None):
+    """Today's suggestions; with `tasks`, each one carries task_id when it stands for a task already on the list."""
     s = _read(SUGGEST, {"date": "", "items": []})
-    return s if s.get("date") == today() else {"date": s.get("date", ""), "items": [], "stale": True}
+    if s.get("date") != today():
+        return {"date": s.get("date", ""), "items": [], "stale": True}
+    for x in s["items"] if tasks is not None else []:
+        hit = match(x.get("title", ""), tasks, x.get("task_id", ""))
+        x["task_id"] = hit["id"] if hit else ""
+    return s
 
 
 def archived():

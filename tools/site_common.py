@@ -159,16 +159,17 @@ def work_pill(status):
     return pill(label, cls)
 
 
-# Five tabs, one per recurring moment (MANTIS-IMP-094): every one always visible, no overflow menu (HIG tab bars:
+# Six tabs, one per recurring moment (MANTIS-IMP-094; Growth added 2026-11-04): every one always visible, no overflow menu (HIG tab bars:
 # "Avoid overflow tabs"; single-word labels). People and the library open in a side panel from any page.
 NAV = (("today", "index.html", "Today"), ("meetings", "meetings.html", "Meetings"), ("features", "features.html", "Features"),
-       ("questions", "questions.html", "Questions"), ("sources", "sources.html", "Sources"))
+       ("questions", "questions.html", "Questions"), ("sources", "sources.html", "Sources"), ("growth", "growth.html", "Growth"))
 ICON = {   # 24px outline symbols for the compact tab bar, one visual language, drawn with currentColor
     "today": '<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v10a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5zM4 10h16M8.5 3v4M15.5 3v4"/><path d="M9 14.5l2 2 4-4"/>',
     "meetings": '<circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c.6-3 2.8-4.8 5.5-4.8s4.9 1.8 5.5 4.8"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M15.6 14.3c2.4-.3 4.3 1.3 4.9 3.9"/>',
     "features": '<path d="M12 3.5 20.5 8 12 12.5 3.5 8z"/><path d="m3.5 12 8.5 4.5 8.5-4.5"/><path d="m3.5 16 8.5 4.5 8.5-4.5"/>',
     "questions": '<path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5h-7l-4.5 3.5V17.5H5A1.5 1.5 0 0 1 3.5 16V7A1.5 1.5 0 0 1 5 5.5z"/><path d="M10 9.6a2 2 0 1 1 2.7 1.9c-.5.2-.7.6-.7 1.1v.3"/><path d="M12 15.2h.01"/>',
     "sources": '<path d="M12 3.5v11m0 0-4-4m4 4 4-4"/><path d="M4.5 14.5v3a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3"/>',
+    "growth": '<path d="M12 20.5V11"/><path d="M12 11c0-3.6 2.6-6.3 7-6.3 0 4-2.8 6.3-7 6.3z"/><path d="M12 14c0-2.9-2.1-5-5.8-5 0 3.2 2.3 5 5.8 5z"/>',
 }
 
 
@@ -195,7 +196,7 @@ def shell(title, body, base="", active="", built=""):
     cur = lambda key: ' class="on" aria-current="page"' if key == active else ""
     nav = "".join(f'<a href="{base}{href}"{cur(key)}>{name}{badge(key)}</a>' for key, href, name in NAV)
     tabbar = "".join(f'<a href="{base}{href}"{cur(key)}>{icon(key)}<span>{name}</span>{badge(key)}</a>' for key, href, name in NAV)
-    # One header for every page (2026-10-31 redesign): five tabs, one box that finds or asks (Ctrl K), the pull with
+    # One header for every page (2026-10-31 redesign): six tabs, one box that finds or asks (Ctrl K), the pull with
     # its last time, and a two-state theme switch. People and the library open from the search box.
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
