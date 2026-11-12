@@ -33,6 +33,8 @@ STORE, FRAME, LOCK = DIR / "growth.json", DIR / "framework.json", DIR / ".lock"
 KINDS = ("contribution", "learning", "recognition")
 STATES = ("proposed", "open", "done", "dropped")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+# A learning whose title opens with one of these is something planned, not learnt yet (IMP-104): "Take the PSPO II certification", "Sit the exam in March", "I will finish the course".
+PLANNED = re.compile(r"^\s*(?:(?:i\s+)?(?:will|want to|plan to|plan on|going to|need to|to)\b|(?:take|sit|book|enrol|enroll|register|plan|planned|prepare|study|schedule|pass|get certified)\b)", re.I)
 GROUP = {"id": "g-growth", "name": "Growth", "card": "", "pin": None, "collapsed": False}
 THIN_DAYS = 90      # a strength with no evidence for this long is "thin"
 WAITING_CAP = 3     # proposals shown at once (DESIGN.md rule 8)
@@ -99,7 +101,7 @@ def clean(x, by="owner"):
     names = lambda v: [s(n, 80) for n in (v if isinstance(v, list) else str(v or "").split(",")) if s(n, 80)][:8]
     kind = x.get("kind") if x.get("kind") in KINDS else "contribution"
     out = {"id": s(x.get("id"), 20) or uuid.uuid4().hex[:8], "kind": kind, "title": s(x.get("title"), 300),
-           "state": x.get("state") if x.get("state") in STATES else ("open" if kind == "contribution" else "done"),
+           "state": x.get("state") if x.get("state") in STATES else ("open" if kind == "contribution" or (kind == "learning" and PLANNED.match(str(x.get("title") or ""))) else "done"),
            "past": bool(x.get("past")),
            "areas": [a for a in (x.get("areas") if isinstance(x.get("areas"), list) else str(x.get("areas") or "").split(",")) if a in keys][:2],
            "card": s(x.get("card"), 80), "meeting": s(x.get("meeting"), 120), "why": s(x.get("why"), 600),

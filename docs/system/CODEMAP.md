@@ -48,7 +48,7 @@ extract.py | 182 | Turn inbox files into clean Markdown before Claude reads them
 followups.py | 172 | Follow-ups per person (MANTIS-IMP-020): topics to raise with someone, or things waiting on them. | datafile, people, steps
 frontmatter.py | 37 | The one front-matter reader for Mantis files (MANTIS-IMP-063): digests, cards, outputs. | 
 graph.py | 103 | Query the Mantis entity graph (built by build_map.py into map/entities.json). | 
-growth.py | 434 | The owner's growth record (Growth tab): opportunities to step up, what came of them, learnings, recognition. | datafile, people, steps, tasks_store
+growth.py | 436 | The owner's growth record (Growth tab): opportunities to step up, what came of them, learnings, recognition. | datafile, people, steps, tasks_store
 guard.py | 211 | The self-running safety net (IMP-112 item 1): runs the checks without anyone asking, records the result for the Health page. | affected
 guard_browser.py | 143 | Real-browser checks of the running site, run by the Playwright interpreter (not by Mantis's Python). IMP-112 item 1. | 
 index_gen.py | 137 | Generate the knowledge index entries (registers/documents/<ID>.md) from digests (MANTIS-IMP-013). | textcache

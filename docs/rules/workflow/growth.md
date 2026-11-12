@@ -15,7 +15,7 @@ cards, registers, Confluence or Jira.
   paraphrased into a new demand. Change it only with the owner.
 - `growth.json`: one entry per contribution, learning or recognition. A contribution is **open** (being done),
   **done** or **dropped**. It is done only with one line saying what changed because of it; evidence (a link)
-  and who saw it are optional. A learning or recognition is saved as done. Recognition is the person's words,
+  and who saw it are optional. Recognition is saved as done. A learning is done when it has been learnt, and **open** when it is planned (a course, a certification): the add form's "Something to learn" is open, "Something I learned" is done, and a title that starts with a planning word (take, sit, book, enrol, register, plan, prepare, study, I will ...) is open when added from the command line. A planned learning can carry steps and moves to done when finished, with no outcome line needed. Recognition is the person's words,
   or is labelled as a summary when it is not.
 
 ## What Mantis does, and never does

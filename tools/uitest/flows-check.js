@@ -134,6 +134,23 @@ const flows = {
     click(w, d.querySelector("[data-gv=Hidden]")); await sleep(300);
     check(/set aside|Nothing is hidden/.test(d.querySelector("#glist").textContent), "Growth: a Hidden tab lists what was set aside or dismissed and says how long it is kept", d.querySelector("#glist").textContent.slice(0, 60));
   },
+  async growthAdd() {   // IMP-104: a learning to do is in progress, one already learnt is done
+    const added = async (kindButton, title) => {
+      const { w, d, posts } = await load("growth");
+      await waitFor(d, "[data-gk]"); click(w, d.querySelector(`[data-gk=${kindButton}]`)); await sleep(200);
+      type(w, d.querySelector("#gtitle"), title); click(w, d.querySelector("[data-act=growth-add]")); await sleep(500);
+      const post = posts.find((x) => x.url.includes("api/growth") && x.body.action === "add");
+      return post && post.body.item;
+    };
+    const planned = await added("Learning", "Take the PSPO II certification");
+    check(planned && planned.kind === "learning" && planned.state === "open", "Growth: Something to learn is saved as a learning in progress, not done", JSON.stringify(planned));
+    const learnt = await added("Learned", "How the CNAME check works");
+    check(learnt && learnt.kind === "learning" && learnt.state === "done", "Growth: Something I learned is saved as a learning that is done", JSON.stringify(learnt));
+    const step = await added("Step", "Send the pricing note");
+    check(step && step.kind === "contribution" && step.state === "open", "Growth: A step to take is still a contribution in progress", JSON.stringify(step));
+    const win = await added("Win", "Got the install done");
+    check(win && win.kind === "contribution" && win.state === "done", "Growth: A win is still done", JSON.stringify(win));
+  },
   async questions() {
     const { w, d, posts } = await load("questions");
     click(w, await waitFor(d, "[data-qx]")); await sleep(300); const ta = d.querySelector("textarea[id^=qa]"); type(w, ta, "My answer"); click(w, d.querySelector("[data-qsave]")); await sleep(400);

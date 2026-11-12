@@ -39,8 +39,8 @@
   UI.action("growth-add", async () => {
     readForm(); const f = ST.gform, title = (f.title || "").trim();
     if (!title) { toast("Say what it is first"); const t = $("#gtitle"); if (t) t.focus(); return; }
-    const a = area([...f.areas][0]), win = f.kind === "Win", why = [f.why, !win && f.when ? `Planned: ${f.when}` : ""].filter(Boolean).join(" ");
-    await Api.post("api/growth", { action: "add", item: { title, kind: f.kind === "Learning" ? "learning" : "contribution", state: win || f.kind === "Learning" ? "done" : "open", past: win, why, outcome: win ? why : "", areas: a ? [a.key] : [] } });
+    const a = area([...f.areas][0]), learnt = f.kind === "Learned", win = f.kind === "Win" || learnt, why = [f.why, !win && f.when ? `Planned: ${f.when}` : ""].filter(Boolean).join(" ");
+    await Api.post("api/growth", { action: "add", item: { title, kind: f.kind === "Learning" || learnt ? "learning" : "contribution", state: win ? "done" : "open", past: win, why, outcome: win ? why : "", areas: a ? [a.key] : [] } });
     ST.gv = win ? "Done" : "In progress"; f.title = ""; f.why = ""; f.areas = new Set();
     await redraw(); const form = $("#gform"); if (form) form.innerHTML = gFormHtml(); toast(win ? "Added to your record" : "Added as a goal");
   });

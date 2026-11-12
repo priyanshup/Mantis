@@ -59,6 +59,37 @@ class EntryRules(GrowthCase):
         self.assertEqual(growth.clean({"title": "a", "areas": ["nope"]})["areas"], [])
 
 
+class PlannedLearning(GrowthCase):
+    """IMP-104: a learning the owner has not done yet is in progress, not done; one already learnt is done."""
+
+    def test_a_learning_that_says_it_is_planned_starts_open(self):
+        for title in ("Take the PSPO II certification", "Sit the exam in March", "Book the agile course", "Enrol in the pricing workshop", "Plan to learn SQL",
+                      "Prepare for the product strategy course", "Study for the scrum exam", "Register for the conference", "I will finish the analytics course", "Going to learn Mermaid"):
+            self.assertEqual(growth.clean({"title": title, "kind": "learning"})["state"], "open", title)
+
+    def test_a_learning_that_describes_something_learnt_starts_done_as_before(self):
+        for title in ("Learned how feature flags work", "Analytics for product owners, a short course I finished", "How the CNAME check works"):
+            item = growth.clean({"title": title, "kind": "learning"})
+            self.assertEqual((item["state"], item["done_at"]), ("done", growth.today()), title)
+
+    def test_an_explicit_state_always_wins_over_the_words(self):
+        self.assertEqual(growth.clean({"title": "Take the PSPO II certification", "kind": "learning", "state": "done"})["state"], "done")
+        self.assertEqual(growth.clean({"title": "Learned a lot", "kind": "learning", "state": "open"})["state"], "open")
+
+    def test_the_planned_words_only_count_for_a_learning_not_for_a_recognition(self):
+        self.assertEqual(growth.clean({"title": "Take the lead award", "kind": "recognition"})["state"], "done")
+
+    def test_a_planned_learning_can_carry_a_step_and_be_finished_without_an_outcome(self):
+        item = growth.add({"title": "Take the PSPO II certification", "kind": "learning"})
+        self.assertEqual(item["state"], "open")
+        done = growth.act({"action": "done", "id": item["id"], "outcome": ""})
+        self.assertEqual((done["state"], done["done_at"]), ("done", growth.today()))
+
+    def test_a_planned_learning_is_listed_among_what_is_in_progress_not_in_the_record(self):
+        item = growth.add({"title": "Take the PSPO II certification", "kind": "learning"})
+        self.assertNotIn(item["id"], [i["id"] for i in growth.record()["learnings"]])
+
+
 class ProposalRules(GrowthCase):
     def test_a_proposal_is_saved_as_proposed_by_mantis_never_as_the_owners(self):
         added, skipped = growth.propose([{"title": "Write the pilot summary", "state": "done", "by": "owner"}], source="brief")

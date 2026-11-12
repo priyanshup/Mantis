@@ -26,7 +26,7 @@ function qList(){ const f=QALL.map((q,i)=>[q,i]).filter(([q])=>(QF.who==="Anyone
 const ansCount=()=>Object.keys(ST.ans).length;
 
 /* growth */
-const KINDS=["Win","Step","Learning"], WHENS=["This quarter","Next quarter","2027"];
+const KINDS=["Win","Step","Learning","Learned"], WHENS=["This quarter","Next quarter","2027"];
 const gOf=x=>x.past?"Wins to record":(x.kind==="learning"?"Things to learn":"Steps to take");
 const heldTill=x=>!!x.hold&&x.hold>REAL.today;
 function gLists(){ const items=GROWD.map((x,i)=>({...x,i})), proposed=items.filter(x=>x.state==="proposed"), later=proposed.filter(heldTill);
@@ -48,12 +48,12 @@ function gListHtml(){ const L=gLists();
   if(ST.gv==="Hidden") return gHidden(L);
   const list=ST.gv==="In progress"?L.prog:L.done; if(!list.length) return `<p class="zero">${ST.gv==="Done"?"Wins you record and steps you finish appear here.":"Steps and learning you take on appear here."}</p>`;
   return `<ul class="rows">${list.map(x=>`<li class="gr static"><span class="t clamp">${esc(x.title)}${x.when?`<small>${esc(x.when)}</small>`:""}</span><span class="pills">${x.areas.slice(0,2).map(a=>`<span class="chip">${a}</span>`).join("")}</span></li>`).join("")}</ul>`; }
-function gFormHtml(){ const f=ST.gform; return `<div class="u-mb12 seg">${KINDS.map(k=>`<button data-gk="${k}" aria-pressed="${f.kind===k}">${k==="Win"?"A win":k==="Step"?"A step to take":"Something to learn"}</button>`).join("")}</div>
-  <input class="field" id="gtitle" aria-label="What" placeholder="${f.kind==="Win"?"What did you do? Say the result.":f.kind==="Step"?"What will you do, and why does it matter?":"What do you want to learn?"}">
+function gFormHtml(){ const f=ST.gform; return `<div class="u-mb12 seg">${KINDS.map(k=>`<button data-gk="${k}" aria-pressed="${f.kind===k}">${k==="Win"?"A win":k==="Step"?"A step to take":k==="Learned"?"Something I learned":"Something to learn"}</button>`).join("")}</div>
+  <input class="field" id="gtitle" aria-label="What" placeholder="${f.kind==="Win"?"What did you do? Say the result.":f.kind==="Step"?"What will you do, and why does it matter?":f.kind==="Learned"?"What did you learn, and what changed?":"What do you want to learn?"}">
   <textarea class="u-mt8 u-minh-84 field" id="gwhy" aria-label="Why" placeholder="Evidence or context (optional)"></textarea>
   <div class="u-m-14-0-8 cap muted">Areas</div><div class="pills" id="gareas">${AREAS.map(a=>`<button class="chip sel ${f.areas.has(a.name)?"on":""}" data-garea="${a.name}">${a.name}</button>`).join("")}</div>
-  ${f.kind!=="Win"?`<div class="u-m-14-0-8 cap muted">When</div><div class="pills" id="gwhen">${WHENS.map(w=>`<button class="chip sel ${f.when===w?"on":""}" data-gwhen="${w}">${w}</button>`).join("")}</div>`:""}
-  <div class="u-mt16 acts"><button class="btn2" data-act="growth-add">${f.kind==="Win"?"Add to my record":"Add as a goal"}</button></div>`; }
+  ${f.kind!=="Win"&&f.kind!=="Learned"?`<div class="u-m-14-0-8 cap muted">When</div><div class="pills" id="gwhen">${WHENS.map(w=>`<button class="chip sel ${f.when===w?"on":""}" data-gwhen="${w}">${w}</button>`).join("")}</div>`:""}
+  <div class="u-mt16 acts"><button class="btn2" data-act="growth-add">${f.kind==="Win"||f.kind==="Learned"?"Add to my record":"Add as a goal"}</button></div>`; }
 const gHead=()=>{ const L=gLists(); return `<b id="gl">${L.prop.length} ${L.prop.length===1?"proposal waits":"proposals wait"} for you.</b> ${L.prog.length} in progress, ${L.done.length} done${L.hidden?`, ${L.hidden} hidden`:""}.`; };
 
 /* feature page: tabs, reader */
