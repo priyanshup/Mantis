@@ -4,6 +4,7 @@ import buildlock
 import jobs
 import subprocess
 import sys
+import threading
 import time
 from webserver.config import FILES, ROOT, WATCH
 
@@ -23,16 +24,24 @@ def rebuild():
     print(time.strftime("%H:%M:%S"), last if r.returncode == 0 else "Build failed:\n" + r.stderr[-1500:], flush=True)
 
 
+def _guard_then_refresh(level):
+    """Run the checks; if what the Health page would say changed, rebuild so the page shows it (the rebuild does not trigger another run)."""
+    import guard
+    before = guard.problems()
+    guard.run(level)
+    if guard.problems() != before:
+        rebuild()
+
+
 def guard_if_due(newest_edit):
     """The safety net (tools/guard.py): the quick checks after any edit has settled, the full run once a day. One run at a time."""
     try:
         import guard
         if guard.running() or buildlock.held():
             return
-        if guard.due_full():
-            guard.run_async("full")
-        elif newest_edit > guard.last_epoch() and time.time() - newest_edit > 8:
-            guard.run_async("quick")
+        level = "full" if guard.due_full() else ("quick" if newest_edit > guard.last_epoch() and time.time() - newest_edit > 8 else None)
+        if level:
+            threading.Thread(target=_guard_then_refresh, args=(level,), daemon=True).start()
     except Exception as e:   # the safety net must never stop the server; the Health page shows a stale run
         print(time.strftime("%H:%M:%S"), f"Safety net not started: {e}", flush=True)
 

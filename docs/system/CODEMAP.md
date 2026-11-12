@@ -108,7 +108,7 @@ webserver/focus.py | 71 | The owner's follow, archive and roadmap choices from t
 webserver/handler.py | 200 | The request handler: every /api route the site calls, and the static files. | edit_common, extra, growth, jobs, pull, tasks_store, webserver/config, webserver/focus
 webserver/inbox.py | 126 | What the site posts to the inbox: answers, edited pages, dropped files and Undo of an automatic close. | jobs, webserver/config, webserver/watching
 webserver/lifecycle.py | 30 | Stop a running site by the process ID it recorded at start. | webserver/config
-webserver/watching.py | 55 | Rebuild the site when a hand edit changes a source; Claude and the site's buttons rebuild themselves. | buildlock, guard, jobs, webserver/config
+webserver/watching.py | 64 | Rebuild the site when a hand edit changes a source; Claude and the site's buttons rebuild themselves. | buildlock, guard, jobs, webserver/config
 
 ## Front end (tools/site_assets/)
 
