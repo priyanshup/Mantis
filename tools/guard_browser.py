@@ -1,6 +1,6 @@
 """Real-browser checks of the running site, run by the Playwright interpreter (not by Mantis's Python). IMP-112 item 1.
 
-    <playwright python> tools/guard_browser.py [--base http://localhost:8000] [--shots DIR] [--json]
+    <playwright python> tools/guard_browser.py [--base http://localhost:8000] [--shots DIR] [--json] [--only app|pages|all]
 
 For every page (the six app tabs and one sample of each page type) at desktop and phone width, in light and dark, it checks:
   - no script error or console error, and no "could not open this page" message;
@@ -64,7 +64,7 @@ def targets(base):
     return out
 
 
-def run(base, shots=None):
+def run(base, shots=None, only="all"):
     from playwright.sync_api import sync_playwright
     results = {}
     with sync_playwright() as p:
@@ -73,6 +73,8 @@ def run(base, shots=None):
             for theme in THEMES:
                 ctx = browser.new_context(viewport={"width": w, "height": h}, color_scheme=theme)
                 for name, url in targets(base).items():
+                    if only == "app" and not name.startswith("app:") or only == "pages" and name.startswith("app:"):
+                        continue
                     page, errors = ctx.new_page(), []
                     page.on("pageerror", lambda e: errors.append("error: " + str(e)[:140]))
                     page.on("console", lambda m: errors.append("console: " + m.text[:140]) if m.type == "error" else None)
@@ -118,7 +120,8 @@ def judge(results, baseline):
 def main(argv):
     base = argv[argv.index("--base") + 1] if "--base" in argv else "http://localhost:8000"
     shots = argv[argv.index("--shots") + 1] if "--shots" in argv else None
-    results = run(base, shots)
+    only = argv[argv.index("--only") + 1] if "--only" in argv else "all"
+    results = run(base, shots, only)
     if "--accept" in argv:
         BASELINE.write_text(json.dumps({k: {"contrast": v["contrast"], "small": v["small"]} for k, v in sorted(results.items())}, indent=1), encoding="utf-8")
         print(f"Baseline saved for {len(results)} page views.")

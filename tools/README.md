@@ -112,6 +112,7 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 
 | Tool | What it does | Needs |
 |---|---|---|
+| `affected.py` | Which checks does a change need? (IMP-112 item 8) | standard library |
 | `backup.py` | Daily local copy of the owner's data, with a restore command (IMP-112 item 6). | standard library |
 | `datafile.py` | Reading and writing the owner's own data files (tasks, follow-ups, Growth, schedule, focus, the Atlassian settings). IMP-112 item 6. | standard library |
 | `growth.py` | The owner's growth record (Growth tab): opportunities to step up, what came of them, learnings, recognition. | standard library |

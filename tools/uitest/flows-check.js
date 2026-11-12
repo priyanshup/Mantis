@@ -1,5 +1,5 @@
 // The owner's flows in the app, end to end against the running site, with every write stubbed and recorded.
-// usage: node flows-check.js [base]      Each check says what it clicked and which request it expects.
+// usage: node flows-check.js [base] [--only=meetings,sources]      Each check says what it clicked and which request it expects.
 const { JSDOM, VirtualConsole } = require("jsdom");
 const base = process.argv[2] && process.argv[2].startsWith("http") ? process.argv[2] : "http://localhost:8000/";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -142,7 +142,8 @@ const flows = {
   },
 };
 (async () => {
-  for (const [name, fn] of Object.entries(flows)) { try { await fn(); } catch (e) { check(false, `${name}: ran without throwing`, e.message); } }
+  const only = (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7).split(",").filter(Boolean);   // --only=meetings,sources runs just those
+  for (const [name, fn] of Object.entries(flows)) { if (only.length && !only.includes(name)) continue; try { await fn(); } catch (e) { check(false, `${name}: ran without throwing`, e.message); } }
   for (const [ok, n, i] of results) console.log((ok ? "ok   " : "FAIL ") + n + (i ? "  " + i : ""));
   console.log("errors:", JSON.stringify([...new Set(errors)].slice(0, 6)));
   process.exit(results.every((r) => r[0]) && !errors.length ? 0 : 1);

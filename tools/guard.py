@@ -3,6 +3,7 @@
     python tools/guard.py quick      the self-test (quick), page structure snapshots, the rule tests          (about 20 s)
     python tools/guard.py full       quick, plus the full self-test, the jsdom flow and page checks, and the real-browser checks
                                      (every page, desktop and phone, light and dark: errors, contrast, sideways scroll, touch targets)
+    python tools/guard.py affected   quick, plus only the checks the changed files can affect (tools/affected.py): the quick cycle between edits
     python tools/guard.py status     what the last runs found
 
 The site server runs `quick` after every hand edit it rebuilds for, and `full` once a day while it is up (webserver/watching.py).
@@ -57,6 +58,29 @@ def _site_up():
         return False
 
 
+def jsdom_checks(scripts):
+    """[(name, callable)] for the jsdom scripts in tools/uitest; skipped (not passed) when their packages are not installed."""
+    if not scripts:
+        return []
+    ui = TOOLS / "uitest"
+    if not (ui / "node_modules").exists():
+        return [("jsdom checks", lambda: (None, "skipped: run npm install in tools/uitest", 0))]
+
+    def one(script, args):
+        rc, o, secs = _run(["node", f"{script}.js", *args], 240, ui)
+        return rc == 0 and ("errors: []" in o or '"errors": []' in o), _tail(o), secs
+    jobs = [(s, []) if isinstance(s, str) else s for s in scripts]
+    return [(f"jsdom {s}" + (" (" + a[0][7:] + ")" if a else ""), lambda s=s, a=a: one(s, a)) for s, a in jobs]
+
+
+def browser_check(scope, sub):
+    """The real-browser pass over every page (scope all), the app tabs (app) or the content pages (pages)."""
+    name = "browser (pages, themes, phone width)" + ("" if scope == "all" else f", {scope} only")
+    if PLAYWRIGHT_PY.exists() and _site_up():
+        return sub(name, [str(PLAYWRIGHT_PY), str(TOOLS / "guard_browser.py"), "--only", scope], 420)
+    return (name, lambda: (None, "skipped: the Playwright tool or the running site is missing", 0))
+
+
 def checks(level):
     """[(name, callable -> (ok or None for skipped, detail, seconds))]"""
     py = sys.executable
@@ -73,20 +97,22 @@ def checks(level):
         out.append(sub("rule tests", [py, "-m", "unittest", "discover", "-s", str(tests), "-t", str(TOOLS), "-q"], 180))
     if level == "full":
         out.append(sub("self-test (full)", [py, str(TOOLS / "selftest.py")], 400))
-        node = "node"
-        ui = TOOLS / "uitest"
-        if (ui / "node_modules").exists():
-            def jsdom(script):
-                rc, o, secs = _run([node, f"{script}.js"], 240, ui)
-                return rc == 0 and ("errors: []" in o or '"errors": []' in o), _tail(o), secs
-            for s in ("flows-check", "pagefn-check", "detail-check", "smoke"):
-                out.append((f"jsdom {s}", lambda s=s: jsdom(s)))
-        else:
-            out.append(("jsdom checks", lambda: (None, "skipped: run npm install in tools/uitest", 0)))
-        if PLAYWRIGHT_PY.exists() and _site_up():
-            out.append(sub("browser (pages, themes, phone width)", [str(PLAYWRIGHT_PY), str(TOOLS / "guard_browser.py")], 420))
-        else:
-            out.append(("browser (pages, themes, phone width)", lambda: (None, "skipped: the Playwright tool or the running site is missing", 0)))
+        out += jsdom_checks(["flows-check", "pagefn-check", "detail-check", "smoke"])
+        out.append(browser_check("all", sub))
+    elif level == "affected":   # only what the changed files can affect (tools/affected.py); the quick set above always runs
+        import affected
+        extra, unmapped = affected.plan(affected.changed_files())
+        if unmapped:
+            out.append(("files no rule knows", lambda: (True, "only the quick set ran for: " + ", ".join(unmapped[:5]), 0)))
+        if "build" in extra:
+            out.append(sub("rebuild the site", [py, str(TOOLS / "build_site.py")], 180))
+        names = {"flows": "flows-check", "pagefn": "pagefn-check", "detail": "detail-check", "smoke": "smoke"}
+        scope_flows = affected.flows_scope(affected.changed_files())   # None = all flows
+        jobs = [(names[k], ["--only=" + ",".join(scope_flows)] if k == "flows" and scope_flows else []) for k in ("flows", "pagefn", "detail", "smoke") if k in extra]
+        out += jsdom_checks(jobs)
+        scope = "all" if "browser-all" in extra else ("app" if "browser-app" in extra else ("pages" if "browser-pages" in extra else None))
+        if scope:
+            out.append(browser_check(scope, sub))
     return out
 
 
@@ -169,6 +195,10 @@ def main(argv):
             if level in st:
                 print(f"{level}: {st[level]['ran_at']}, {st[level]['seconds']} s, failed {st[level]['failed'] or 'none'}, skipped {st[level]['skipped'] or 'none'}")
         return 0
+    if cmd == "affected":
+        import affected
+        d = affected.describe(affected.changed_files())
+        print(f"{len(d['files'])} changed file(s). Quick set, plus: {', '.join(d['extra']) or 'nothing'}")
     res = run(cmd)
     for c in res.get("checks", []):
         print(f"{'ok  ' if c['ok'] else ('skip' if c['ok'] is None else 'FAIL')}  {c['name']}  ({c['seconds']} s)" + (f"  {c['detail']}" if c["ok"] is not True else ""))
