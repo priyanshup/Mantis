@@ -16,6 +16,7 @@ FILE is JSON: {"meeting", "date", "facts": [], "decisions": [], "mine": [], "the
 Adding the same date again replaces that session's section; nothing else changes.
 """
 import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 import json, re, subprocess, tempfile
 from datetime import date
 from pathlib import Path

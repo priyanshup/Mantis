@@ -4,6 +4,7 @@ Run by .claude/settings.json at the start of every Claude Code session in this p
 Prints one JSON object for Claude Code; never fails the session.
 """
 import json, re, subprocess, sys
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 from pathlib import Path
 
 sys.dont_write_bytecode = True

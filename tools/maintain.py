@@ -12,6 +12,7 @@ with a zip backup first (tools/prune_sources.py). It never deletes knowledge, di
 Writes mantis/knowledge/map/health.md and health.json.
 """
 import json, os, re, shutil, sys, tempfile, time
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 from datetime import date, datetime
 from itertools import combinations
 from pathlib import Path

@@ -8,6 +8,7 @@ build reads on purpose without needing it: the assets (always rebuilt), the web 
 add the folder to sitecache.inputs() when pages depend on it, or to ALLOWED here with the reason.
 """
 import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 import os
 from pathlib import Path
 

@@ -19,6 +19,7 @@ Checks, each one a failure that has happened before:
 Exit code 1 lists every failure; nothing is changed.
 """
 import ast, importlib, json, re, shutil, subprocess, sys
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 from pathlib import Path
 
 sys.dont_write_bytecode = True

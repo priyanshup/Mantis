@@ -8,6 +8,7 @@ that fits; a file no rule knows runs the quick set and is listed as unmapped, so
 The quick set (self-test, snapshots, rule tests) always runs; the rules only add to it.
 """
 import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 import re, subprocess
 from pathlib import Path
 

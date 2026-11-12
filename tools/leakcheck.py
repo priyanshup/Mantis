@@ -14,6 +14,7 @@ safety net behind the whitelist in .gitignore. It fails on:
 Standard library only. Exit code 1 when anything is found.
 """
 import re, subprocess, sys
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 from pathlib import Path
 
 sys.dont_write_bytecode = True

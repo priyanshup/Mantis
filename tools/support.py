@@ -26,6 +26,7 @@ Record format: [{"card": slug, "claim": text, "cites": [ids], "verdict": ..., "r
 "counterevidence": [{"doc": id, "why": one line}]}]
 """
 import hashlib, json, re, subprocess, sys, time
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 from datetime import date
 from pathlib import Path
 

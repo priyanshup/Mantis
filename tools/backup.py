@@ -14,6 +14,7 @@ touch it. Kept: the last 14 days, plus one per week for 8 weeks.
 Restoring one file first saves the current one next to it as <name>.before-restore, so a restore can itself be undone.
 """
 import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 import os, re, tempfile, zipfile
 from datetime import date, datetime, timedelta
 from pathlib import Path

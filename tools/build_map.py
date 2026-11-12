@@ -10,6 +10,7 @@ Importing this module runs nothing. main() runs the stages in one fixed order; e
 function that takes what it reads as arguments and returns what it computes (MANTIS-IMP-111).
 """
 import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 import json, re, sys
 from collections import defaultdict
 from pathlib import Path

@@ -8,6 +8,7 @@ Only browsers whose command line is headless AND points at a "browser-profile" f
 they have run for 30 minutes; the owner's own browser and Playwright's throwaway profiles are never touched. Cleaning is never automatic.
 """
 import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 import json, os, re, shutil, subprocess, tempfile
 from datetime import datetime, timedelta
 from pathlib import Path

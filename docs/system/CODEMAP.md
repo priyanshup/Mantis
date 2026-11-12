@@ -7,13 +7,13 @@ Columns: lines, what it does, what it uses.
 
 file | lines | purpose | uses
 ---|---|---|---
-affected.py | 100 | Which checks does a change need? (IMP-112 item 8) | 
+affected.py | 101 | Which checks does a change need? (IMP-112 item 8) | noconsole
 answered.py | 182 | What the owner has already settled, so Mantis never asks it again (MANTIS-IMP-088). Stdlib only, no AI. | mishear
 answers.py | 121 | Check the owner's answers before recording them (MANTIS-IMP-050). Stdlib only. | mishear
 apply_edits.py | 66 | Apply page, epic and story edits the owner saved from the site (mantis/00_inbox/edit-*.md). | edit_common
 ask.py | 348 | Ask Mantis a question; get a sourced answer (MANTIS-IMP-081). | classify, decisions, frontmatter, search, support
 assets.py | 456 | Knowledge assets: reusable diagrams and visuals from the sources (MANTIS-IMP-008). | 
-atl.py | 485 | Jira and Confluence, read-only: fetch, mirror and compare with what Mantis already holds (MANTIS-IMP-087). Stdlib only. | atl_client, atl_compare, atl_confluence, atl_crawl, atl_jira, atl_media, atl_rules, atl_store
+atl.py | 486 | Jira and Confluence, read-only: fetch, mirror and compare with what Mantis already holds (MANTIS-IMP-087). Stdlib only. | atl_client, atl_compare, atl_confluence, atl_crawl, atl_jira, atl_media, atl_rules, atl_store
 atl_client.py | 134 | Read-only Jira and Confluence Cloud client: login, API gateway fallback, pacing (MANTIS-IMP-087). Stdlib only. | datafile
 atl_compare.py | 278 | Match mirrored Confluence pages to Mantis digests by title and content, and diff the ones that changed (MANTIS-IMP-087). Stdlib only. | atl_confluence, atl_store, extract, frontmatter
 atl_confluence.py | 155 | Confluence reads: a folder or page tree, one page as Markdown, its old versions, and a mirror sync (MANTIS-IMP-087). Stdlib only. | atl_convert, atl_store
@@ -25,11 +25,11 @@ atl_rules.py | 68 | Rule checks on the mirrored Jira tickets (IMP-087, step 4). 
 atl_store.py | 51 | The local mirror of Jira and Confluence: one Markdown file per item plus an index (MANTIS-IMP-087). Stdlib only. | 
 atl_updates.py | 403 | What changed in Jira and Confluence since the last pull, per filter (MANTIS-IMP-092, MANTIS-IMP-094). Stdlib only. | atl_client, atl_compare, atl_confluence, atl_convert, atl_jira, atl_store, frontmatter
 away.py | 160 | Away planner and handover (MANTIS-IMP-038). | brief, followups, people, schedule, steps, tasks_store
-backup.py | 166 | Daily local copy of the owner's data, with a restore command (IMP-112 item 6). | 
+backup.py | 167 | Daily local copy of the owner's data, with a restore command (IMP-112 item 6). | noconsole
 brief.py | 408 | Meeting briefs (MANTIS-IMP-037): "I'm meeting Sam now, what should I discuss?" | followups, growth, people, readiness, repeats, schedule, steps, tasks_store
 briefcheck.py | 32 | Is today's daily brief worth preparing? (IMP-099) A pure rule used by session_start.py. | 
-build_map.py | 543 | Build Mantis's navigation map and reference graph (stdlib only, deterministic). | answered, assets, backup, build_site, buildlock, cardkeys, cards, changes
-build_site.py | 174 | Build the read-only Mantis website from the Markdown files. | buildlock, layout, pagebuild/changes, pagebuild/feature, pagebuild/frame, pagebuild/library, pagebuild/loaders, pagebuild/paths
+build_map.py | 544 | Build Mantis's navigation map and reference graph (stdlib only, deterministic). | answered, assets, backup, build_site, buildlock, cardkeys, cards, changes
+build_site.py | 175 | Build the read-only Mantis website from the Markdown files. | buildlock, layout, noconsole, pagebuild/changes, pagebuild/feature, pagebuild/frame, pagebuild/library, pagebuild/loaders
 buildlock.py | 57 | One build at a time (MANTIS-IMP-063): the site server, a background job and a chat session can all start one. | 
 cardkeys.py | 91 | The Jira keys and Confluence page IDs each card stands on (IMP-113): a generated map, never hand-kept. | textcache
 cards.py | 261 | Cards: the reading layer for every subject (MANTIS-IMP-014). Stdlib only, deterministic. | frontmatter
@@ -58,45 +58,46 @@ frontmatter.py | 37 | The one front-matter reader for Mantis files (MANTIS-IMP-0
 glossary.py | 82 | Look up glossary terms instead of reading the whole glossary (IMP-100). | local_config
 graph.py | 103 | Query the Mantis entity graph (built by build_map.py into map/entities.json). | 
 growth.py | 436 | The owner's growth record (Growth tab): opportunities to step up, what came of them, learnings, recognition. | datafile, people, steps, tasks_store
-guard.py | 212 | The self-running safety net (IMP-112 item 1): runs the checks without anyone asking, records the result for the Health page. | affected
-guard_browser.py | 143 | Real-browser checks of the running site, run by the Playwright interpreter (not by Mantis's Python). IMP-112 item 1. | 
+guard.py | 213 | The self-running safety net (IMP-112 item 1): runs the checks without anyone asking, records the result for the Health page. | affected, noconsole
+guard_browser.py | 144 | Real-browser checks of the running site, run by the Playwright interpreter (not by Mantis's Python). IMP-112 item 1. | noconsole
 index_gen.py | 137 | Generate the knowledge index entries (registers/documents/<ID>.md) from digests (MANTIS-IMP-013). | textcache
 init.py | 166 | Create an empty Mantis knowledge base on a new machine (MANTIS-IMP-036). | 
-inputscheck.py | 85 | Does the incremental build know every file it reads? (IMP-111 step 7) | sitecache
-jobs.py | 347 | Background jobs started from the site's buttons (MANTIS-IMP-034, MANTIS-IMP-035). | ask, local_config, tasks_store
+inputscheck.py | 86 | Does the incremental build know every file it reads? (IMP-111 step 7) | noconsole, sitecache
+jobs.py | 348 | Background jobs started from the site's buttons (MANTIS-IMP-034, MANTIS-IMP-035). | ask, local_config, noconsole, tasks_store
 kgraph.py | 188 | Entity knowledge graph for Mantis (MANTIS-IMP-004). Stdlib only, deterministic. | answered, local_config, textcache
 layout.py | 88 | The layout: site_config/layout.json -> window.APP_LAYOUT, plus checks (stdlib only; MANTIS-IMP-107). | 
-leakcheck.py | 108 | Check that files bound for the public engine repo carry no knowledge (MANTIS-IMP-036). | 
+leakcheck.py | 109 | Check that files bound for the public engine repo carry no knowledge (MANTIS-IMP-036). | noconsole
 local_config.py | 39 | Read this instance's local settings (mantis/config/settings.json). Never committed (MANTIS-IMP-036). | 
-maintain.py | 283 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, atl_client, atl_updates, backup, citations, classify, digesthealth
-meetingnotes.py | 204 | Recurring-meeting notes without a full source and digest each time (IMP-105). | brief, schedule
+maintain.py | 284 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, atl_client, atl_updates, backup, citations, classify, digesthealth
+meetingnotes.py | 205 | Recurring-meeting notes without a full source and digest each time (IMP-105). | brief, noconsole, schedule
 mishear.py | 56 | Mishearings: words speech-to-text gets wrong (MANTIS-IMP-051). Stdlib only. | 
+noconsole.py | 54 | No console windows from background work (Windows). | 
 pagecheck.py | 88 | Static checks for the packages tools/pagebuild/ (page builders), tools/webserver/ (the site server) and tools/pullkit/ (the pull), run by selftest.py. | 
 peek.py | 97 | Read a digest in two tiers: the short form (title, confidence, open items and Summary), then one section at a time. | 
 people.py | 104 | People the owner works with (MANTIS-IMP-022), read from mantis/knowledge/people.md. | followups, local_config
 prune_sources.py | 147 | Free space in the source snapshots without losing evidence (MANTIS-IMP-089). Stdlib for planning; pypdf to keep text. | extract
-pull.py | 76 | Pull: what changed in Jira, Confluence and the inbox since the last pull, digested card by card (MANTIS-IMP-094). | atl_client, pullkit/brief, pullkit/commands, pullkit/filters, pullkit/grouping, pullkit/state
+pull.py | 77 | Pull: what changed in Jira, Confluence and the inbox since the last pull, digested card by card (MANTIS-IMP-094). | atl_client, noconsole, pullkit/brief, pullkit/commands, pullkit/filters, pullkit/grouping, pullkit/state
 readiness.py | 203 | Decision readiness of roadmap features: problem evidence, measurement plan, launch review (MANTIS-IMP-074 to 076). | frontmatter, textcache
 refresh_report.py | 114 | What a card refresh changed and what it cost: curated part before and after, plus exact token use (MANTIS-IMP-090). Stdlib only. | 
 repeats.py | 102 | Repetition check: what an output says twice (MANTIS-IMP-094). Stdlib, no AI. | answered
 schedule.py | 258 | The owner's recurring meetings and away periods (MANTIS-IMP-037, MANTIS-IMP-038). | datafile, people
 search.py | 239 | Search index for questions: SQLite full-text search plus the entity graph (MANTIS-IMP-086). | ask, frontmatter
-selftest.py | 347 | Self-test for the Mantis engine (MANTIS-IMP-061). Run before every commit (the pre-commit hook does). | atl_updates, decisions, layout, pagecheck, pull, readiness, repeats, search
-serve.py | 71 | Serve the Mantis site at http://localhost:8000 and rebuild it when Markdown changes. | jobs, webserver/config, webserver/handler, webserver/lifecycle, webserver/watching
-session_start.py | 127 | SessionStart hook: start the site and tell Claude what is waiting in the inbox. | brief, briefcheck, followups, guard, people, readiness, schedule, skillscan
+selftest.py | 348 | Self-test for the Mantis engine (MANTIS-IMP-061). Run before every commit (the pre-commit hook does). | atl_updates, decisions, layout, noconsole, pagecheck, pull, readiness, repeats
+serve.py | 72 | Serve the Mantis site at http://localhost:8000 and rebuild it when Markdown changes. | jobs, noconsole, webserver/config, webserver/handler, webserver/lifecycle, webserver/watching
+session_start.py | 128 | SessionStart hook: start the site and tell Claude what is waiting in the inbox. | brief, briefcheck, followups, guard, noconsole, people, readiness, schedule
 site_app.py | 155 | The front end (2026-11-11): the approved mock's own screens, run on live data. | layout, pagebuild/day, pagebuild/paths, pagebuild/registry, site_chrome
 site_chrome.py | 48 | Page chrome both page shells share: head links, theme-colour meta tags and the theme switch (stdlib only; MANTIS-IMP-107). | theme
 site_pages.py | 114 | Page types and their bundles for the content pages (stdlib only; MANTIS-IMP-107). | 
 site_shell.py | 55 | The shell of the content pages (feature, topic, people, library, documents, changes, work): the app's header, a main area, and | layout, site_chrome
 sitecache.py | 139 | Incremental site build (Phase 3, task 1). Stdlib only. | 
-skillscan.py | 189 | Run every Claude skill through NVIDIA SkillSpector before it is trusted, and keep a record (owner rule, 2026-11-12). | 
-snapshots.py | 142 | Structure snapshots of the built pages: a change to markup shows up as a diff the owner can accept (IMP-112 item 1). | 
+skillscan.py | 190 | Run every Claude skill through NVIDIA SkillSpector before it is trusted, and keep a record (owner rule, 2026-11-12). | noconsole
+snapshots.py | 143 | Structure snapshots of the built pages: a change to markup shows up as a diff the owner can accept (IMP-112 item 1). | noconsole
 steps.py | 108 | Next steps on cards (MANTIS-IMP-023): read the "## Next steps" table from every card's curated part. | people, textcache
 stylelint.py | 125 | Style lint: keeps colour, type and layout in the theme, not in widgets (stdlib only; MANTIS-IMP-107). | csskit, theme
-support.py | 356 | Does the cited source support the claim? An AI verifier, fed by code (MANTIS-IMP-079). | classify, entry, frontmatter, jobs, local_config
+support.py | 357 | Does the cited source support the claim? An AI verifier, fed by code (MANTIS-IMP-079). | classify, entry, frontmatter, jobs, local_config, noconsole
 tasks.py | 152 | Add to or read the owner's task list from the command line (Claude uses this on request). | away, deadlines, followups, growth, readiness, tasks_store
 tasks_store.py | 254 | The owner's task list (MANTIS-IMP-018): storage, validation and the daily rollover. | datafile
-tempcheck.py | 100 | Leftover browser profiles and headless browsers in %TEMP% (IMP-112 item 7). Reports on Health; cleans only when asked. | 
+tempcheck.py | 101 | Leftover browser profiles and headless browsers in %TEMP% (IMP-112 item 7). Reports on Health; cleans only when asked. | noconsole
 textcache.py | 92 | Cached file reads for the rebuild (MANTIS-IMP-016). Stdlib only. | 
 theme.py | 98 | The theme: site_config/theme.json -> assets/tokens.css, plus checks (stdlib only; MANTIS-IMP-107). | 
 ticketsuggest.py | 93 | Which card should the tickets no card owns go to, and which look like a new epic? (IMP-113) Words only, no AI, nothing written to the cards. | atl_store

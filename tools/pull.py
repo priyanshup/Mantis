@@ -23,6 +23,7 @@ parent or attachments, and a page edit that changed formatting only. The brief s
 """
 
 import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))

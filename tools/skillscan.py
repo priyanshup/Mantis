@@ -19,6 +19,7 @@ The pinned commit is release v2.13.4. Change PIN only after reading the new rele
 %LOCALAPPDATA%/Mantis/skillscan.json.
 """
 import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 import hashlib, json, os, subprocess, tempfile
 from datetime import datetime
 from pathlib import Path

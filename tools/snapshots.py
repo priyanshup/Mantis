@@ -10,6 +10,7 @@ One sample page per page type (the first in name order) plus the app shell. Outl
 Pixels and colours are checked in the browser instead (tools/guard_browser.py).
 """
 import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 import difflib, os, re
 from html.parser import HTMLParser
 from pathlib import Path

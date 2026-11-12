@@ -12,6 +12,7 @@ The browser checks need the Playwright tool (see tools/uitest/README.md) and the
 never as passed.
 """
 import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 import json, os, subprocess, tempfile, threading, time
 from datetime import datetime
 from pathlib import Path

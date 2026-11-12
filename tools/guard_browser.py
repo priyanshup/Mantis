@@ -12,6 +12,7 @@ Errors, a failed page, a blank page and sideways scroll must be zero. Contrast a
 tools/uitest/browser-baseline.json, so existing problems are tracked down over time and a new one fails at once.
 """
 import json, os, sys
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent

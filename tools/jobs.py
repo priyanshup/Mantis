@@ -13,6 +13,7 @@ final message under "NEEDS YOU:", and the job ends as "needs you" instead of gue
     python tools/jobs.py run TYPE [ARG]  run one job now, in this window (for testing)
 """
 import glob, json, os, re, shutil, subprocess, sys, threading, time, uuid
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 from datetime import date, datetime
 from pathlib import Path
 

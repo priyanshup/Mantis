@@ -21,6 +21,7 @@ How Mantis works. Three groups, by the question each answers.
 | `ARCHITECTURE_DECISIONS.md` | You need the reason behind a design choice (AD-001 onwards). |
 | `MAINTENANCE.md` | Cleaning up: what is generated, what is removed automatically, what is kept. |
 | `SKILLS.md` | Setting up a machine, or choosing a skill or tool. |
+| `SITE_JOURNEYS.md` | Every site page, how pages connect, what each action does; orphan and unused pages. |
 
 ## project/ — plans and history
 

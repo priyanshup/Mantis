@@ -24,6 +24,7 @@ mantis/mirror/ (see atl_store.py); reports in mantis/mirror/reports/. Nothing he
 Confluence. These are the bulk and one-off reads; the everyday "what changed" is tools/pull.py.
 """
 import datetime, json, sys
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 
 import atl_client, atl_compare, atl_confluence, atl_jira, atl_media, atl_store, atl_updates
 

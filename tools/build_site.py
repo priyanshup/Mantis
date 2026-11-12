@@ -9,6 +9,7 @@ HTML comments are removed. Needs the `markdown` package (pip install markdown).
 Reads mantis/knowledge/map/features.json and work.json, which build_map.py writes.
 """
 import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 import json, re
 from datetime import datetime
 from pathlib import Path

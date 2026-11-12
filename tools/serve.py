@@ -24,6 +24,7 @@ this exits quietly. Stop with Ctrl+C.
 """
 
 import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
+import noconsole; noconsole.install()   # no console windows from background work (tools/noconsole.py)
 import functools, http.server, os, socket, subprocess, sys, threading, webbrowser
 from pathlib import Path
 
