@@ -25,7 +25,7 @@ atl_updates.py | 403 | What changed in Jira and Confluence since the last pull, 
 away.py | 160 | Away planner and handover (MANTIS-IMP-038). | brief, followups, people, schedule, steps, tasks_store
 backup.py | 166 | Daily local copy of the owner's data, with a restore command (IMP-112 item 6). | 
 brief.py | 408 | Meeting briefs (MANTIS-IMP-037): "I'm meeting Sam now, what should I discuss?" | followups, growth, people, readiness, repeats, schedule, steps, tasks_store
-build_map.py | 427 | Build Mantis's navigation map and reference graph (stdlib only, deterministic). | answered, assets, backup, build_site, buildlock, cards, changes, codemap
+build_map.py | 429 | Build Mantis's navigation map and reference graph (stdlib only, deterministic). | answered, assets, backup, build_site, buildlock, cards, changes, codemap
 build_site.py | 174 | Build the read-only Mantis website from the Markdown files. | buildlock, layout, pagebuild/changes, pagebuild/feature, pagebuild/frame, pagebuild/library, pagebuild/loaders, pagebuild/paths
 buildlock.py | 57 | One build at a time (MANTIS-IMP-063): the site server, a background job and a chat session can all start one. | 
 cards.py | 261 | Cards: the reading layer for every subject (MANTIS-IMP-014). Stdlib only, deterministic. | frontmatter
@@ -33,6 +33,7 @@ changes.py | 352 | What changed, and which card summaries are behind (MANTIS-IMP
 citations.py | 137 | Citation checks that code can do (MANTIS-IMP-078): do the cited sources exist and belong where they are cited? | entry, frontmatter
 classify.py | 208 | Classify a new document against the corpus before ingest (MANTIS-IMP-005). Stdlib only. | frontmatter, kgraph, local_config, textcache
 codemap.py | 82 | Write docs/system/CODEMAP.md: every tool and front-end file with its one-line purpose, size and neighbours (stdlib only). | 
+context.py | 228 | Where do things stand on a subject? A few hundred tokens instead of the card and its digests (IMP-109). | 
 contradictions.py | 152 | Contradiction check (MANTIS-IMP-047): what to compare when a source arrives or a summary is refreshed. | classify
 csskit.py | 79 | A small CSS walker (stdlib only): list a stylesheet's rules with their positions, and rewrite it keeping only the rules a test keeps. | 
 datafile.py | 50 | Reading and writing the owner's own data files (tasks, follow-ups, Growth, schedule, focus, the Atlassian settings). IMP-112 item 6. | 
@@ -62,7 +63,7 @@ maintain.py | 280 | Mantis housekeeping: safe automatic cleanup plus a health re
 meetingnotes.py | 204 | Recurring-meeting notes without a full source and digest each time (IMP-105). | brief, schedule
 mishear.py | 56 | Mishearings: words speech-to-text gets wrong (MANTIS-IMP-051). Stdlib only. | 
 pagecheck.py | 88 | Static checks for the packages tools/pagebuild/ (page builders), tools/webserver/ (the site server) and tools/pullkit/ (the pull), run by selftest.py. | 
-peek.py | 30 | Print the short form of one or more digests: title, confidence, open items and Summary. | 
+peek.py | 97 | Read a digest in two tiers: the short form (title, confidence, open items and Summary), then one section at a time. | 
 people.py | 104 | People the owner works with (MANTIS-IMP-022), read from mantis/knowledge/people.md. | followups, local_config
 prune_sources.py | 147 | Free space in the source snapshots without losing evidence (MANTIS-IMP-089). Stdlib for planning; pypdf to keep text. | extract
 pull.py | 76 | Pull: what changed in Jira, Confluence and the inbox since the last pull, digested card by card (MANTIS-IMP-094). | atl_client, pullkit/brief, pullkit/commands, pullkit/filters, pullkit/grouping, pullkit/state
@@ -90,6 +91,7 @@ tempcheck.py | 100 | Leftover browser profiles and headless browsers in %TEMP% (
 textcache.py | 92 | Cached file reads for the rebuild (MANTIS-IMP-016). Stdlib only. | 
 theme.py | 98 | The theme: site_config/theme.json -> assets/tokens.css, plus checks (stdlib only; MANTIS-IMP-107). | 
 toollist.py | 83 | Write tools/README.md, the one list of tools, from each tool's own first help line (MANTIS-IMP-062). | 
+topicmap.py | 65 | The file-to-topic map (IMP-109): for every feature and topic card, which files hold its knowledge and what each costs to read. | textcache
 unusedcss.py | 93 | Find (and with --apply remove) CSS rules whose class or id appears nowhere in the site (stdlib only; MANTIS-IMP-107). | csskit
 wiring.py | 72 | Wiring check for the app: every control it draws must be connected to something (stdlib only; MANTIS-IMP-110). | 
 pagebuild/changes.py | 70 | The changes page. | pagebuild/frame, pagebuild/labels, pagebuild/registry, pagebuild/text

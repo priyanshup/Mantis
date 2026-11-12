@@ -239,6 +239,8 @@ _deferred = {rid: r for reg in (gaps, asms, cfls) for rid, r in reg.items() if r
 _c = cards_mod.write(all_cards, docs, summaries, gaps, kg["entities"], is_open, asset_list, _deferred)
 # A citation a card had last build and no longer has (a lost edit), or a source listed but never cited, is recorded for the Health page (IMP-093)
 _cc = OUT / "cards-cited.json"
+import topicmap   # the file-to-topic map (IMP-109)
+topicmap.write(OUT, M)
 _alerts, _cstate = cards_mod.citation_changes(all_cards, json.loads(textcache.read(_cc)) if _cc.exists() else {}, time.strftime("%Y-%m-%d"))
 textcache.write(_cc, json.dumps(_cstate, indent=1, ensure_ascii=False))
 for _a in _alerts:

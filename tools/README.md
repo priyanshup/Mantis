@@ -44,7 +44,7 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 |---|---|---|
 | `ask.py` | Ask Mantis a question; get a sourced answer. | standard library |
 | `search.py` | Search index for questions: SQLite full-text search plus the entity graph. | standard library |
-| `peek.py` | Print the short form of one or more digests: title, confidence, open items and Summary. | standard library |
+| `peek.py` | Read a digest in two tiers: the short form (title, confidence, open items and Summary), then one section at a time. | standard library |
 | `graph.py` | Query the Mantis entity graph (built by build_map.py into map/entities.json). | standard library |
 | `readiness.py` | Decision readiness of roadmap features: problem evidence, measurement plan, launch review. | standard library |
 | `decisions.py` | Decisions know what they rest on. | standard library |
@@ -114,6 +114,7 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 |---|---|---|
 | `affected.py` | Which checks does a change need? (IMP-112 item 8) | standard library |
 | `backup.py` | Daily local copy of the owner's data, with a restore command (IMP-112 item 6). | standard library |
+| `context.py` | Where do things stand on a subject? A few hundred tokens instead of the card and its digests (IMP-109). | standard library |
 | `datafile.py` | Reading and writing the owner's own data files (tasks, follow-ups, Growth, schedule, focus, the Atlassian settings). IMP-112 item 6. | standard library |
 | `growth.py` | The owner's growth record (Growth tab): opportunities to step up, what came of them, learnings, recognition. | standard library |
 | `guard.py` | The self-running safety net (IMP-112 item 1): runs the checks without anyone asking, records the result for the Health page. | standard library |
@@ -124,6 +125,7 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 | `skillscan.py` | Run every Claude skill through NVIDIA SkillSpector before it is trusted, and keep a record (owner rule, 2026-11-12). | standard library |
 | `snapshots.py` | Structure snapshots of the built pages: a change to markup shows up as a diff the owner can accept (IMP-112 item 1). | standard library |
 | `tempcheck.py` | Leftover browser profiles and headless browsers in %TEMP% (IMP-112 item 7). Reports on Health; cleans only when asked. | standard library |
+| `topicmap.py` | The file-to-topic map (IMP-109): for every feature and topic card, which files hold its knowledge and what each costs to read. | standard library |
 
 ## Files that are not commands
 
