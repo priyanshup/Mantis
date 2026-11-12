@@ -6,3 +6,4 @@ python-docx==1.2.0      # extract.py: Word files
 pypdf==6.19.0           # extract.py, assets.py: PDF text and images
 pillow==12.3.0          # assets.py: diagram and image handling
 openpyxl==3.1.5         # estimates.py: Excel files
+python-pptx==1.0.2      # extract.py: PowerPoint decks (slides, tables, charts, speaker notes)

@@ -161,7 +161,7 @@ def skills():
 
 def requirements():
     """Every third-party import in tools/ is listed in requirements.txt (IMP-112 item 3), so a fresh machine can build."""
-    dist = {"PIL": "pillow", "docx": "python-docx", "markdown": "markdown", "markdownify": "markdownify", "pypdf": "pypdf", "openpyxl": "openpyxl"}
+    dist = {"PIL": "pillow", "docx": "python-docx", "markdown": "markdown", "markdownify": "markdownify", "pypdf": "pypdf", "openpyxl": "openpyxl", "pptx": "python-pptx"}
     local = {p.stem for p in T.glob("*.py")} | {"pagebuild", "webserver", "pullkit"}
     listed = {re.split(r"[=<>~! #]", l.strip(), maxsplit=1)[0].lower() for l in (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith("#")}
     for p in [*T.glob("*.py"), *(T / "pagebuild").glob("*.py"), *(T / "webserver").glob("*.py")]:

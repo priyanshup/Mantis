@@ -24,7 +24,7 @@ Part of the workflow (index and the rules for every task: `../WORKFLOW.md`). Use
 ## For each document
 
 1. **Extract.** `python tools/extract.py` turns inbox files (Confluence Word exports, HTML,
-   DOCX, PDF) into Markdown in `00_inbox/.extracted/`. Read that, not the original.
+   DOCX, PPTX, PDF; a deck gives one section per slide, with tables, chart numbers and the speaker notes, which can differ from the slide) into Markdown in `00_inbox/.extracted/`. Read that, not the original.
 2. **Fingerprint and classify.** Note tags, key entities and a one-line summary, then run
    `python tools/classify.py --title "..." --topics a,b --entities "X, Y"`. It gives the verdict
    (NEW DOCUMENT: go on; NEW VERSION of a digest: go on as a version and say so; AMBIGUOUS:

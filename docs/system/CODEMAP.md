@@ -44,7 +44,7 @@ entry.py | 376 | Read and write Mantis registers: one file per entry (stdlib onl
 estimates.py | 155 | Import the team's estimation sheet onto the roadmap cards (MANTIS-IMP-053). | build_site, local_config
 evaluate.py | 353 | Evaluation set: does Mantis still get known cases right? (MANTIS-IMP-077) | ask, classify, contradictions, support
 extra.py | 192 | Live data for the Today and People pages: follow-ups, suggested deadlines, meetings, away, briefs. | brief, deadlines, followups, people, schedule, steps, tasks_store
-extract.py | 118 | Turn inbox files into clean Markdown before Claude reads them (saves most of the reading tokens). | mishear
+extract.py | 182 | Turn inbox files into clean Markdown before Claude reads them (saves most of the reading tokens). | mishear
 followups.py | 172 | Follow-ups per person (MANTIS-IMP-020): topics to raise with someone, or things waiting on them. | datafile, people, steps
 frontmatter.py | 37 | The one front-matter reader for Mantis files (MANTIS-IMP-063): digests, cards, outputs. | 
 graph.py | 103 | Query the Mantis entity graph (built by build_map.py into map/entities.json). | 
