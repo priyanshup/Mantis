@@ -42,9 +42,9 @@ window.rebuildLive = function () {
     if (!m.next || !m.time) return;
     const nx = D(m.next), idx = (nx.getDay() + 6) % 7; if (idx > 4) return;
     const diff = Math.round((D(weekDates[idx]) - nx) / 864e5); if (diff % (7 * (m.every || 1)) !== 0) return;
-    const ag = []; let more = 0;
-    (m.agenda || []).forEach((s) => { s.items.forEach((it) => ag.push([it.text, (it.note || "").replace(/\s*\([^)]*\)\s*$/, "")])); more += s.more || 0; });
-    meetings.push({ d: WK[idx], date: weekDates[idx], n: m.name, t: m.time, w: m.attendees || [], why: m.purpose || "", ag: ag.slice(0, 5), more: Math.max(0, ag.length - 5) + more, key: m.key, id: m.id, at: new Date(weekDates[idx] + "T" + m.time + ":00") });
+    const ag = [];
+    (m.agenda || []).forEach((s) => s.items.forEach((it) => ag.push([it.text, (it.note || "").replace(/\s*\([^)]*\)\s*$/, "")])));
+    meetings.push({ d: WK[idx], date: weekDates[idx], n: m.name, t: m.time, w: m.attendees || [], why: m.purpose || "", ag, key: m.key, id: m.id, at: new Date(weekDates[idx] + "T" + m.time + ":00") });
   });
   meetings.sort((a, b) => a.at - b.at);
   const nextM = meetings.find((m) => m.at >= now); if (nextM) nextM.next = true;
@@ -111,7 +111,7 @@ window.rebuildLive = function () {
   LV.nextLine = `${todayMs.length ? plural(todayMs.length, "meeting") + " today." : "No meetings today."}${nextM ? ` Next: ${esc(nextM.n)}, ${nextM.date === today ? "at" : nextM.date === plus(today, 1) ? "tomorrow at" : nextM.d + " at"} ${nextM.t}.` : ""}`;
   const nw = nextM ? (nextM.date === today ? "Today" : nextM.date === plus(today, 1) ? "Tomorrow" : nextM.d) + " " + nextM.t : "";
   LV.nextAt = nextM ? nextM.at : null; LV.nextWhen = nw;
-  LV.nextCard = nextM ? `<div class="card-h"><h2>Next meeting</h2><span class="mono muted" id="cd">${esc(nw)}</span></div><h3 class="u-fs-20 u-mb8">${esc(nextM.n)}</h3><p class="u-mb16 muted">${esc((nextM.w || []).slice(0, 3).join(", "))}. ${nextM.ag.length + nextM.more ? `Brief ready, ${nextM.ag.length + nextM.more} to raise.` : "Nothing to raise."}</p><a class="u-c-glow-2 link" href="#meetings" data-gomeet="${MEET.indexOf(nextM)}">Open the brief</a>`
+  LV.nextCard = nextM ? `<div class="card-h"><h2>Next meeting</h2><span class="mono muted" id="cd">${esc(nw)}</span></div><h3 class="u-fs-20 u-mb8">${esc(nextM.n)}</h3><p class="u-mb16 muted">${esc((nextM.w || []).slice(0, 3).join(", "))}. ${nextM.ag.length ? `Brief ready, ${nextM.ag.length} to raise.` : "Nothing to raise."}</p><a class="u-c-glow-2 link" href="#meetings" data-gomeet="${MEET.indexOf(nextM)}">Open the brief</a>`
     : `<div class="card-h"><h2>Next meeting</h2></div><p class="muted">No more meetings this week.</p>`;
   const moreW = Math.max(0, Object.keys(WANT).length - 3);
   LV.moreWaitingHtml = moreW ? `<a class="more" href="#questions">${plural(moreW, "more person", "more people")}</a>` : "";

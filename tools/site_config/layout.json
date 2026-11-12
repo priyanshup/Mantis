@@ -133,6 +133,15 @@
    ],
    "hidden": []
   },
+  "features.prep": {
+   "flat": true,
+   "cols": [
+    [
+     "feature.prep"
+    ]
+   ],
+   "hidden": []
+  },
   "features.pages": {
    "flat": true,
    "cols_class": "rd",
@@ -193,6 +202,7 @@
   "features.rows": {
    "raw": true
   },
+  "feature.prep": {},
   "feature.stage": {},
   "feature.needs": {
    "fixed_i": 1

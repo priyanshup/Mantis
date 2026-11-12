@@ -26,17 +26,20 @@ UI.widget("feature.reader", ({ o }) => readerHtml(o));
 UI.widget("feature.pagelist", ({ F }) => `<ul class="rows mlist"><li><div class="mi" aria-current="true"><span class="chip">Confluence</span><span class="t clamp">${esc(F.title)}</span></div></li></ul>`);
 UI.widget("feature.pagebody", ({ F, text }) => `<div class="rd-top"><span class="chip">Confluence</span></div><h2 class="rd-t">${esc(F.title)}</h2><div class="rd-a"><button class="btn2" data-copy="${esc(text)}">Copy all</button><span class="hint">Copies the page text as shown, ${text.split("\n").length} lines.</span></div><div class="md">${md(UJ)}</div>`);
 
+UI.widget("feature.prep", ({ P }) => `<div class="rd-top"><span class="chip">Meeting prep</span>${P.updated ? `<span class="hint">Updated ${esc(P.updated)}</span>` : ""}</div><h2 class="rd-t">${esc(P.title)}</h2><div class="rd-a"><button class="btn2" data-copy="${esc(P.md)}">Copy all</button></div><div class="md">${md(P.md)}</div>`);
+
 function ftabHtml() {
   const F = curFeat(), items = FITEMS();
   if (ST.ft === "Epic and stories") return UI.place("features.reader", { items, o: items[Math.min(ST.st, items.length - 1)] });
   if (ST.ft === "Pages") return UJ ? UI.place("features.pages", { F, text: UJ.replace(/^---[\s\S]*?\n---\n?/, "") }) : UI.card(UI.empty("No Confluence page is written for this feature yet."), { i: 0 });
+  if (ST.ft === "Meeting prep") return (F.preps || []).map((P) => UI.place("features.prep", { P })).join("");
   const tasks = REAL.tasks.filter((t) => LV.gcard[t.g] === F.slug).length, qs = QALL.filter((q) => q.feat === featShort(F.title)).length;
   const people = Object.entries(((window.__LIVE.extra || {}).followups) || {}).filter(([, v]) => (v.items || []).some((i) => i.card === F.slug && i.status === "open")).map(([n]) => n);
   return UI.place("features.overview", { F, tasks, qs, people });
 }
 S.promotions = () => {
   const F = curFeat(); setFeatData(F);
-  const eps = F.stories.length + 1, tabs = [["Overview", ""], ["Epic and stories", eps], ["Pages", F.page ? 1 : ""]];
+  const eps = F.stories.length + 1, tabs = [["Overview", ""], ["Epic and stories", eps], ["Pages", F.page ? 1 : ""], ...((F.preps || []).length ? [["Meeting prep", F.preps.length]] : [])];
   const c = LV.cards.find((x) => x.slug === F.slug);
   const follow = c ? `<button type="button" class="pick nochev ${c.following ? "set" : ""}" data-follow="${c.following ? "unfollow" : "follow"}" data-slug="${esc(F.slug)}">${c.following ? "Following" : "Follow"}</button>` : "";
   return `<div class="screen"><a class="crumb" href="#features">← Features</a>${UI.head(esc(featShort(F.title)), { sub: esc(F.summary), action: follow, flush: true, titleClass: "vt-ftitle" })}

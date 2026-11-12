@@ -27,7 +27,6 @@ def briefs_index():
     return out
 
 
-AGENDA_CAP = 5   # items per agenda section; the rest is counted, not listed
 QUIET = re.compile(r"(no (real |new )?change|nothing (changed|new))", re.I)   # a pull line saying nothing happened
 
 
@@ -90,7 +89,7 @@ def agenda(m, fus, open_items, titles, brief_cards):
     if len(cards) <= 3 and "subjects" in dr:   # a meeting about one or two subjects: what is still open on them is worth raising too
         seen = {o["id"] for o in decide + ask}
         secs.append(("Still open", [q(o) for o in open_items if o["status"] == "Open" and set(o.get("features", [])) & cards and o["id"] not in seen]))
-    return [{"name": n, "items": items[:AGENDA_CAP], "more": max(0, len(items) - AGENDA_CAP)} for n, items in secs if items]
+    return [{"name": n, "items": items} for n, items in secs if items]
 
 
 def last_time(m):

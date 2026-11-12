@@ -2,7 +2,7 @@
 const DAY_NAME = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday" };
 const meetFilter = () => ({ day: ST.mday || "All", q: (ST.mq || "").trim().toLowerCase() });
 const meetShown = (m) => { const f = meetFilter(); return (f.day === "All" || m.d === f.day) && (!f.q || `${m.n} ${m.why} ${(m.w || []).join(" ")}`.toLowerCase().includes(f.q)); };
-const meetRow = (m, i, cur) => `<button class="mrow" data-mi="${i}" aria-pressed="${i === cur}"><span class="dy">${m.d}</span><span class="tm">${m.t}</span><span class="nm">${esc(m.n)}<small>${m.w.length} ${m.w.length === 1 ? "person" : "people"}${m.ag.length ? " · " + (m.ag.length + m.more) + " to raise" : ""}</small></span>${m.ag.length ? '<span class="pip"></span>' : ""}</button>`;
+const meetRow = (m, i, cur) => `<button class="mrow" data-mi="${i}" aria-pressed="${i === cur}"><span class="dy">${m.d}</span><span class="tm">${m.t}</span><span class="nm">${esc(m.n)}<small>${m.w.length} ${m.w.length === 1 ? "person" : "people"}${m.ag.length ? " · " + m.ag.length + " to raise" : ""}</small></span>${m.ag.length ? '<span class="pip"></span>' : ""}</button>`;
 function meetChips() {   // Mon to Fri are always there, so a day with no meeting is a choice that says so instead of a missing button
   const f = meetFilter();
   const chip = (d, n) => `<button type="button" class="chipf${n === 0 ? " none" : ""}" data-act="meeting-day" data-day="${d}" aria-pressed="${f.day === d}"${n === 0 ? ` aria-label="${DAY_NAME[d]}, no meetings"` : ""}>${d}</button>`;

@@ -7,7 +7,7 @@ function dayStats(i){ const date=EXTRA.week[i].d;
 function weekInner(){ const days=WKD.map((d,i)=>{ const date=EXTRA.week[i].d, isT=date===REAL.today, past=date<REAL.today, st=dayStats(i);
     const ms=MEET.map((m,idx)=>({m,idx})).filter(x=>x.m.d===d).sort((a,b)=>a.m.t.localeCompare(b.m.t)), ts=allTasksW().filter(x=>x.due===date&&!ST.done.has(x.k));
     const items=[...ms.map(({m,idx})=>({k:"m",m,idx})),...ts.map(x=>({k:"t",x}))];
-    const li=it=>it.k==="m"?`<li><button class="wdm ${it.m.next?"nx":""}" data-gomeet="${it.idx}" title="Open the brief"><span class="when">${it.m.t}</span><span class="t clamp">${esc(it.m.n)}</span>${it.m.ag.length+it.m.more?'<i class="bp" title="Brief ready"></i>':"<i></i>"}</button></li>`
+    const li=it=>it.k==="m"?`<li><button class="wdm ${it.m.next?"nx":""}" data-gomeet="${it.idx}" title="Open the brief"><span class="when">${it.m.t}</span><span class="t clamp">${esc(it.m.n)}</span>${it.m.ag.length?'<i class="bp" title="Brief ready"></i>':"<i></i>"}</button></li>`
       :`<li><button class="wdm tk" data-agtask="${it.x.k}"><span class="when">Due</span><span class="t clamp">${esc(it.x.t)}</span><i></i></button></li>`;
     const shown=items.slice(0,3), rest=items.slice(3);
     const tl=ms.map(({m})=>{ const [h,mm]=m.t.split(":"), p=((+h*60+ +mm)-480)/600*100; return `<i style="left:${Math.max(0,Math.min(93,p)).toFixed(1)}%" title="${m.t}  ${esc(m.n)}"></i>`; }).join(""), nowp=isT?(nowMin()-480)/600*100:-1, pct=st.total?Math.round(st.done/st.total*100):0;

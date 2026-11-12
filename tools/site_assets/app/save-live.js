@@ -3,7 +3,7 @@
 (function () {
   const L = window.__LIVE || {};
   const jsonPost = (u, b) => fetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) })
-    .then(async (r) => { const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(r.status === 409 ? "Your list changed in another tab. Reload to see it." : (j.error || "That did not work.")); return j; });
+    .then(async (r) => { const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(r.status === 409 ? "Your list changed in another tab. Reload to see it." : (j.error || "That did not work.")), { status: r.status, body: j }); return j; });
   const uid = () => Math.random().toString(36).slice(2, 12);
 
   // ---- header ----
@@ -49,10 +49,19 @@
   }
   const signature = () => JSON.stringify([[...ST.done], ST.edits, ST.newTasks, ST.added, [...ST.gone], ST.carryKept]);
   let sig = signature();
-  async function save() {
+  // The list changed under the page (a pull, a task added from the command line, another tab): the server refuses the save
+  // and sends its current list. Take that list as the base and apply your changes on top of it, once, so nothing you did is lost.
+  async function save(retry = true) {
     const T = desired();
     try { const j = await jsonPost("api/tasks", { rev: LV.rev, tasks: T.tasks, groups: T.groups, dismissed: T.dismissed }); LV.rev = j.rev; }
-    catch (e) { toast("Could not save your tasks. " + e.message); }
+    catch (e) {
+      const b = e.body || {};
+      if (e.status === 409 && retry && Array.isArray(b.tasks) && b.rev !== undefined) {
+        LV.base = Object.assign({}, LV.base, { tasks: b.tasks, groups: b.groups || [], dismissed: b.dismissed || [] }); LV.rev = b.rev;
+        return save(false);
+      }
+      toast("Could not save your tasks. " + e.message);
+    }
   }
   if (L.served) setInterval(() => { const s = signature(); if (s !== sig) { sig = s; save(); } }, 1200);
 

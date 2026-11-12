@@ -28,7 +28,7 @@ new MutationObserver(()=>requestAnimationFrame(setupReveal)).observe(main,{child
 /* 5. peek cards: hover a meeting for its purpose and people */
 let peekT, peekFor=null; const peekEl=()=>{ let p=$("#peek"); if(!p){ p=document.createElement("div"); p.id="peek"; p.className="peek"; p.setAttribute("role","tooltip"); document.body.appendChild(p); } return p; };
 const hidePeek=()=>{ clearTimeout(peekT); peekFor=null; const p=$("#peek"); if(p) p.classList.remove("show"); };
-function showPeek(row,i){ const m=MEET[i], p=peekEl(), n=m.ag.length+m.more, names=m.w.slice(0,5).join(", ")+(m.w.length>5?` and ${m.w.length-5} more`:"");
+function showPeek(row,i){ const m=MEET[i], p=peekEl(), n=m.ag.length, names=m.w.slice(0,5).join(", ")+(m.w.length>5?` and ${m.w.length-5} more`:"");
   p.innerHTML=`<b>${esc(m.n)}</b><span class="mono">${m.d} ${DATES[m.d]}, ${m.t}</span><p>${esc(m.why)}</p><p class="mono">${esc(names)}</p><p class="pk">${n?`${n} to raise. Brief ready. Click to open.`:"Nothing to raise. Click to open."}</p>`;
   const r=row.getBoundingClientRect(), w=300; p.style.width=w+"px"; let left=r.left-w-12; if(left<8) left=Math.min(r.right+12,innerWidth-w-8); p.style.left=left+"px"; p.style.top=Math.max(72,Math.min(r.top-8,innerHeight-p.offsetHeight-12))+"px"; p.classList.add("show"); }
 UI.hoverIntent("[data-gomeet],.mrow[data-mi]",{delay:220,show:r=>{ const i=+(r.dataset.gomeet!==undefined?r.dataset.gomeet:r.dataset.mi); if(MEET[i]){ peekFor=i; showPeek(r,i); } },hide:()=>hidePeek()});
