@@ -58,7 +58,7 @@ kgraph.py | 188 | Entity knowledge graph for Mantis (MANTIS-IMP-004). Stdlib onl
 layout.py | 88 | The layout: site_config/layout.json -> window.APP_LAYOUT, plus checks (stdlib only; MANTIS-IMP-107). | 
 leakcheck.py | 108 | Check that files bound for the public engine repo carry no knowledge (MANTIS-IMP-036). | 
 local_config.py | 39 | Read this instance's local settings (mantis/config/settings.json). Never committed (MANTIS-IMP-036). | 
-maintain.py | 262 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, backup, citations, classify, entry, guard, local_config
+maintain.py | 266 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, backup, citations, classify, entry, guard, local_config
 mishear.py | 56 | Mishearings: words speech-to-text gets wrong (MANTIS-IMP-051). Stdlib only. | 
 pagecheck.py | 88 | Static checks for the packages tools/pagebuild/ (page builders), tools/webserver/ (the site server) and tools/pullkit/ (the pull), run by selftest.py. | 
 peek.py | 30 | Print the short form of one or more digests: title, confidence, open items and Summary. | 
@@ -85,6 +85,7 @@ stylelint.py | 125 | Style lint: keeps colour, type and layout in the theme, not
 support.py | 356 | Does the cited source support the claim? An AI verifier, fed by code (MANTIS-IMP-079). | classify, entry, frontmatter, jobs, local_config
 tasks.py | 152 | Add to or read the owner's task list from the command line (Claude uses this on request). | away, deadlines, followups, growth, readiness, tasks_store
 tasks_store.py | 254 | The owner's task list (MANTIS-IMP-018): storage, validation and the daily rollover. | datafile
+tempcheck.py | 100 | Leftover browser profiles and headless browsers in %TEMP% (IMP-112 item 7). Reports on Health; cleans only when asked. | 
 textcache.py | 92 | Cached file reads for the rebuild (MANTIS-IMP-016). Stdlib only. | 
 theme.py | 98 | The theme: site_config/theme.json -> assets/tokens.css, plus checks (stdlib only; MANTIS-IMP-107). | 
 toollist.py | 83 | Write tools/README.md, the one list of tools, from each tool's own first help line (MANTIS-IMP-062). | 

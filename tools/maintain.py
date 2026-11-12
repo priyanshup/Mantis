@@ -208,6 +208,10 @@ def report():
     except Exception as e:
         add("info", "Commits", f"Uncommitted-work check skipped: {e}")
 
+    import tempcheck   # old browser profiles and headless browsers left running in %TEMP% (tools/tempcheck.py)
+    if tempcheck.problem():
+        add("warn", "Temp", tempcheck.problem())
+
     import backup   # the daily copy of the owner's data (tools/backup.py)
     if backup.problem():
         add("warn", "Backup", backup.problem())

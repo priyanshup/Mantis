@@ -122,6 +122,7 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 | `site_shell.py` | The shell of the content pages (feature, topic, people, library, documents, changes, work): the app's header, a main area, and | standard library |
 | `skillscan.py` | Run every Claude skill through NVIDIA SkillSpector before it is trusted, and keep a record (owner rule, 2026-11-12). | standard library |
 | `snapshots.py` | Structure snapshots of the built pages: a change to markup shows up as a diff the owner can accept (IMP-112 item 1). | standard library |
+| `tempcheck.py` | Leftover browser profiles and headless browsers in %TEMP% (IMP-112 item 7). Reports on Health; cleans only when asked. | standard library |
 
 ## Files that are not commands
 
