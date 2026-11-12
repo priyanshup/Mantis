@@ -12,16 +12,17 @@ INBOX = ROOT / "mantis" / "00_inbox"
 
 try:
     subprocess.run([sys.executable, str(ROOT / "tools" / "serve.py"), "--background"], capture_output=True, timeout=20)
-except Exception:
-    pass
+    _site_note = ""
+except Exception as e:   # the hook must never fail; the owner is told below
+    _site_note = f"The site could not be started ({e}). Tell the owner in one line; python tools/serve.py --background retries."
 
-notes = []
+notes = [_site_note] if _site_note else []
 try:  # weekly housekeeping (MANTIS-IMP-015): runs only if the last run was 7+ days ago
     r = subprocess.run([sys.executable, str(ROOT / "tools" / "maintain.py"), "--if-due"], capture_output=True, text=True, timeout=60)
     if r.stdout.strip():
         notes.append("Weekly maintenance ran: " + r.stdout.strip() + " Mention anything marked 'to fix' to the owner.")
-except Exception:
-    pass
+except Exception as e:   # the hook must never fail
+    notes.append(f"Weekly maintenance could not run ({e}).")
 try:   # what waits is processed by the next pull, which only the owner starts (MANTIS-IMP-094): mention it, do not start it
     answers = sorted(INBOX.glob("answers-*.md"))
     edits = sorted(INBOX.glob("edit-*.md"))
@@ -95,8 +96,8 @@ try:  # once a day: Claude prepares the owner's daily brief suggestions for the 
         notes.append("Today's brief has no suggestions yet. Prepare them per docs/rules/workflow/day.md, 'Daily brief': run "
                      "`python tools/tasks.py context`, write up to 5 suggestions, save with `python tools/tasks.py suggest <file>`, "
                      "and tell the owner in one line that today's brief is ready on the Today page.")
-except Exception:
-    pass
+except Exception as e:   # the hook must never fail
+    notes.append(f"Today's brief check failed ({e}).")
 
 try:  # a recurring meeting today (its regular day or a moved one): prepare its brief once, before it starts
     sys.path.insert(0, str(ROOT / "tools"))
@@ -107,8 +108,8 @@ try:  # a recurring meeting today (its regular day or a moved one): prepare its 
             notes.append(f"The owner's meeting '{m['name']}' is today{(' at ' + m['time']) if m.get('time') else ''}. Prepare its brief per "
                          f"docs/rules/workflow/day.md, 'Meeting briefs' (python tools/brief.py gather \"{m['name']}\"), save it, and "
                          "give the owner the bullets in your first reply. After the meeting, offer to save the takeaways.")
-except Exception:
-    pass
+except Exception as e:   # the hook must never fail
+    notes.append(f"Today's meeting-brief check failed ({e}).")
 
 out ={"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": " ".join(notes)}} if notes else {}
 print(json.dumps(out))

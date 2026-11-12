@@ -43,8 +43,8 @@ def cleanup():
         sys.path.insert(0, str(Path(__file__).parent))
         import tasks_store
         tasks_store.load()
-    except Exception:
-        pass
+    except (ImportError, OSError, ValueError) as e:
+        print(f"Task housekeeping skipped: {e}", file=sys.stderr)
     packets = M / "mirror" / "packets"   # pull packets: a digested one was copied to 01_sources; the mirror copy is a working file
     for p in packets.glob("*.md") if packets.exists() else []:
         if time.time() - p.stat().st_mtime > 30 * 86400:
@@ -85,7 +85,8 @@ def prune_asset_files():
         sys.path.insert(0, str(Path(__file__).parent))
         import assets
         return assets.prune_files()
-    except Exception:
+    except (ImportError, OSError) as e:
+        print(f"Image pruning skipped: {e}", file=sys.stderr)
         return 0
 
 
@@ -172,12 +173,9 @@ def report():
         docs = classify.corpus()
         w = json.loads(classify.CONFIG.read_text(encoding="utf-8"))
         pairs = classify.pair_scores(docs, w["weights"], floor=min(0.5, w["version"] - 0.05))
-        try:   # pairs checked and known to be different documents (local settings): parts of one study read alike
-            import local_config
-            distinct = {frozenset(p) for p in local_config.load().get("classify_known_distinct_pairs", [])}
-            pairs = [p for p in pairs if frozenset(p[1:]) not in distinct]
-        except Exception:
-            pass
+        import local_config   # pairs checked and known to be different documents (local settings): parts of one study read alike
+        distinct = {frozenset(p) for p in local_config.load().get("classify_known_distinct_pairs", [])}
+        pairs = [p for p in pairs if frozenset(p[1:]) not in distinct]
         near = [p for p in pairs if p[0] >= 0.5]
         if near:
             add("info", "Duplicates", "Near-duplicate digests (same card covers them): " + ", ".join(f"{x[-4:]}~{y[-4:]} ({s:.2f})" for s, x, y in near[:6]) + ".")
@@ -209,6 +207,10 @@ def report():
                 + ". Commit per finished task so a change can be rolled back; ask Claude to commit.")
     except Exception as e:
         add("info", "Commits", f"Uncommitted-work check skipped: {e}")
+
+    import local_config   # local settings that exist but cannot be read are reported, not silently replaced by defaults
+    if local_config.check():
+        add("warn", "Settings", local_config.check())
 
     try:   # the self-running safety net (tools/guard.py): failing or stale checks
         import guard

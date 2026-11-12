@@ -73,7 +73,7 @@ def text_of(f):
         import extract
         try:
             _texts[f] = extract.convert(f) or ""
-        except Exception:
+        except Exception:   # a file type the extractor cannot read counts as empty text; the prune then keeps the source
             _texts[f] = ""
     return _texts[f]
 

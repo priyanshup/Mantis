@@ -109,7 +109,7 @@ def main(paths):
             note = mishear.report(text)
             if note:
                 print("  " + note)
-        except Exception:
+        except (ImportError, OSError, ValueError):   # the mishearing note is optional
             pass
 
 

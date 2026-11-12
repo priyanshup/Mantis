@@ -25,12 +25,10 @@ COLS = {"complexity": re.compile(r"complex", re.I), "effort": re.compile(r"effor
         "notes": re.compile(r"note|comment|remark|assumption|scope", re.I)}
 STOP = {"the", "a", "an", "and", "or", "of", "for", "to", "in", "on", "with", "by", "from", "feature", "management", "mvp",
         "new", "support"}
-try:   # words too common in this instance to tell cards apart (product names): mantis/config/settings.json "estimate_stopwords"
-    sys.path.insert(0, str(Path(__file__).parent))
-    import local_config
-    STOP |= {w.lower() for w in local_config.load().get("estimate_stopwords", [])}
-except Exception:
-    pass
+# words too common in this instance to tell cards apart (product names): mantis/config/settings.json "estimate_stopwords"
+sys.path.insert(0, str(Path(__file__).parent))
+import local_config
+STOP |= {w.lower() for w in local_config.load().get("estimate_stopwords", [])}
 SIZES = {"xs": "Extra small", "s": "Small", "m": "Medium", "l": "Large", "xl": "Extra large", "xxl": "Extra extra large",
          "low": "Low", "medium": "Medium", "med": "Medium", "high": "High", "very high": "Very high"}
 MIN_SCORE = 0.34

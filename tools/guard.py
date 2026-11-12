@@ -53,7 +53,7 @@ def _site_up():
     try:
         urllib.request.urlopen("http://localhost:8000/index.html", timeout=3).read(1)
         return True
-    except Exception:
+    except (OSError, ValueError):   # not running, or not answering
         return False
 
 

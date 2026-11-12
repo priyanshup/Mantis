@@ -59,7 +59,7 @@ def expand(q):
             canon = classify.ALIAS.get(classify.NORM(t))
             if canon:
                 extra.append(canon)
-    except Exception:
+    except (ImportError, AttributeError, OSError, ValueError):   # no alias table: the question's own words are used
         pass
     return toks + extra
 

@@ -134,7 +134,7 @@ def mishearings():
         sys.path.insert(0, str(ROOT / "tools"))
         import mishear
         return mishear.load()
-    except Exception:
+    except (ImportError, OSError, ValueError):   # no mishearing list yet
         return []
 
 

@@ -174,6 +174,24 @@ def requirements():
                     check("requirements", dist.get(m, m).lower() in listed, f"{p.name} imports {m}, which requirements.txt does not list")
 
 
+def broad_excepts():
+    """A broad `except Exception` (or a bare except) hides a failure unless it reports it or says why not (IMP-112 item 4).
+    Allowed: the handler uses the exception (prints, records or returns it), or the except line carries a comment saying why."""
+    for p in [*T.glob("*.py"), *(T / "pagebuild").glob("*.py"), *(T / "webserver").glob("*.py")]:
+        src = p.read_text(encoding="utf-8")
+        lines = src.splitlines()
+        for n in ast.walk(ast.parse(src)):
+            if not isinstance(n, ast.ExceptHandler):
+                continue
+            broad = n.type is None or (isinstance(n.type, ast.Name) and n.type.id in ("Exception", "BaseException"))
+            if not broad:
+                continue
+            uses = n.name and any(isinstance(x, ast.Name) and x.id == n.name for b in n.body for x in ast.walk(b))
+            reraises = any(isinstance(x, ast.Raise) for b in n.body for x in ast.walk(b))
+            commented = "#" in lines[n.lineno - 1].split("except", 1)[-1]
+            check("except", bool(uses or reraises or commented), f"{p.name} line {n.lineno}: a broad except that neither reports the error nor says why on the same line; narrow it, report it, or add a comment")
+
+
 def readiness_rules():
     """Decision readiness judges evidence, not filled fields (MANTIS-IMP-074 to 076): fixed cards, expected states."""
     import tempfile, readiness
@@ -306,7 +324,7 @@ def data():
 
 if __name__ == "__main__":
     quick = "--quick" in sys.argv
-    code(); js_css(); theme_and_style(); docs(); incremental(); skills(); requirements(); readiness_rules(); decision_watch(); search_index(); pull_logic(); repeats_rule()
+    code(); js_css(); theme_and_style(); docs(); incremental(); skills(); requirements(); broad_excepts(); readiness_rules(); decision_watch(); search_index(); pull_logic(); repeats_rule()
     if not quick:
         tools(); data()
     if fails:

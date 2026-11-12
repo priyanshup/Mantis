@@ -67,7 +67,7 @@ def keep(data, where, out):
     try:
         img = Image.open(io.BytesIO(data))
         img.load()
-    except Exception:
+    except Exception:   # any decoder failure on an embedded image (they vary by format): the image is skipped, the document is still read
         return
     h = hashlib.sha256(data).hexdigest()[:16]
     fmt = (img.format or "png").lower()
@@ -148,7 +148,7 @@ def from_pdf(p, out):
         try:
             for im in page.images:
                 keep(im.data, i + 1, out)
-        except Exception:
+        except Exception:   # pypdf raises its own and generic errors on damaged pages: the page's images are skipped
             continue
 
 

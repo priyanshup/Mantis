@@ -191,13 +191,10 @@ def run_model_text(prompt, role="verify", bare=False):
     if bare:
         cmd += ["--system-prompt", "You answer questions from the evidence you are given and reply with JSON only."]
         run_in = Path(tempfile.mkdtemp(prefix="mantis-call-"))
-    try:
-        import local_config
-        model = local_config.load().get("job_models", {}).get(role)
-        if model:
-            cmd += ["--model", model]
-    except Exception:
-        pass
+    import local_config
+    model = local_config.load().get("job_models", {}).get(role)
+    if model:
+        cmd += ["--model", model]
     t0 = time.time()
     try:
         r = subprocess.run(cmd, cwd=run_in, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=900,

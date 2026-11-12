@@ -39,7 +39,7 @@ def aliases():
             for n in [name] + e["aliases"]:
                 out[kgraph.norm(n)] = kgraph.norm(name)
         return out, kgraph.norm
-    except Exception:
+    except (ImportError, OSError, ValueError, KeyError):   # no entity register yet: plain normalisation only
         n = lambda s: re.sub(r"[^0-9a-z]", "", s.lower())
         return {}, n
 

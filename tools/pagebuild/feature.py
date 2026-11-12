@@ -249,7 +249,7 @@ def jira_tickets(slug):
     try:
         import atl_store, atl_updates, atl_client
         idx, conf = atl_store.load_index("jira"), atl_client.load_config()
-    except Exception:
+    except (ImportError, OSError, ValueError, KeyError):   # no Jira mirror on this machine
         return []
     rows = [dict(v, key=k) for k, v in idx.items() if atl_updates.card_of(k, idx, conf) == slug]
     return sorted(rows, key=lambda r: r.get("updated", ""), reverse=True)

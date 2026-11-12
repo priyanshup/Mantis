@@ -47,12 +47,9 @@ def slug(name):
 
 
 def owner_names():
-    try:
-        sys.path.insert(0, str(ROOT / "tools"))
-        import local_config
-        names = local_config.load().get("owner_names", [])
-    except Exception:
-        names = []
+    sys.path.insert(0, str(ROOT / "tools"))
+    import local_config
+    names = local_config.load().get("owner_names", [])
     return [n.lower() for n in names] + ["owner", "the owner", "me"]
 
 

@@ -167,10 +167,10 @@ def claude_today():
 
 
 def daily_cap():
+    import local_config
     try:
-        import local_config
         return int(local_config.load().get("max_claude_jobs_per_day", 25))
-    except Exception:
+    except (TypeError, ValueError):   # a setting that is not a number: the default
         return 25
 
 
@@ -293,13 +293,10 @@ def _run_agent(job):
     cmd = agent_command() + ["-p", prompt, "--output-format", "json", "--permission-mode", "acceptEdits",
                              "--append-system-prompt", UNATTENDED, "--allowedTools", *ALLOWED_TOOLS,
                              "--tools", JOB_TOOLS, "--strict-mcp-config", "--disable-slash-commands"]
-    try:   # optional, per job type, in local settings: {"job_models": {"daily-brief": "sonnet"}}; default is unchanged
-        import local_config
-        model = local_config.load().get("job_models", {}).get(job["type"])
-        if model:
-            cmd += ["--model", model]
-    except Exception:
-        pass
+    import local_config   # optional, per job type, in local settings: {"job_models": {"daily-brief": "sonnet"}}; default is unchanged
+    model = local_config.load().get("job_models", {}).get(job["type"])
+    if model:
+        cmd += ["--model", model]
     if os.environ.get("MANTIS_AGENT_CMD"):   # another tool: pass the prompt only
         cmd = agent_command() + [UNATTENDED + "\n\n" + prompt]
     r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
