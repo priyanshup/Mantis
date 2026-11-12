@@ -385,8 +385,8 @@ if problems:
 lap("lint")
 import sitecache   # a stage that only reads files is skipped when nothing it reads changed (--full forces it)
 _today = time.strftime("%Y-%m-%d")
-import guard, skillscan   # the health report also lists skills not cleared by SkillSpector, so their state is part of its signature
-_sig = sitecache.stage_signature([ROOT / "mantis", ROOT / "docs", ROOT / "tools"], _today + "|" + ";".join(f"{r['name']}:{r['state']}" for r in skillscan.status()) + "|" + repr(guard.problems()))   # and the date, and the safety net's result
+import backup, guard, skillscan   # the health report also lists skills not cleared by SkillSpector, so their state is part of its signature
+_sig = sitecache.stage_signature([ROOT / "mantis", ROOT / "docs", ROOT / "tools"], _today + "|" + ";".join(f"{r['name']}:{r['state']}" for r in skillscan.status()) + "|" + repr(guard.problems()) + "|" + backup.problem())   # and the date, and the safety net's result
 if sitecache.stage_unchanged("health", _sig, OUT / "health.json"):
     print("Health report: nothing changed, kept.")
 else:

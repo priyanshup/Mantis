@@ -12,6 +12,7 @@
 DAY is Mon..Fri (weekly; --every 2 for fortnightly). Stored in mantis/tasks/meetings.json and
 mantis/tasks/away.json; the site edits the same files. Dates are YYYY-MM-DD.
 """
+import datafile
 import json, os, re, sys, uuid
 from datetime import date, timedelta
 from pathlib import Path
@@ -24,19 +25,13 @@ DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 
 def _read(p, key):
-    try:
-        d = json.loads(p.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        d = {}
+    d = datafile.read(p, {})
     d.setdefault(key, [])
     return d
 
 
 def _write(p, d):
-    p.parent.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_suffix(".tmp")
-    tmp.write_text(json.dumps(d, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    os.replace(tmp, p)
+    datafile.write(p, d)
 
 
 def iso(d):

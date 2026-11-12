@@ -16,6 +16,8 @@ long run never floods the site. `calls` counts the requests a run made.
 import base64, json, os, sys, time, urllib.error, urllib.parse, urllib.request
 from pathlib import Path
 
+import datafile
+
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent.parent
 ENV = ROOT / "mantis" / "config" / ".env"
@@ -35,14 +37,12 @@ def load_env(path=ENV):
 
 
 def load_config():
-    try:
-        return json.loads(CONFIG.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
+    """The Atlassian settings. A missing file is an empty configuration; one that exists but cannot be read raises, so a later save cannot replace it."""
+    return datafile.read(CONFIG, {})
 
 
 def save_config(cfg):
-    CONFIG.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    datafile.write(CONFIG, cfg, indent=2)
 
 
 class AtlassianError(RuntimeError):

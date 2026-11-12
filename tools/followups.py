@@ -11,6 +11,7 @@ not closed in a meeting is still there for the next one. "raise": a topic the ow
 up; "wait": something the owner is waiting for from that person (chase on the chase date).
 Steps on cards that are waiting on someone are shown alongside, read from the cards (tools/steps.py).
 """
+import datafile
 import json, os, sys, time, uuid
 from datetime import date
 from pathlib import Path
@@ -23,18 +24,12 @@ LOCK = FILE.with_suffix(".lock")
 
 
 def _read():
-    try:
-        return json.loads(FILE.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {"rev": 0, "items": []}
+    return datafile.read(FILE, {"rev": 0, "items": []})
 
 
 def _write(st):
-    FILE.parent.mkdir(parents=True, exist_ok=True)
     st["rev"] = st.get("rev", 0) + 1
-    tmp = FILE.with_suffix(".tmp")
-    tmp.write_text(json.dumps(st, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    os.replace(tmp, FILE)
+    datafile.write(FILE, st)
     return st
 
 

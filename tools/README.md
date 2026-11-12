@@ -112,6 +112,8 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 
 | Tool | What it does | Needs |
 |---|---|---|
+| `backup.py` | Daily local copy of the owner's data, with a restore command (IMP-112 item 6). | standard library |
+| `datafile.py` | Reading and writing the owner's own data files (tasks, follow-ups, Growth, schedule, focus, the Atlassian settings). IMP-112 item 6. | standard library |
 | `growth.py` | The owner's growth record (Growth tab): opportunities to step up, what came of them, learnings, recognition. | standard library |
 | `guard.py` | The self-running safety net (IMP-112 item 1): runs the checks without anyone asking, records the result for the Health page. | standard library |
 | `guard_browser.py` | Real-browser checks of the running site, run by the Playwright interpreter (not by Mantis's Python). IMP-112 item 1. | standard library |

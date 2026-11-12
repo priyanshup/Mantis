@@ -33,6 +33,16 @@ def _guard_then_refresh(level):
         rebuild()
 
 
+def backup_if_due():
+    """The owner's data is copied once a day while the site is up (tools/backup.py); a failure shows on the Health page."""
+    try:
+        import backup
+        if backup.due():
+            backup.make()
+    except (ImportError, OSError, ValueError) as e:
+        print(time.strftime("%H:%M:%S"), f"Backup not made: {e}", flush=True)
+
+
 def guard_if_due(newest_edit):
     """The safety net (tools/guard.py): the quick checks after any edit has settled, the full run once a day. One run at a time."""
     try:
@@ -61,3 +71,4 @@ def watch():
             rebuild()
         seen = now
         guard_if_due(now)
+        backup_if_due()

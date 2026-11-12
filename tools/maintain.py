@@ -208,6 +208,10 @@ def report():
     except Exception as e:
         add("info", "Commits", f"Uncommitted-work check skipped: {e}")
 
+    import backup   # the daily copy of the owner's data (tools/backup.py)
+    if backup.problem():
+        add("warn", "Backup", backup.problem())
+
     import local_config   # local settings that exist but cannot be read are reported, not silently replaced by defaults
     if local_config.check():
         add("warn", "Settings", local_config.check())

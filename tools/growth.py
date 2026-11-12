@@ -27,6 +27,7 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+import datafile
 DIR = ROOT / "mantis" / "growth"
 STORE, FRAME, LOCK = DIR / "growth.json", DIR / "framework.json", DIR / ".lock"
 KINDS = ("contribution", "learning", "recognition")
@@ -44,10 +45,7 @@ def today():
 
 
 def _read(p, default):
-    try:
-        return json.loads(p.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return default
+    return datafile.read(p, default)   # unreadable stops the action instead of becoming an empty record
 
 
 def framework():
@@ -88,9 +86,7 @@ def edit(fn):
         out = fn(st)
         if out:
             st["rev"] = st.get("rev", 0) + 1
-            tmp = STORE.with_suffix(".tmp")
-            tmp.write_text(json.dumps(st, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-            os.replace(tmp, STORE)
+            datafile.write(STORE, st)
         return out
     return _locked(go)
 

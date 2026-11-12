@@ -21,6 +21,7 @@ shorter estimate; a group ranks as its best open task. `pin` (null or a slot, 0 
 dragged a task or group; it outranks priority, due date and estimate, and holds until the task leaves Today
 (done, parked, deleted, moved to another day) or changes group. A task's pin counts within its group, a group's and an ungrouped task's within the list.
 """
+import datafile
 import json, os, re, time, uuid
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -45,17 +46,11 @@ def today():
 
 
 def _read(p, default):
-    try:
-        return json.loads(p.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return default
+    return datafile.read(p, default)   # a file that cannot be read stops the action; it is never replaced by an empty one
 
 
 def _write(p, data):
-    DIR.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    os.replace(tmp, p)
+    datafile.write(p, data)
 
 
 def _locked(fn):

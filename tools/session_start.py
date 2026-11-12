@@ -49,6 +49,11 @@ try:   # every skill goes through SkillSpector before it is trusted (owner rule,
 except Exception as e:
     notes.append(f"Skill check failed: {e}")
 
+try:   # the owner's data is copied once a day (tools/backup.py); the site server does it too, this covers a day it was not running
+    subprocess.run([sys.executable, str(ROOT / "tools" / "backup.py")], capture_output=True, timeout=120)
+except Exception as e:   # the hook must never fail
+    notes.append(f"The daily backup could not run ({e}). Tell the owner in one line; python tools/backup.py retries.")
+
 try:   # the safety net's last result (tools/guard.py): read only, it runs inside the site server
     import guard
     failing = [m for lvl, m in guard.problems() if lvl == "warn"]

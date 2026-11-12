@@ -1,6 +1,6 @@
 """The owner's follow, archive and roadmap choices from the Features page (knowledge/focus.json)."""
 import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
-import json
+import datafile
 import threading
 from webserver.config import FOCUS, OUTPUTS, ROOT
 from webserver.watching import rebuild
@@ -26,28 +26,28 @@ def set_focus(slug, action, order=None, rebuild_after=True):
         for s in [s for s in (order or []) if s in feats | topics]:
             f = set_focus(s, action[5:], rebuild_after=False)
         threading.Thread(target=rebuild, daemon=True).start()
-        return f or json.loads(FOCUS.read_text(encoding="utf-8"))
+        return f or datafile.read(FOCUS, {})
     if action in ("archive-work", "unarchive-work"):   # one epic or story, keyed by its file under mantis/ (outputs/...)
         target = (ROOT / "mantis" / slug).resolve()
         if not slug.startswith("outputs/") or not slug.endswith(".md") or OUTPUTS not in target.parents or not target.exists():
             raise ValueError("unknown epic or story")
-        f = json.loads(FOCUS.read_text(encoding="utf-8")) if FOCUS.exists() else {"following": []}
+        f = datafile.read(FOCUS, {"following": []})
         rest = [s for s in f.get("archived_work", []) if s != slug]
         f["archived_work"] = sorted(rest + ([slug] if action == "archive-work" else []))
-        FOCUS.write_text(json.dumps(f, indent=1) + "\n", encoding="utf-8")
+        datafile.write(FOCUS, f, ensure_ascii=True)
         if rebuild_after:
             threading.Thread(target=rebuild, daemon=True).start()
         return f
     if action == "order":   # the owner's ranking of followed cards, top first
-        f = json.loads(FOCUS.read_text(encoding="utf-8")) if FOCUS.exists() else {"following": []}
+        f = datafile.read(FOCUS, {"following": []})
         known = [s for s in (order or []) if s in f.get("following", [])]
         f["following"] = known + [s for s in f.get("following", []) if s not in known]
-        FOCUS.write_text(json.dumps(f, indent=1) + "\n", encoding="utf-8")
+        datafile.write(FOCUS, f, ensure_ascii=True)
         threading.Thread(target=rebuild, daemon=True).start()
         return f
     if slug not in feats | topics or action not in FOCUS_ACTIONS:
         raise ValueError("unknown card or action")
-    f = json.loads(FOCUS.read_text(encoding="utf-8")) if FOCUS.exists() else {"following": [], "on_roadmap": [], "off_roadmap": []}
+    f = datafile.read(FOCUS, {"following": [], "on_roadmap": [], "off_roadmap": []})
     for k in ("following", "on_roadmap", "off_roadmap", "archived"):
         f.setdefault(k, [])
     if action == "archive":   # an archived card leaves focus and the roadmap; restoring it does not put it back
@@ -64,7 +64,7 @@ def set_focus(slug, action, order=None, rebuild_after=True):
         lst = set(f[key])
         (lst.add if on else lst.discard)(slug)
         f[key] = sorted(lst)
-    FOCUS.write_text(json.dumps(f, indent=1) + "\n", encoding="utf-8")
+    datafile.write(FOCUS, f, ensure_ascii=True)
     if rebuild_after:
         threading.Thread(target=rebuild, daemon=True).start()   # the page reloads itself when the rebuild lands
     return f
