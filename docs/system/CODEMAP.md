@@ -60,11 +60,11 @@ leakcheck.py | 108 | Check that files bound for the public engine repo carry no 
 local_config.py | 39 | Read this instance's local settings (mantis/config/settings.json). Never committed (MANTIS-IMP-036). | 
 maintain.py | 262 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, backup, citations, classify, entry, guard, local_config
 mishear.py | 56 | Mishearings: words speech-to-text gets wrong (MANTIS-IMP-051). Stdlib only. | 
-pagecheck.py | 88 | Static checks for the packages tools/pagebuild/ (page builders) and tools/webserver/ (the site server), run by selftest.py. | 
+pagecheck.py | 88 | Static checks for the packages tools/pagebuild/ (page builders), tools/webserver/ (the site server) and tools/pullkit/ (the pull), run by selftest.py. | 
 peek.py | 30 | Print the short form of one or more digests: title, confidence, open items and Summary. | 
 people.py | 104 | People the owner works with (MANTIS-IMP-022), read from mantis/knowledge/people.md. | followups, local_config
 prune_sources.py | 147 | Free space in the source snapshots without losing evidence (MANTIS-IMP-089). Stdlib for planning; pypdf to keep text. | extract
-pull.py | 573 | Pull: what changed in Jira, Confluence and the inbox since the last pull, digested card by card (MANTIS-IMP-094). | atl_client, atl_jira, atl_store, atl_updates, frontmatter, jobs, textcache
+pull.py | 76 | Pull: what changed in Jira, Confluence and the inbox since the last pull, digested card by card (MANTIS-IMP-094). | atl_client, pullkit/brief, pullkit/commands, pullkit/filters, pullkit/grouping, pullkit/state
 readiness.py | 203 | Decision readiness of roadmap features: problem evidence, measurement plan, launch review (MANTIS-IMP-074 to 076). | frontmatter, textcache
 refresh_report.py | 114 | What a card refresh changed and what it cost: curated part before and after, plus exact token use (MANTIS-IMP-090). Stdlib only. | 
 repeats.py | 102 | Repetition check: what an output says twice (MANTIS-IMP-094). Stdlib, no AI. | answered
@@ -87,7 +87,7 @@ tasks.py | 152 | Add to or read the owner's task list from the command line (Cla
 tasks_store.py | 254 | The owner's task list (MANTIS-IMP-018): storage, validation and the daily rollover. | datafile
 textcache.py | 92 | Cached file reads for the rebuild (MANTIS-IMP-016). Stdlib only. | 
 theme.py | 98 | The theme: site_config/theme.json -> assets/tokens.css, plus checks (stdlib only; MANTIS-IMP-107). | 
-toollist.py | 82 | Write tools/README.md, the one list of tools, from each tool's own first help line (MANTIS-IMP-062). | 
+toollist.py | 83 | Write tools/README.md, the one list of tools, from each tool's own first help line (MANTIS-IMP-062). | 
 unusedcss.py | 93 | Find (and with --apply remove) CSS rules whose class or id appears nowhere in the site (stdlib only; MANTIS-IMP-107). | csskit
 wiring.py | 72 | Wiring check for the app: every control it draws must be connected to something (stdlib only; MANTIS-IMP-110). | 
 pagebuild/changes.py | 70 | The changes page. | pagebuild/frame, pagebuild/labels, pagebuild/registry, pagebuild/text
@@ -112,6 +112,11 @@ webserver/handler.py | 200 | The request handler: every /api route the site call
 webserver/inbox.py | 126 | What the site posts to the inbox: answers, edited pages, dropped files and Undo of an automatic close. | jobs, webserver/config, webserver/watching
 webserver/lifecycle.py | 30 | Stop a running site by the process ID it recorded at start. | webserver/config
 webserver/watching.py | 75 | Rebuild the site when a hand edit changes a source; Claude and the site's buttons rebuild themselves. | backup, buildlock, guard, jobs, webserver/config
+pullkit/brief.py | 70 | The Since-last-pull brief: what it holds, what closed by itself, and how it prints. | atl_updates, pullkit/grouping, pullkit/state
+pullkit/commands.py | 236 | The pull's steps: fetch, plan, one card's packet, done, skip, headline, needs and finish. | atl_client, atl_store, atl_updates, jobs, pullkit/brief, pullkit/grouping, pullkit/state
+pullkit/filters.py | 88 | What a pull fetches: list, add, change, remove and test a filter (also used by the site). | atl_client, atl_jira, atl_updates, pullkit/state
+pullkit/grouping.py | 97 | Which card a ticket or page belongs to, what waits for each card, and the tickets no card owns. | atl_client, atl_store, atl_updates, frontmatter, pullkit/state, textcache
+pullkit/state.py | 73 | Where a pull keeps things, the pull state and the cards it can pass. | atl_updates, frontmatter, textcache
 
 ## Front end (tools/site_assets/)
 

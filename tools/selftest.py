@@ -35,7 +35,7 @@ def check(name, ok, detail=""):
 
 
 def code():
-    for p in [*sorted(T.glob("*.py")), *sorted((T / "pagebuild").glob("*.py")), *sorted((T / "webserver").glob("*.py")), *sorted((T / "site_assets" / "pages" / "js").glob("*.js"))]:
+    for p in [*sorted(T.glob("*.py")), *sorted((T / "pagebuild").glob("*.py")), *sorted((T / "webserver").glob("*.py")), *sorted((T / "pullkit").glob("*.py")), *sorted((T / "site_assets" / "pages" / "js").glob("*.js"))]:
         bad = re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", p.read_text(encoding="utf-8"))
         if bad:   # a control character in code: the mark of a shell-quoting accident ("\b" becoming a backspace)
             line = p.read_text(encoding="utf-8")[:bad.start()].count("\n") + 1
@@ -43,7 +43,7 @@ def code():
     import pagecheck
     for problem in pagecheck.check():   # page builders: names resolve, nothing unused, no cycles, small modules
         check("pagebuild", False, problem)
-    for p in [*sorted(T.glob("*.py")), *sorted((T / "pagebuild").glob("*.py")), *sorted((T / "webserver").glob("*.py"))]:
+    for p in [*sorted(T.glob("*.py")), *sorted((T / "pagebuild").glob("*.py")), *sorted((T / "webserver").glob("*.py")), *sorted((T / "pullkit").glob("*.py"))]:
         try:
             ast.parse(p.read_text(encoding="utf-8"), filename=p.name)
         except SyntaxError as e:
@@ -51,7 +51,7 @@ def code():
             continue
         if p.stem not in NO_IMPORT:
             try:
-                importlib.import_module((p.parent.name + "." if p.parent.name in ("pagebuild", "webserver") else "") + p.stem)
+                importlib.import_module((p.parent.name + "." if p.parent.name in ("pagebuild", "webserver", "pullkit") else "") + p.stem)
             except SystemExit:
                 pass
             except Exception as e:
@@ -162,7 +162,7 @@ def skills():
 def requirements():
     """Every third-party import in tools/ is listed in requirements.txt (IMP-112 item 3), so a fresh machine can build."""
     dist = {"PIL": "pillow", "docx": "python-docx", "markdown": "markdown", "markdownify": "markdownify", "pypdf": "pypdf", "openpyxl": "openpyxl"}
-    local = {p.stem for p in T.glob("*.py")} | {"pagebuild", "webserver"}
+    local = {p.stem for p in T.glob("*.py")} | {"pagebuild", "webserver", "pullkit"}
     listed = {re.split(r"[=<>~! #]", l.strip(), maxsplit=1)[0].lower() for l in (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith("#")}
     for p in [*T.glob("*.py"), *(T / "pagebuild").glob("*.py"), *(T / "webserver").glob("*.py")]:
         if p.stem == "guard_browser":   # runs under the Playwright tool's own interpreter (tools/uitest/README.md), not this one

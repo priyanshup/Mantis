@@ -1,4 +1,4 @@
-"""Static checks for the packages tools/pagebuild/ (page builders) and tools/webserver/ (the site server), run by selftest.py.
+"""Static checks for the packages tools/pagebuild/ (page builders), tools/webserver/ (the site server) and tools/pullkit/ (the pull), run by selftest.py.
 
     python tools/pagecheck.py
 
@@ -11,7 +11,7 @@ import ast, builtins
 from pathlib import Path
 
 TOOLS = Path(__file__).resolve().parent
-PACKAGES = ("pagebuild", "webserver")
+PACKAGES = ("pagebuild", "webserver", "pullkit")
 SHARED = {"paths", "text", "labels", "registry", "markup", "loaders", "frame", "day"}   # imported by any module
 PAGES = {"feature", "work", "topic", "people", "library", "decisions", "diagrams", "changes"}   # one per page type
 ALLOWED = {("topic", "feature"), ("library", "decisions"), ("library", "diagrams")}   # a page that shows another's pieces

@@ -92,7 +92,7 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 | `layout.py` | The layout: site_config/layout.json -> window.APP_LAYOUT, plus checks. | standard library |
 | `wiring.py` | Wiring check for the app: every control it draws must be connected to something. | standard library |
 | `site_chrome.py` | Page chrome both page shells share: head links, theme-colour meta tags and the theme switch. | standard library |
-| `pagecheck.py` | Static checks for the packages tools/pagebuild/ (page builders) and tools/webserver/ (the site server), run by selftest.py. | standard library |
+| `pagecheck.py` | Static checks for the packages tools/pagebuild/ (page builders), tools/webserver/ (the site server) and tools/pullkit/ (the pull), run by selftest.py. | standard library |
 | `sitecache.py` | Incremental site build (Phase 3, task 1). | standard library |
 | `csskit.py` | A small CSS walker: list a stylesheet's rules with their positions, and rewrite it keeping only the rules a test keeps. | standard library |
 | `site_app.py` | The front end (2026-11-11): the approved mock's own screens, run on live data. | standard library |
@@ -128,6 +128,7 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 | File | Role |
 |---|---|
 | `pagebuild/` | The page builders, one module per page type, and the shared parts they import |
+| `pullkit/` | The pull split by job: state, grouping, commands, brief, filters; `pull.py` keeps the command line |
 | `webserver/` | The site server split by job: config, watching, inbox, focus, the request handler |
 | `site_assets/` | The site's CSS, JavaScript, logo and vendored libraries |
 | `githooks/pre-commit` | Runs `leakcheck.py` and `selftest.py --quick` before every commit (`git config core.hooksPath tools/githooks`) |

@@ -60,6 +60,7 @@ def render():
             placed.add(n)
     rows += ["\n## Files that are not commands\n", "| File | Role |", "|---|---|",
              "| `pagebuild/` | The page builders, one module per page type, and the shared parts they import |",
+             "| `pullkit/` | The pull split by job: state, grouping, commands, brief, filters; `pull.py` keeps the command line |",
              "| `webserver/` | The site server split by job: config, watching, inbox, focus, the request handler |",
              "| `site_assets/` | The site's CSS, JavaScript, logo and vendored libraries |",
              "| `githooks/pre-commit` | Runs `leakcheck.py` and `selftest.py --quick` before every commit (`git config core.hooksPath tools/githooks`) |",
