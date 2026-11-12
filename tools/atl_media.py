@@ -67,9 +67,3 @@ def fetch_page(c, pid, idx):
             e["pages"].append(pid)
     return got, had, skipped
 
-
-def for_page(pid, idx=None):
-    """[(name, file path)] of a page's downloaded attachments."""
-    idx = idx or load()
-    return [(n, atl_store.MIRROR / "attachments" / e["file"]) for h, e in idx.items()
-            if not h.startswith("_") and pid in e["pages"] for n in e["names"]]

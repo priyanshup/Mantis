@@ -35,6 +35,8 @@ DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 GROUP = {"id": "g-growth", "name": "Growth", "card": "", "pin": None, "collapsed": False}
 THIN_DAYS = 90      # a strength with no evidence for this long is "thin"
 WAITING_CAP = 3     # proposals shown at once (DESIGN.md rule 8)
+HOLD_DAYS = 14      # "Not now": a proposal waits this long, then comes back on its own
+DECLINED_KEEP_DAYS = 30   # "Dismiss": the entry stays restorable this long; its title is kept for good so it is never proposed again
 
 
 def today():
@@ -108,7 +110,7 @@ def clean(x, by="owner"):
            "source": s(x.get("source"), 200), "outcome": s(x.get("outcome"), 800), "evidence": s(x.get("evidence"), 500),
            "seen_by": names(x.get("seen_by")), "said_by": s(x.get("said_by"), 80), "shared": d(x.get("shared")),
            "tasks": [s(t, 40) for t in (x.get("tasks") or [])][:30], "created": d(x.get("created")) or today(),
-           "done_at": d(x.get("done_at")), "by": "mantis" if (x.get("by") or by) == "mantis" else "owner"}
+           "done_at": d(x.get("done_at")), "hold_until": d(x.get("hold_until")), "by": "mantis" if (x.get("by") or by) == "mantis" else "owner"}
     if not out["title"]:
         raise ValueError("an entry needs a title")
     if out["state"] == "done" and not out["done_at"]:
@@ -171,25 +173,33 @@ def act(b):
         return add_step(iid, str(b.get("title", "")))
 
     def go(st):
+        cut = (date.today() - timedelta(days=DECLINED_KEEP_DAYS)).isoformat()   # a declined entry is forgotten after its keep time (the title stays)
+        st["declined"] = [x for x in st.get("declined", []) if x.get("on", "") >= cut]
         if a == "restore":   # Undo: the entry exactly as it was, and no longer declined
             it = clean(b.get("item") or {}, by=(b.get("item") or {}).get("by", "owner"))
             st["items"] = [x for x in st["items"] if x["id"] != it["id"]] + [it]
             st["dismissed"] = [t for t in st.get("dismissed", []) if t != it["title"]]
+            st["declined"] = [x for x in st["declined"] if x["item"]["id"] != it["id"]]
             return it
         if a == "dismiss":   # declining a proposal: gone, and never proposed again
             it = _find(st, iid)
             st["items"].remove(it)
+            st["declined"].append({"item": it, "on": today()})
             st.setdefault("dismissed", []).append(it["title"])
             st["dismissed"] = st["dismissed"][-500:]
             return True
         it = _find(st, iid)
-        if a == "take":      # an opportunity the owner takes on
-            it.update(state="open", by="owner")
+        if a == "hold":      # Not now: out of sight for HOLD_DAYS, then back in Proposed; nothing is deleted
+            it["hold_until"] = (date.today() + timedelta(days=max(1, min(int(b.get("days") or HOLD_DAYS), 90)))).isoformat()
+        elif a == "unhold":  # bring a held proposal back now
+            it["hold_until"] = ""
+        elif a == "take":      # an opportunity the owner takes on
+            it.update(state="open", by="owner", hold_until="")
         elif a == "confirm":  # a past win the owner confirms, with the outcome as they put it
             out = " ".join(str(b.get("outcome") or it["outcome"]).split())
             if not out and it["kind"] == "contribution":
                 raise ValueError("say what changed because of it")
-            it.update(state="done", by="owner", outcome=out[:800], done_at=it["done_at"] or today())
+            it.update(state="done", by="owner", outcome=out[:800], done_at=it["done_at"] or today(), hold_until="")
         elif a == "done":
             out = " ".join(str(b.get("outcome", "")).split())
             if not out and it["kind"] == "contribution":
@@ -290,7 +300,11 @@ def payload():
         steps = [{"id": t, "title": tasks[t]["title"], "status": tasks[t]["status"], "day": tasks[t]["day"]} for t in it["tasks"] if t in tasks]
         items.append(dict(it, steps=steps))
     return {"today": today(), "rev": st.get("rev", 0), "framework": {k: fw.get(k) for k in ("role", "areas", "manager", "review")},
-            "items": items, "coverage": coverage(st["items"]), "record": record()}
+            "items": items, "coverage": coverage(st["items"]), "record": record(),
+            "declined": [{"id": x["item"]["id"], "title": x["item"]["title"], "kind": x["item"]["kind"], "on": x["on"], "item": x["item"],
+                          "until": (date.fromisoformat(x["on"]) + timedelta(days=DECLINED_KEEP_DAYS)).isoformat()}
+                         for x in st.get("declined", []) if x.get("on", "") >= (date.today() - timedelta(days=DECLINED_KEEP_DAYS)).isoformat()],
+            "hold_days": HOLD_DAYS, "declined_days": DECLINED_KEEP_DAYS}
 
 
 def for_meeting(cards, names, out=print):
@@ -322,7 +336,7 @@ def context():
     for i in items:
         if i["state"] == "open":
             print(f"OPEN [{i['id']}] {i['title']} ({', '.join(i['areas']) or 'no strength'}{', card ' + i['card'] if i['card'] else ''}, {len(i['tasks'])} steps)")
-    waiting = [i for i in items if i["state"] == "proposed"]
+    waiting = [i for i in items if i["state"] == "proposed" and not (i.get("hold_until") and i["hold_until"] > today())]   # a held proposal is out of sight until its date
     print(f"WAITING FOR THE OWNER: {len(waiting)} proposals" + (" (do not add more until they are handled)" if len(waiting) >= WAITING_CAP else ""))
     cov = coverage(items)
     thin = [k for k, v in cov.items() if v["thin"]]

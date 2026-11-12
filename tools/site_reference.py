@@ -17,13 +17,13 @@ def page_library(items, built):
 <section class="panel-box lib-sec" data-libsec="written">{rows or '<p class="empty">Nothing written yet.</p>'}</section>
 <section class="lib-sec" data-libsec="diagrams" id="diagrams"><h2 class="lib-h">Diagrams</h2>{page_diagrams(built, embed=True)}</section>
 <section class="lib-sec" data-libsec="decisions" id="decisions"><h2 class="lib-h">Decisions</h2>{page_decisions(built, embed=True)}</section>"""
-    return shell("Library", body, built=built)
+    return shell("Library", body, built=built, kind="library")
 
 
 def page_single(it, built):
     body = f"""<div class="crumbs"><a href="../library.html">Library</a><span>›</span><span>{esc(it["title"])}</span></div>
 <div class="tab-panel">{copy_bar("Copy page", it.get("file"))}<article class="doc">{render(it["md"])}</article></div>"""
-    return shell(it["title"], body, base="../", built=built)
+    return shell(it["title"], body, base="../", built=built, kind="document")
 
 
 def search_index(features, work, items, entries):
@@ -60,7 +60,7 @@ def search_index(features, work, items, entries):
     return idx
 
 
-def page_decisions(built, embed=False):
+def page_decisions(built, embed=True):
     """Every logged decision (MANTIS-IMP-027): what was chosen, why, and what else was considered."""
     rows = []
     for f in sorted((M / "knowledge" / "registers" / "decisions").glob("MANTIS-DEC-*.md"), reverse=True):
@@ -76,9 +76,7 @@ def page_decisions(built, embed=False):
                     + "</article>")
     body = f"""<div class="page-h"><div><h1>Decisions</h1><p class="lead">Choices made along the way, newest first: what was decided, why, and what else was on the table. Facts live on the cards; decisions live here, so a new source never silently rewrites why something was done.</p></div></div>
 <div class="dec-list">{"".join(rows) or '<p class="empty">No decisions logged yet.</p>'}</div>"""
-    if embed:   # shown inside another page (MANTIS-IMP-068): no page header, no shell
-        return re.sub(r'^<div class="page-h">.*?</div></div>\n?', "", body, count=1, flags=re.S)
-    return shell("Decisions", body, active="decisions", built=built)
+    return re.sub(r'^<div class="page-h">.*?</div></div>\n?', "", body, count=1, flags=re.S)   # shown inside the Library page (MANTIS-IMP-068): no page header
 
 
 def page_changes(built):
@@ -141,10 +139,10 @@ def page_changes(built):
 <p class="muted small ev-sum" id="ev-sum" aria-live="polite"></p>
 <div class="ev-feed" id="ev-feed" data-today="{today.isoformat()}">{feed or '<p class="empty">Nothing changed in the last 30 days.</p>'}</div>
 <p class="empty" id="ev-none" hidden>Nothing of this kind in this period.</p>"""
-    return shell("What's new", body, active="sources", built=built)
+    return shell("What's new", body, active="sources", built=built, kind="changes")
 
 
-def page_diagrams(built, embed=False):
+def page_diagrams(built, embed=True):
     """Registered knowledge assets (MANTIS-IMP-008): diagrams worth reusing, with what each shows."""
     clean = lambda v: re.sub(r"\s*(?:Source: )?\(?MANTIS-[A-Z]+-\d+(?:, (?:page|slide) \d+)?\)?[.;,]?", "", v).strip()
     tiles = []
@@ -165,8 +163,6 @@ def page_diagrams(built, embed=False):
     body = f"""<div class="page-h"><div><h1>Diagrams</h1><p class="lead">Diagrams and other visuals from the sources that are worth reusing, each with what it shows. Pages reuse one of these before anyone draws a new diagram.</p></div></div>
 {f'<div class="toolbar"><div class="chips" id="f-dia"><button data-v="all" class="on">All</button>{chips}</div></div>' if len(types) > 1 else ""}
 <div class="dia-grid">{"".join(tiles) or '<p class="empty">No diagrams registered yet.</p>'}</div>"""
-    if embed:   # shown inside another page (MANTIS-IMP-068): no page header, no shell
-        return re.sub(r'^<div class="page-h">.*?</div></div>\n?', "", body, count=1, flags=re.S)
-    return shell("Diagrams", body, active="diagrams", built=built)
+    return re.sub(r'^<div class="page-h">.*?</div></div>\n?', "", body, count=1, flags=re.S)   # shown inside the Library page (MANTIS-IMP-068): no page header
 
 

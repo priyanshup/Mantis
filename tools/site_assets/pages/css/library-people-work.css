@@ -1,0 +1,12 @@
+/* library-people-work.css: rules used only by: library, people, work.
+   Every rule starts with /*@n*/, its place in the cascade. The build merges a page type's modules by n, so rules keep the order they had in one file.
+   A new rule needs no number: it takes the place after the rule above it. */
+/*@121*/ .tile { display: block; padding: 16px 17px; margin-bottom: 10px; color: var(--ink); transition: box-shadow .2s var(--ease); }
+/*@122*/ a.tile:hover { text-decoration: none; }
+/*@123*/ .tile .tag { display: inline-block; margin: 0 0 8px; }
+/*@124*/ .tile h3 { font-size: 16px; margin: 0 0 6px; display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; }
+/*@125*/ .tile p { margin: 0 0 10px; color: var(--ink-2); font-size: 14px; line-height: 1.45; }
+/*@299*/ @media (hover: hover) and (pointer: fine) { a.tile:hover { box-shadow: var(--g-hi), var(--shadow-lift); } }
+/*@320*/ .tile[class*="st-"] { box-shadow: inset 3px 0 0 var(--c), var(--g-hi), var(--shadow); }
+/*@321*/ @media (hover: hover) and (pointer: fine) { a.tile[class*="st-"]:hover { box-shadow: inset 3px 0 0 var(--c), var(--g-hi), var(--shadow-lift); } }
+/*@767*/ .tile, .board .tile { background: var(--surface); border: 1px solid var(--line); box-shadow: none; border-radius: 12px; backdrop-filter: none; -webkit-backdrop-filter: none; }

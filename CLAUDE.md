@@ -3,7 +3,7 @@
 The owner's personal assistant and knowledge repository. The repo is the source of truth, not any
 chat. Rules: `docs/rules/PROJECT_VISION.md`. Workflow: `docs/rules/WORKFLOW.md`, an index naming
 the one file in `docs/rules/workflow/` for each task. Writing: `docs/rules/OUTPUTS_GUIDE.md`. Screens
-and anything the owner reads: `docs/rules/DESIGN.md`.
+and anything the owner reads: `docs/rules/DESIGN.md`. Changing the site or tools: `docs/rules/DEVELOPMENT_GUIDELINES.md`.
 Tools: `docs/system/SKILLS.md`. Where things live: `README.md` and each folder's README; cleanup:
 `docs/system/MAINTENANCE.md`.
 
@@ -58,6 +58,8 @@ paths, but outputs should not contain them anyway.
 
 ## Token habits
 
+- Find code by `docs/system/CODEMAP.md` (every file and its purpose), not by opening files. To change how the site looks
+  or what sits where, edit `tools/site_config/theme.json` or `layout.json` only (`docs/rules/DESIGN.md`).
 - One task per session; read the smallest thing that answers. Convert inbox files with
   `python tools/extract.py` and read the Markdown. Point to site pages instead of pasting them.
 

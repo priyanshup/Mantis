@@ -1,0 +1,27 @@
+/* feature.css: rules used only by: feature.
+   Every rule starts with /*@n*/, its place in the cascade. The build merges a page type's modules by n, so rules keep the order they had in one file.
+   A new rule needs no number: it takes the place after the rule above it. */
+/*@100*/ .k-ico { background: none !important; font-size: 12px; margin-right: 6px; }
+/*@164*/ .grp { margin: 14px 10px 4px; font-size: 12px; color: var(--muted); font-weight: 600; }
+/*@171*/ .empty-state { padding: 18px 8px; }
+/*@172*/ .empty-state p { margin: 0 0 6px; }
+/*@258*/ .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--t-unknown); }
+/*@259*/ .dot[class*="t-"] { fill: var(--c); background: var(--c); }
+/*@286*/ .empty-state .prompt { flex-direction: column; align-items: stretch; }
+/*@287*/ .empty-state .prompt code { font-size: 12.5px; line-height: 1.5; }
+/*@288*/ .empty-state .prompt button { align-self: flex-start; }
+/*@294*/ .tabs .k-ico { margin-right: 0; }
+/*@506*/ .sync.behind-note { background: color-mix(in srgb, var(--carry-bg) 60%, transparent); box-shadow: inset 3px 0 0 var(--carry-edge), inset 0 0 0 .5px var(--g-edge); }
+/*@507*/ .sync.behind-note .sync-ico { background: var(--carry); }
+/*@551*/ .nowrap { white-space: nowrap; }
+/*@616*/ .flag-info { color: var(--build); }
+/*@694*/ .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
+/*@695*/ .dot.no { background: transparent; }
+/*@727*/ .ag-h { margin: 28px 0 6px; font-size: 12px; font-weight: 400; color: var(--muted); }
+/*@728*/ .agenda .ag-h:first-child { margin-top: 0; }
+/*@782*/ dl.kv { display: grid; grid-template-columns: 160px 1fr; margin: 36px 0 0; border-top: 1px solid var(--line); }
+/*@783*/ dl.kv dt, dl.kv dd { margin: 0; padding: 14px 0; border-bottom: 1px solid var(--line); }
+/*@784*/ dl.kv dt { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 16px; }
+/*@785*/ dl.kv dd { color: var(--ink); }
+/*@844*/ @media (max-width: 700px) { dl.kv { grid-template-columns: minmax(0, 1fr); } }
+/*@845*/ @media (max-width: 700px) { dl.kv dt { border-bottom: 0; padding-bottom: 0; } }

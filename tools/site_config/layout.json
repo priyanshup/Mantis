@@ -1,0 +1,217 @@
+{
+ "_readme": [
+  "The one place for what is on each screen and where. Edit it, then run python tools/build_map.py (or python tools/layout.py to check).",
+  "tabs: the header tabs, in order. Set \"visible\": false to hide one.",
+  "screens.<tab>.cols: the columns, each a list of widget ids from top to bottom. Move an id to move the widget. Add its id to \"hidden\" to hide it.",
+  "widgets.<id>: how a widget is wrapped. dom_id = the element id other code looks for; variant = an extra card class (night = the dark card); tag = \"aside\"; plain = no entrance animation; fixed_i = fixed stagger position; raw = the widget draws its own card. screens.<name>.flat = cards side by side with no column wrappers.",
+  "A widget is written once with UI.widget(\"<id>\", ctx => html) in tools/site_assets/app/widgets-*.js. Colours and sizes come from theme.json, never from here."
+ ],
+ "tabs": [
+  {
+   "id": "today",
+   "label": "Today"
+  },
+  {
+   "id": "meetings",
+   "label": "Meetings"
+  },
+  {
+   "id": "features",
+   "label": "Features"
+  },
+  {
+   "id": "questions",
+   "label": "Questions"
+  },
+  {
+   "id": "sources",
+   "label": "Sources"
+  },
+  {
+   "id": "growth",
+   "label": "Growth"
+  }
+ ],
+ "screens": {
+  "today": {
+   "stagger_start": 1,
+   "cols": [
+    [
+     "today.plan",
+     "today.changes"
+    ],
+    [
+     "today.next",
+     "today.week",
+     "today.waiting"
+    ]
+   ],
+   "hidden": []
+  },
+  "sources": {
+   "stagger_start": 0,
+   "cols": [
+    [
+     "sources.compose",
+     "sources.recent",
+     "sources.health"
+    ],
+    [
+     "sources.pull"
+    ]
+   ],
+   "hidden": []
+  },
+  "growth": {
+   "stagger_start": 0,
+   "cols_class": "g-cols",
+   "cols": [
+    [
+     "growth.proposals"
+    ],
+    [
+     "growth.add",
+     "growth.evidence"
+    ]
+   ],
+   "hidden": []
+  },
+  "meetings": {
+   "flat": true,
+   "cols_class": "mt",
+   "cols": [
+    [
+     "meetings.filter",
+     "meetings.list",
+     "meetings.detail"
+    ]
+   ],
+   "hidden": []
+  },
+  "questions": {
+   "flat": true,
+   "cols": [
+    [
+     "questions.list",
+     "questions.answerbar"
+    ]
+   ],
+   "hidden": []
+  },
+  "features": {
+   "flat": true,
+   "cols": [
+    [
+     "features.tabs",
+     "features.rows"
+    ]
+   ],
+   "hidden": []
+  },
+  "features.overview": {
+   "stagger_start": 0,
+   "cols": [
+    [
+     "feature.stage",
+     "feature.needs",
+     "feature.card"
+    ],
+    [
+     "feature.people"
+    ]
+   ],
+   "hidden": []
+  },
+  "features.reader": {
+   "flat": true,
+   "cols_class": "rd",
+   "cols": [
+    [
+     "feature.items",
+     "feature.reader"
+    ]
+   ],
+   "hidden": []
+  },
+  "features.pages": {
+   "flat": true,
+   "cols_class": "rd",
+   "cols": [
+    [
+     "feature.pagelist",
+     "feature.pagebody"
+    ]
+   ],
+   "hidden": []
+  }
+ },
+ "widgets": {
+  "today.plan": {
+   "dom_id": "plan"
+  },
+  "today.changes": {
+   "dom_id": "changes"
+  },
+  "today.next": {
+   "variant": "night"
+  },
+  "today.week": {
+   "dom_id": "week"
+  },
+  "today.waiting": {},
+  "sources.compose": {
+   "dom_id": "compose"
+  },
+  "sources.recent": {},
+  "sources.health": {
+   "raw": true
+  },
+  "sources.pull": {},
+  "growth.proposals": {},
+  "growth.add": {},
+  "growth.evidence": {},
+  "meetings.filter": {
+   "raw": true
+  },
+  "meetings.list": {
+   "plain": true,
+   "dom_id": "mlist"
+  },
+  "meetings.detail": {
+   "plain": true,
+   "dom_id": "mdet"
+  },
+  "questions.list": {
+   "plain": true
+  },
+  "questions.answerbar": {
+   "raw": true
+  },
+  "features.tabs": {
+   "raw": true
+  },
+  "features.rows": {
+   "raw": true
+  },
+  "feature.stage": {},
+  "feature.needs": {
+   "fixed_i": 1
+  },
+  "feature.card": {
+   "fixed_i": 2
+  },
+  "feature.people": {
+   "tag": "aside",
+   "fixed_i": 1
+  },
+  "feature.items": {},
+  "feature.reader": {
+   "variant": "reader",
+   "dom_id": "reader"
+  },
+  "feature.pagelist": {},
+  "feature.pagebody": {
+   "variant": "reader"
+  }
+ }
+}

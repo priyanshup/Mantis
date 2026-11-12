@@ -1,0 +1,28 @@
+/* people.css: rules used only by: people.
+   Every rule starts with /*@n*/, its place in the cascade. The build merges a page type's modules by n, so rules keep the order they had in one file.
+   A new rule needs no number: it takes the place after the rule above it. */
+/*@491*/ .pp-ask > div { min-width: 0; }
+/*@492*/ .pp-q { margin: 0 0 4px; font-size: 14px; }
+/*@493*/ .pp-q li { margin: 2px 0; }
+/*@494*/ .pp-q { list-style: none; padding-left: 0; }
+/*@495*/ .pp-q li + li { margin-top: 6px; }
+/*@1135*/ .people-grid .person > :not(.pr-head) { display: none; }
+/*@1136*/ .pr-head { display: grid; grid-template-columns: minmax(150px, 230px) minmax(0, 1fr) auto 20px; align-items: center; gap: 4px 14px; height: 60px; padding: 0 6px; margin: 0 -6px; border-radius: 12px; cursor: pointer; transition: background .15s; }
+/*@1137*/ .pr-head:hover { background: var(--fill); }
+/*@1138*/ .pr-head:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+/*@1139*/ .pr-head h3 { display: contents; margin: 0; }
+/*@1140*/ .pr-head h3 > span:first-child { font-size: 16px; font-weight: 600; grid-column: 1; }
+/*@1141*/ .pr-head .pp-n { grid-column: 3; grid-row: 1; justify-self: end; }
+/*@1142*/ .pr-sub { grid-column: 2; font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+/*@1143*/ .people-grid .pr-head .tile-acts { display: flex; grid-column: 3; grid-row: 1; margin: 0; padding: 0; border: 0; opacity: 0; transition: opacity .2s; gap: 6px; }
+/*@1144*/ .pr-head:hover .tile-acts, .pr-head:focus-within .tile-acts { opacity: 1; }
+/*@1145*/ .pr-head:hover .pp-n, .pr-head:focus-within .pp-n { display: none; }
+/*@1146*/ .pr-chev { grid-column: 4; width: 8px; height: 8px; border-right: 1.6px solid var(--faint); border-top: 1.6px solid var(--faint); transform: rotate(45deg); transition: transform .4s var(--spring); justify-self: center; }
+/*@1147*/ .pr-head:hover .pr-chev { transform: rotate(45deg) translate(2px, -2px); border-color: var(--ink); }
+/*@1148*/ @media (hover: none) { .people-grid .pr-head .tile-acts { display: none; } }
+/*@1150*/ @media (max-width: 760px) { .pr-head { height: 64px; grid-template-columns: minmax(0, 1fr) auto 20px; } }
+/*@1151*/ @media (max-width: 760px) { .pr-head h3 > span:first-child { grid-row: 1; } }
+/*@1152*/ @media (max-width: 760px) { .pr-sub { grid-column: 1 / 3; grid-row: 2; } }
+/*@1153*/ @media (max-width: 760px) { .pr-head .pp-n { grid-column: 2; grid-row: 1; } }
+/*@1154*/ @media (max-width: 760px) { .people-grid .pr-head .tile-acts { display: none; } }
+/*@1155*/ @media (max-width: 760px) { .pr-chev { grid-row: 1 / 3; } }

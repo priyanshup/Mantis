@@ -1,0 +1,128 @@
+{
+ "_readme": [
+  "Which script and style modules each kind of content page loads (site_assets/pages/js and css). Add a type here, build its page in a module that calls shell(kind=...), and nothing else changes.",
+  "js: module names; '@chrome' is the group below. A module's own needs are read from its first line, and python tools/site_pages.py checks the list is complete.",
+  "css: style modules merged by the cascade number on every rule (see any module's header comment)."
+ ],
+ "groups": {
+  "chrome": [
+   "core",
+   "busy",
+   "menus",
+   "theme",
+   "jobs",
+   "people-data",
+   "drafts",
+   "drawer",
+   "palette",
+   "datepicker",
+   "person-card",
+   "ui-env",
+   "scroll-lock",
+   "back-to-top",
+   "shortcuts",
+   "reload"
+  ]
+ },
+ "types": {
+  "feature": {
+   "js": [
+    "@chrome",
+    "tabs",
+    "card-tasks",
+    "editor",
+    "sync"
+   ],
+   "css": [
+    "base",
+    "common",
+    "reserve",
+    "document-feature",
+    "document-feature-topic",
+    "feature",
+    "feature-topic"
+   ]
+  },
+  "topic": {
+   "js": [
+    "@chrome",
+    "tabs",
+    "card-tasks"
+   ],
+   "css": [
+    "base",
+    "common",
+    "reserve",
+    "document-feature-topic",
+    "feature-topic",
+    "topic"
+   ]
+  },
+  "people": {
+   "js": [
+    "@chrome",
+    "people-page"
+   ],
+   "css": [
+    "base",
+    "common",
+    "reserve",
+    "library-people-work",
+    "people"
+   ]
+  },
+  "library": {
+   "js": [
+    "@chrome",
+    "library-chips",
+    "diagram-chips"
+   ],
+   "css": [
+    "base",
+    "common",
+    "reserve",
+    "library",
+    "library-people-work"
+   ]
+  },
+  "document": {
+   "js": [
+    "@chrome",
+    "editor",
+    "sync"
+   ],
+   "css": [
+    "base",
+    "common",
+    "reserve",
+    "document-feature",
+    "document-feature-topic"
+   ]
+  },
+  "changes": {
+   "js": [
+    "@chrome",
+    "whats-new"
+   ],
+   "css": [
+    "base",
+    "common",
+    "reserve",
+    "changes"
+   ]
+  },
+  "work": {
+   "js": [
+    "@chrome",
+    "boards"
+   ],
+   "css": [
+    "base",
+    "common",
+    "reserve",
+    "library-people-work",
+    "work"
+   ]
+  }
+ }
+}

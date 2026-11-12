@@ -1,0 +1,53 @@
+/* feature-topic.css: rules used only by: feature, topic.
+   Every rule starts with /*@n*/, its place in the cascade. The build merges a page type's modules by n, so rules keep the order they had in one file.
+   A new rule needs no number: it takes the place after the rule above it. */
+/*@72*/ .tabs { margin-bottom: 14px; }
+/*@73*/ .tabs .pill { padding: 1px 8px; font-size: 11px; }
+/*@589*/ .wtag { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; line-height: 18px; padding: 1px 9px 1px 7px;
+  border-radius: 999px; white-space: nowrap; vertical-align: 1px; }
+/*@590*/ .wtag::before, .wh::before, .sw { content: ""; width: 7px; height: 7px; flex: none; display: inline-block; }
+/*@591*/ .wtag-business, .wh-b { color: var(--biz); background: var(--biz-bg); }
+/*@592*/ .wtag-technical, .wh-t { color: var(--tech); background: var(--tech-bg); }
+/*@593*/ .wtag-business::before, .wh-b::before, .sw-business { background: var(--biz-edge); border-radius: 50%; }
+/*@594*/ .wtag-technical::before, .wh-t::before, .sw-technical { background: var(--tech-edge); border-radius: 1.5px; }
+/*@595*/ .wtag-both { padding: 0; gap: 0; overflow: hidden; }
+/*@596*/ .wtag-both::before { display: none; }
+/*@597*/ .wh { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px 1px 7px; }
+/*@598*/ .wh-t { box-shadow: inset 1px 0 0 var(--surface); }
+/*@599*/ .sw { margin-right: 6px; vertical-align: 1px; }
+/*@603*/ .feat-h .meta .wtag, .f-sig .wtag { vertical-align: middle; }
+/*@604*/ .doc td .wtag { vertical-align: middle; }
+/*@685*/ .pop-b { position: absolute; z-index: 25; top: calc(100% + 8px); left: 0; min-width: 280px; display: grid; gap: 10px; padding: 16px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-pop); }
+/*@686*/ .pop-r .pop-b, .ph-acts .pop-b { left: auto; right: 0; }
+/*@688*/ .ph-acts { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; min-width: 0; }
+/*@699*/ .rail { display: grid; gap: 36px; align-content: start; min-width: 0; }
+/*@700*/ .rail-blk h2 { margin: 0 0 10px; }
+/*@707*/ .faces { display: inline-flex; }
+/*@708*/ .face { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--bg); background: var(--surface-2); margin-left: -6px; display: grid; place-items: center; padding: 0;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 500; color: var(--ink); }
+/*@709*/ .face:first-child { margin-left: 0; }
+/*@710*/ .face:hover { background: var(--ink); color: var(--bg); }
+/*@746*/ .tabs-u button, .tabs a { background: none; border: 0; padding: 0 0 12px; border-radius: 0; font-family: var(--font-display); font-weight: 750; font-size: 11px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted); box-shadow: none; }
+/*@747*/ .tabs-u button:hover, .tabs a:hover { color: var(--ink); text-decoration: none; }
+/*@748*/ .tabs-u button.on, .tabs a.on { color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); background: none; }
+/*@749*/ .tabs-u .n, .tabs .n { margin-left: 4px; }
+/*@750*/ .tabs { display: flex; gap: 28px; border-bottom: 1px solid var(--line); margin: 0 0 32px; padding: 0; background: none; box-shadow: none; }
+/*@773*/ .meta-line { margin: 12px 0 0; font-size: 12px; color: var(--muted); }
+/*@774*/ .meta-line a, .meta-line .linkish { color: var(--muted); font: inherit; }
+/*@786*/ .folds { margin-top: 36px; }
+/*@787*/ .fold-row { border-bottom: 1px solid var(--line); }
+/*@788*/ .fold-row > summary { display: flex; align-items: center; gap: 14px; min-height: 52px; padding: 0 4px; }
+/*@789*/ .fold-row > summary:hover { background: var(--fill); }
+/*@790*/ .fr-t { flex: none; width: 210px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/*@791*/ .fr-s { flex: 1; min-width: 0; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/*@792*/ .fold-row[open] .fr-s { visibility: hidden; }
+/*@793*/ .fold-row > .doc { padding: 4px 4px 24px 32px; }
+/*@824*/ @media (max-width: 900px) { .pb-t, .fr-t { width: 150px; } }
+/*@838*/ @media (max-width: 700px) { .pb-t, .fr-t { width: auto; flex: 1; } }
+/*@839*/ @media (max-width: 700px) { .pb-s, .fr-s { display: none; } }
+/*@843*/ @media (max-width: 700px) { .tabs-u, .tabs { gap: 18px; overflow-x: auto; } }
+/*@1093*/ .rail { gap: 16px; }
+/*@1094*/ .blk-h h2, .rail-blk h2 { font-size: 17px; font-weight: 600; letter-spacing: -.01em; text-transform: none; }
+/*@1095*/ .rail-blk h2 { margin: 0 0 12px; }

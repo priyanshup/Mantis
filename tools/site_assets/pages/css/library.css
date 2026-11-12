@@ -1,0 +1,22 @@
+/* library.css: rules used only by: library.
+   Every rule starts with /*@n*/, its place in the cascade. The build merges a page type's modules by n, so rules keep the order they had in one file.
+   A new rule needs no number: it takes the place after the rule above it. */
+/*@194*/ details.bl { border-bottom: .5px solid var(--line); }
+/*@195*/ details.bl:last-child { border-bottom: 0; }
+/*@196*/ details.bl summary { display: flex; align-items: center; gap: 10px; padding: 12px 10px; cursor: pointer; list-style: none; border-radius: 10px; }
+/*@197*/ details.bl summary::-webkit-details-marker { display: none; }
+/*@198*/ details.bl summary:hover { background: var(--fill); }
+/*@199*/ details.bl .doc { padding: 0 12px 14px 78px; font-size: 14px; }
+/*@267*/ @media (max-width: 900px) { details.bl .doc { padding-left: 12px; } }
+/*@410*/ .dec-list { display: flex; flex-direction: column; gap: 12px; }
+/*@411*/ .dec h3 { font-size: 17px; line-height: 1.35; margin: 2px 0 10px; }
+/*@412*/ .dec .pp-f { grid-template-columns: 110px 1fr; }
+/*@435*/ .dia-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px; }
+/*@436*/ .dia { display: flex; flex-direction: column; padding: 0; overflow: hidden; margin: 0; }
+/*@437*/ .dia-img { display: block; background: var(--white); border-bottom: 1px solid var(--line, color-mix(in srgb, var(--black) 8%, transparent)); }
+/*@438*/ .dia-img img { display: block; width: 100%; height: 220px; object-fit: contain; padding: 10px; box-sizing: border-box; }
+/*@439*/ .dia-body { padding: 14px 16px 16px; }
+/*@440*/ .dia-body h3 { font-size: 16px; line-height: 1.35; margin: 8px 0 6px; }
+/*@441*/ .dia-body p { margin: 0 0 8px; font-size: 14px; line-height: 1.5; }
+/*@504*/ .lib-sec + .lib-sec { margin-top: 28px; }
+/*@505*/ .lib-h { font-size: 19px; margin: 0 0 12px 2px; }

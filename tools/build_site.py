@@ -22,17 +22,10 @@ from site_plan import *     # noqa: F401,F403
 from site_people import *   # noqa: F401,F403
 from site_reference import *   # noqa: F401,F403
 from site_day import *   # noqa: F401,F403
-from site_growth import page_growth
+from site_app import page_app, static_json
 
 
 # ---------- Build ----------
-
-def app_js():
-    """The site script, joined from site_assets/js/*.js in name order (MANTIS-IMP-064). The parts are pieces of
-    one script (it opens in 00-core.js and closes in 90-reload-end.js), split by page area for editing."""
-    parts = sorted((Path(__file__).resolve().parent / "site_assets" / "js").glob("*.js"))
-    return b"".join(p.read_bytes() for p in parts)
-
 
 def build():
     built = datetime.now().strftime("%d %b %Y, %H:%M")
@@ -57,24 +50,28 @@ def build():
     fp = M / "knowledge" / "focus.json"
     if fp.exists():
         FOCUS.update(json.loads(fp.read_text(encoding="utf-8")))
-    # The tab's badge counts only what blocks progress until the owner decides: likely answers and possible conflicts
-    BADGES["questions"] = len(yours())   # the same number the Questions page and Today show
     items = library_items(features, work)
     # Pages are built in memory; only files whose content changed are written (MANTIS-IMP-016).
     out = {}
     assets = Path(__file__).resolve().parent / "site_assets"
     for p in assets.rglob("*"):
-        if p.is_file() and p.parent.name != "js":
+        if p.is_file() and p.parent.name != "js" and "pages" not in p.relative_to(assets).parts:
             out["assets/" + p.relative_to(assets).as_posix()] = p.read_bytes()
-    out["assets/app.js"] = app_js()
+    import site_pages
+    for t in site_pages.config()["types"]:   # one script and one stylesheet per page type
+        out[f"assets/pages/{t}.js"], out[f"assets/pages/{t}.css"] = site_pages.bundle_js(t), site_pages.bundle_css(t)
+    import theme
+    for problem in theme.check():   # checked on every build (MANTIS-IMP-107)
+        print("Theme:", problem)
+    out["assets/tokens.css"] = theme.css().encode("utf-8")   # the one source of colour, type, shape and motion
+    import layout, stylelint
+    for problem in layout.check():
+        print("Layout:", problem)
+    stylelint.main()   # prints one line; problems are listed under it
     w = lambda rel, s: out.__setitem__(rel, s.encode("utf-8"))
-    # The six tabs (MANTIS-IMP-094; Growth 2026-11-04), then the pages they lead to
-    w("index.html", page_today(features, work, built))
-    w("meetings.html", page_meetings(built))
-    w("features.html", page_features(features, later, built))
-    w("questions.html", page_review(features, built))
-    w("sources.html", page_sources(work, built))
-    w("growth.html", page_growth(features, built))
+    # The six tabs are index.html alone (MANTIS-IMP-107); the old tab addresses redirect (MOVED). Then the pages the tabs lead to
+    w("index.html", page_app(built))
+    out["assets/app/static.json"] = static_json(features, built).encode("utf-8")
     w("work.html", page_work(work, features, built))
     w("library.html", page_library(items, built))
     w("people.html", page_people(built))

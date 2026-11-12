@@ -1,0 +1,10 @@
+/* topic.css: rules used only by: topic.
+   Every rule starts with /*@n*/, its place in the cascade. The build merges a page type's modules by n, so rules keep the order they had in one file.
+   A new rule needs no number: it takes the place after the rule above it. */
+/*@322*/ .tag.carry { background: var(--carry-bg); color: var(--carry); font-weight: 650; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--carry) 35%, transparent); }
+/*@712*/ .carry { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 20px; margin: -16px 0 40px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+/*@713*/ .carry > span { flex: 1; }
+/*@714*/ .carry .btn { min-height: 38px; }
+/*@841*/ @media (max-width: 700px) { .carry { flex-wrap: wrap; } }
+/*@842*/ @media (max-width: 700px) { .carry > span { flex-basis: 100%; } }
+/*@929*/ .carry .btn-line { background: var(--ctl); }

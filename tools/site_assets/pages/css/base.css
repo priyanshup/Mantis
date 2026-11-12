@@ -1,0 +1,27 @@
+/* base.css: fonts, keyframes and other at-rules every page needs.
+   Every rule starts with /*@n*/, its place in the cascade. The build merges a page type's modules by n, so rules keep the order they had in one file.
+   A new rule needs no number: it takes the place after the rule above it. */
+/*@0*/ @font-face { font-family: "Inter"; src: url("fonts/Inter-400-600.woff2") format("woff2"); font-weight: 400 600; font-display: block; }
+/*@0*/ @font-face { font-family: "Zalando Sans Expanded"; src: url("fonts/ZalandoSansExpanded-600-850.woff2") format("woff2"); font-weight: 600 850; font-display: block; }
+/*@0*/ @font-face { font-family: "IBM Plex Mono"; src: url("fonts/IBMPlexMono-400.woff2") format("woff2"); font-weight: 400; font-display: block; }
+/*@0*/ @font-face { font-family: "IBM Plex Mono"; src: url("fonts/IBMPlexMono-500.woff2") format("woff2"); font-weight: 500; font-display: block; }
+/*@20*/ @view-transition { navigation: auto; }
+/*@213*/ @keyframes pop-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+/*@276*/ @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+/*@354*/ @keyframes jh-spin { to { transform: rotate(360deg); } }
+/*@532*/ @keyframes dr-in { from { transform: translateX(16px); } }
+/*@548*/ @keyframes dr-up { from { transform: translateY(20px); } }
+/*@899*/ @keyframes comet { to { left: 100%; } }
+/*@899*/ @keyframes comet-head { from { left: -2%; } to { left: 134%; } }
+/*@907*/ @keyframes sheen { to { transform: translateX(100%); } }
+/*@909*/ @keyframes scan { from { transform: translateY(-6px) scaleX(.4); } to { transform: translateY(6px) scaleX(1); } }
+/*@913*/ @keyframes btn-sheen { from { background-position: -50% 0; } to { background-position: 150% 0; } }
+/*@1018*/ @media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }
+/*@1042*/ @keyframes v3fade { from { opacity: 0; } }
+/*@1043*/ @keyframes v3pop { from { opacity: 0; transform: translateX(-50%) translateY(8px); } }
+/*@1052*/ @keyframes v3row { from { opacity: 0; transform: translateX(-10px); } }
+/*@1091*/ @keyframes v3tick { from { opacity: 0; transform: scale(.3); } }
+/*@1098*/ @keyframes v3wall { from { opacity: 0; transform: scale(.94) rotate(-4deg); } to { opacity: .05; transform: none; } }
+/*@1099*/ @keyframes v3wall-d { from { opacity: 0; transform: scale(.94) rotate(-4deg); } to { opacity: .07; transform: none; } }
+/*@1105*/ @keyframes v3aura { 50% { opacity: .85; transform: scale(1.18); } }
+/*@1106*/ @keyframes v3wig { 20% { transform: rotate(-14deg) scale(1.08); } 45% { transform: rotate(10deg) scale(1.08); } 70% { transform: rotate(-5deg); } 100% { transform: none; } }

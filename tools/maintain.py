@@ -25,13 +25,6 @@ STAMP = MAP / ".maintained"
 TODAY = date.today()
 
 
-def days_since(s):
-    try:
-        return (TODAY - datetime.strptime(s[:10], "%Y-%m-%d").date()).days
-    except (ValueError, TypeError):
-        return None
-
-
 def cleanup():
     removed = [f"diagram candidate image ({n})" for n in range(prune_asset_files())]
     for p in list(ROOT.rglob("__pycache__")):

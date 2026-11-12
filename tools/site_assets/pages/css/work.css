@@ -1,0 +1,63 @@
+/* work.css: rules used only by: work.
+   Every rule starts with /*@n*/, its place in the cascade. The build merges a page type's modules by n, so rules keep the order they had in one file.
+   A new rule needs no number: it takes the place after the rule above it. */
+/*@98*/ .k-epic { color: var(--epic); background: var(--epic-bg); }
+/*@117*/ .board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; align-items: start; }
+/*@119*/ .col-h { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px 10px; }
+/*@120*/ .col-h .n { color: var(--muted); font-weight: 600; font-size: 13px; font-variant-numeric: tabular-nums; }
+/*@126*/ .tile .facts { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12.5px; color: var(--muted); }
+/*@127*/ .tile .facts b { color: var(--ink); font-weight: 600; }
+/*@128*/ .tile.wk-epic { box-shadow: inset 3px 0 0 var(--epic), var(--shadow); }
+/*@129*/ .tile.wk-story { box-shadow: inset 3px 0 0 var(--story), var(--shadow); }
+/*@130*/ a.tile.wk-epic:hover { box-shadow: inset 3px 0 0 var(--epic), var(--shadow-lift); }
+/*@131*/ a.tile.wk-story:hover { box-shadow: inset 3px 0 0 var(--story), var(--shadow-lift); }
+/*@141*/ .list-t th { cursor: pointer; user-select: none; white-space: nowrap; }
+/*@142*/ .list-t th.sorted { color: var(--ink); }
+/*@143*/ .list-t th.sorted::after { content: " ↓"; }
+/*@144*/ .list-t th.sorted.asc::after { content: " ↑"; }
+/*@145*/ .list-t tr:hover td { background: var(--fill); }
+/*@146*/ .list-t tr:last-child td { border-bottom: 0; }
+/*@147*/ .list-t td:first-child a { font-weight: 600; color: var(--ink); }
+/*@261*/ @media (max-width: 900px) { .board { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/*@273*/ @media (max-width: 560px) { .board { grid-template-columns: 1fr; } }
+/*@279*/ .tile-wrap { position: relative; }
+/*@280*/ .tile-x { position: absolute; top: 12px; right: 12px; border: 0; background: var(--fill); color: var(--ink-2); border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 600; opacity: 0; transition: opacity .15s var(--ease), background-color .2s; }
+/*@281*/ .tile-wrap:hover .tile-x, .tile-x:focus-visible { opacity: 1; }
+/*@282*/ .tile-x:hover { background: var(--fill-2); color: var(--ink); }
+/*@283*/ @media (hover: none) { .tile-x { opacity: 1; } }
+/*@564*/ .rd-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; flex: 1; }
+/*@565*/ .rd-tools[hidden] { display: none; }
+/*@860*/ .rd-tools { margin-left: auto; }
+/*@861*/ .rd-tools #q { width: 260px; height: 38px; }
+/*@865*/ .list-t { width: 100%; border-collapse: collapse; font-size: 14px; }
+/*@866*/ .list-t th { font-family: var(--font-mono); font-weight: 400; font-size: 12px; color: var(--muted); text-align: left; padding: 0 12px 10px 0; border-bottom: 1px solid var(--line); background: none; }
+/*@867*/ .list-t td { padding: 14px 12px 14px 0; border-bottom: 1px solid var(--line); background: none; }
+/*@868*/ .list-t tr:hover td { background: var(--fill); }
+/*@891*/ @media (max-width: 700px) { .rd-tools, .rd-tools #q { width: 100%; margin: 0; } }
+/*@915*/ .wk-business::before, .wk-both::before { background: var(--biz-edge); border-radius: 1px; }
+/*@916*/ .wk-technical::before { background: var(--tech-edge); clip-path: polygon(50% 0, 100% 100%, 0 100%); width: 9px; height: 8px; }
+/*@917*/ .wk-both { gap: 5px; }
+/*@918*/ .wk-both::after { order: -1; background: var(--tech-edge); clip-path: polygon(50% 0, 100% 100%, 0 100%); width: 9px; }
+/*@919*/ .wk-none { color: var(--faint); }
+/*@920*/ .wk-none::before { border: 1px dashed var(--faint); border-radius: 50%; width: 7px; height: 7px; }
+/*@1061*/ .wk-d { display: grid; grid-template-columns: 56px minmax(0, 1fr); column-gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); }
+/*@1062*/ .wk-d:first-child { border-top: 0; padding-top: 2px; }
+/*@1063*/ .wk-d.past { opacity: .5; }
+/*@1064*/ .wk-d.past .wk-tl { display: none; }
+/*@1065*/ .wk-h { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+/*@1066*/ .wk-n { font-family: var(--font-display); font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+/*@1067*/ .wk-dd { font-family: var(--font-display); font-size: 24px; font-weight: 700; letter-spacing: -.03em; line-height: 1; }
+/*@1068*/ .wk-d.today .wk-n, .wk-d.today .wk-dd { color: var(--accent-text); }
+/*@1069*/ .wk-s { display: flex; flex-direction: column; gap: 3px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+/*@1070*/ .wk-s i { display: block; width: 44px; height: 3px; border-radius: 2px; background: var(--fill-2); overflow: hidden; }
+/*@1071*/ .wk-s b { display: block; height: 100%; background: var(--leaf); }
+/*@1072*/ .wk-tl { position: relative; height: 4px; border-radius: 2px; background: var(--fill); margin: 8px 0 6px; }
+/*@1073*/ .wk-tl i { position: absolute; top: 0; width: 6%; height: 100%; background: var(--ink); border-radius: 2px; transition: transform .3s var(--spring); }
+/*@1074*/ .wk-d:hover .wk-tl i { transform: scaleY(2); }
+/*@1075*/ .wk-b ul { list-style: none; margin: 0; padding: 0; }
+/*@1076*/ .wk-b a { display: grid; grid-template-columns: 40px minmax(0, 1fr) 8px; gap: 8px; align-items: baseline; padding: 6px 0; color: var(--ink); font-size: 13.5px; line-height: 1.35; }
+/*@1077*/ .wk-b a:hover { text-decoration: none; color: var(--accent-text); }
+/*@1078*/ .wk-t { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+/*@1081*/ .wk-rest summary { cursor: pointer; color: var(--accent-text); font-size: 13px; padding: 2px 0; list-style: none; }
+/*@1082*/ .wk-rest summary::-webkit-details-marker { display: none; }
+/*@1083*/ .wk-free { margin: 6px 0 0; color: var(--faint); font-size: 13.5px; }

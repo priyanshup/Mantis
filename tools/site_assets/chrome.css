@@ -1,0 +1,35 @@
+/* chrome.css: the theme switch, the one piece of header chrome both page shells share. Colours come from theme.json (--sun-*, --moon-*). Loaded after the page stylesheet. */
+
+.th { position: relative; }
+.th svg { position: relative; width: 22px; height: 22px; transition: transform .5s var(--spring); }
+.th::before { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--sun-glow) 80%, transparent), transparent 70%); filter: blur(7px); opacity: .5; animation: v3aura 3.4s ease-in-out infinite; pointer-events: none; }
+.th:hover svg { transform: rotate(18deg) scale(1.1); }
+.th .th-moon { display: none; }
+:root[data-theme="dark"] .th .th-sun { display: none; }
+:root[data-theme="dark"] .th .th-moon { display: block; }
+:root[data-theme="dark"] .th::before { background: radial-gradient(circle, color-mix(in srgb, var(--moon-b) 85%, transparent), transparent 70%); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) .th .th-sun { display: none; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) .th .th-moon { display: block; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) .th::before { background: radial-gradient(circle, color-mix(in srgb, var(--moon-b) 85%, transparent), transparent 70%); } }
+.th .th-sun { display: none; }
+.th .th-moon { display: block; }
+.th::before { background: radial-gradient(circle, color-mix(in srgb, var(--moon-b) 85%, transparent), transparent 70%); }
+:root[data-theme="dark"] .th .th-sun { display: block; }
+:root[data-theme="dark"] .th .th-moon { display: none; }
+:root[data-theme="dark"] .th::before { background: radial-gradient(circle, color-mix(in srgb, var(--sun-glow) 85%, transparent), transparent 70%); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) .th .th-sun { display: block; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) .th .th-moon { display: none; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) .th::before { background: radial-gradient(circle, color-mix(in srgb, var(--sun-glow) 85%, transparent), transparent 70%); } }
+.th .th-moon path:first-of-type { fill: var(--moon-a); }
+.th .th-moon path:not(:first-of-type), .th .th-moon circle { fill: var(--moon-b); }
+.th .th-sun circle { fill: var(--sun-core); }
+.th .th-sun line { stroke: var(--sun-core); }
+
+/* the icon's own gradients and strokes, so the markup carries no colour */
+.th .sun-a { stop-color:var(--sun-a); } .th .sun-b { stop-color:var(--sun-b); } .th .sun-rays { stroke:var(--sun-ray); }
+.th .moon-c { stop-color:var(--moon-c); } .th .moon-d { stop-color:var(--moon-d); } .th .moon-star { fill:var(--moon-star); }
+
+/* the tooltip (tooltips.js): one copy for the app and the content pages */
+#mn-tip { position: fixed; z-index: 99999; pointer-events: none; max-width: 260px; padding: 6px 10px; border-radius: 8px; background: var(--ink, var(--fixed-ink)); color: var(--bg, var(--white)); font: 500 12.5px/1.35 inherit; font-family: inherit; box-shadow: 0 6px 18px color-mix(in srgb, var(--black) 22%, transparent); opacity: 0; transform: translateY(4px) scale(.96); transition: opacity .14s ease, transform .28s cubic-bezier(.32,.72,0,1); }
+#mn-tip[data-pos="below"] { transform: translateY(-4px) scale(.96); } #mn-tip.on { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { #mn-tip { transition: opacity .1s; transform: none !important; } }

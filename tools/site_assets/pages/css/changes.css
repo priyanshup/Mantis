@@ -1,0 +1,40 @@
+/* changes.css: rules used only by: changes.
+   Every rule starts with /*@n*/, its place in the cascade. The build merges a page type's modules by n, so rules keep the order they had in one file.
+   A new rule needs no number: it takes the place after the rule above it. */
+/*@444*/ .ev-src { --c: var(--build); --ei: var(--ev-src); }
+/*@445*/ .ev-q { --c: var(--ref); --ei: var(--ev-q); }
+/*@446*/ .ev-a { --c: var(--done); --ei: var(--ev-a); }
+/*@447*/ .ev-c { --c: var(--ref); --ei: var(--ev-c); }
+/*@448*/ .ev-dec { --c: var(--disc); --ei: var(--ev-dec); }
+/*@449*/ .ev-w { --c: var(--accent-text); --ei: var(--ev-w); }
+/*@450*/ .ev-card { --c: var(--none); --ei: var(--ev-card); }
+/*@452*/ .ev-bar { margin-bottom: 8px; }
+/*@453*/ .ev-sum { margin: 0 0 14px; min-height: 1.4em; }
+/*@454*/ .ev-day { margin-bottom: 22px; }
+/*@455*/ .ev-day h3 { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--ink-2); margin: 0 0 6px 4px; }
+/*@456*/ .ev-list { list-style: none; margin: 0; padding: 0; background: var(--surface); border-radius: var(--radius); border: .5px solid var(--line-soft); box-shadow: var(--shadow); overflow: hidden; }
+/*@457*/ .ev { display: grid; grid-template-columns: 168px minmax(0, 1fr) auto; gap: 4px 14px; align-items: baseline; padding: 11px 16px; }
+/*@458*/ .ev + .ev { border-top: .5px solid var(--line-soft); }
+/*@459*/ .ev-k { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--c); white-space: nowrap; }
+/*@460*/ .ev-ico { flex: none; width: 15px; height: 15px; background: currentColor; -webkit-mask: var(--ei) center / contain no-repeat; mask: var(--ei) center / contain no-repeat; transform: translateY(2px); }
+/*@461*/ .ev-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+/*@462*/ .ev-t { font-weight: 500; overflow-wrap: anywhere; }
+/*@463*/ .ev-t a { color: var(--ink); }
+/*@464*/ .ev-d { overflow-wrap: anywhere; }
+/*@465*/ .ev-card { max-width: 240px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+/*@466*/ .ev-card:hover { color: var(--ink); }
+/*@468*/ @media (max-width: 640px) { .ev { grid-template-columns: minmax(0, 1fr); padding: 12px 14px; } }
+/*@469*/ @media (max-width: 640px) { .ev-card { text-align: left; max-width: none; } }
+/*@470*/ .ev-day h3 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-right: 4px; }
+/*@471*/ .ev-day h3 .ev-n { font-weight: 500; }
+/*@472*/ .ev-fold { display: block; padding: 0; }
+/*@473*/ .ev-fold > details > summary { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: 4px 14px; align-items: baseline; padding: 11px 16px; cursor: pointer; list-style: none; }
+/*@474*/ .ev-fold > details > summary::-webkit-details-marker { display: none; }
+/*@475*/ .ev-fold > details > summary:hover .ev-d { color: var(--ink); }
+/*@476*/ .ev-fold > details[open] > summary .ev-d { visibility: hidden; }
+/*@477*/ .ev-sub { list-style: none; margin: 0 0 6px; padding: 0; }
+/*@478*/ .ev-sub .ev { padding: 8px 16px 8px 198px; border-top: 0; }
+/*@479*/ .ev-sub .ev-k { display: none; }
+/*@480*/ .ev-sub .ev { grid-template-columns: minmax(0, 1fr) auto; }
+/*@481*/ @media (max-width: 640px) { .ev-fold > details > summary { grid-template-columns: minmax(0, 1fr); padding: 12px 14px; } }
+/*@482*/ @media (max-width: 640px) { .ev-sub .ev { padding: 8px 14px 8px 36px; grid-template-columns: minmax(0, 1fr); } }

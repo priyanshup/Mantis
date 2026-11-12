@@ -23,6 +23,17 @@ OUT = M / "knowledge" / "map"
 ID_RE = re.compile(r"MANTIS-(?:DOC|GAP|ASM|CFL|DEC)-\d+")
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import textcache   # unchanged files are not reopened (MANTIS-IMP-016)
+import time
+_LAP0 = _LAP = time.perf_counter()
+LAPS = {}   # stage -> seconds; printed at the end and saved as map/timings.json (MANTIS-IMP-106)
+
+
+def lap(stage):
+    global _LAP
+    now = time.perf_counter()
+    LAPS[stage] = round(now - _LAP, 2)
+    _LAP = now
+
 
 
 def front_matter(text):
@@ -78,12 +89,16 @@ gaps = registers("gaps", "MANTIS-GAP-")
 asms = registers("assumptions", "MANTIS-ASM-")
 cfls = registers("conflicts", "MANTIS-CFL-")
 
+lap("read registers and digests")
+
 # Index entries (registers/documents/<ID>.md) are generated from the digests; only their Notes are hand-kept.
 import index_gen
 if __name__ != "index_migrate":
     _n = index_gen.build(docs, gaps, asms, cfls)
     if _n:
         print(f"Index: {_n} entries regenerated")
+
+lap("index entries")
 
 edges = []  # (from, to, kind)
 by_topic, by_entity = defaultdict(list), defaultdict(list)
@@ -193,6 +208,7 @@ kg = kgraph.build(docs, features + topics)
 
 # Knowledge assets (tools/assets.py, MANTIS-IMP-008): pull images out of new sources, read the
 # asset register, and note which digests and pages use each asset.
+lap("graph and entities")
 import assets as assets_mod
 try:
     _n = assets_mod.scan(quiet=True)
@@ -218,6 +234,7 @@ rows += [" | ".join([a["id"], a["type"] or "-", a["title"][:90], ",".join(short(
 textcache.write((OUT / "assets.md"), "\n".join(rows) + "\n")
 textcache.write((OUT / "assets.json"), json.dumps({"assets": asset_list, "tiers": dict(_tiers)}, indent=1, ensure_ascii=False))
 
+lap("assets")
 _deferred = {rid: r for reg in (gaps, asms, cfls) for rid, r in reg.items() if r["status"].lower().startswith("deferred")}
 _c = cards_mod.write(all_cards, docs, summaries, gaps, kg["entities"], is_open, asset_list, _deferred)
 
@@ -236,6 +253,7 @@ textcache.write((OUT / "changes.json"), json.dumps(_changes, indent=1, ensure_as
 if _c:
     print(f"Cards: {_c} regenerated")
 
+lap("cards and changes")
 suggest = cards_mod.uncovered_tags(all_cards, docs)
 rows = ["# Cards", "", "Generated. Read a subject's card before any digest: `mantis/knowledge/features/<slug>.md` or",
         "`mantis/knowledge/topics/<slug>.md`. new = linked sources the curated summary does not cover yet;",
@@ -345,6 +363,7 @@ for typ, reg in (("gap", gaps), ("assumption", asms), ("conflict", cfls)):
 edges = sorted(set(edges))
 textcache.write((OUT / "titles.json"), json.dumps({d: f.get("original_title", "") for d, f in docs.items()}, ensure_ascii=False, indent=0))
 
+lap("map files")
 # The search index for questions (MANTIS-IMP-086): only digests, cards and relations that changed are re-indexed; no AI
 try:
     import search
@@ -352,6 +371,7 @@ try:
 except Exception as e:   # the index is a convenience: Ask still works by scanning if it cannot be written
     print(f"Search index skipped: {e}")
 
+lap("search index")
 print(f"docs={len(docs)} gaps={len(gaps)} asm={len(asms)} cfl={len(cfls)} features={len(features)} entities={len(kg['entities'])} edges={len(edges)}")
 for msg in kg["problems"]: print("Graph:", msg)
 for f in sorted(OUT.iterdir()): print(f"{f.name}: {f.stat().st_size} bytes")
@@ -362,6 +382,7 @@ textcache.prune()
 if problems:
     print(f"\nLint: {len(problems)} problem(s). Run `python tools/entry.py check` for the list.")
 
+lap("lint")
 try:
     import maintain  # health report only (no cleanup) so the site's Home and Health pages are current
     maintain.report()
@@ -369,8 +390,18 @@ except Exception as e:
     print(f"Health report skipped: {e}")
 
 try:
+    import codemap   # docs/system/CODEMAP.md: which file does what (MANTIS-IMP-106)
+    codemap.main()
+except Exception as e:
+    print(f"Code map skipped: {e}")
+lap("health report and code map")
+try:
     import build_site
     build_site.build()
 except ImportError as e:
     print(f"\nSite not rebuilt: {e}")
+lap("site")
+LAPS["total"] = round(time.perf_counter() - _LAP0, 2)
+print("Timings (s): " + ", ".join(f"{k} {v}" for k, v in LAPS.items()))
+textcache.write(OUT / "timings.json", json.dumps(LAPS, indent=1))
 buildlock.mark_done()   # the server's watcher skips edits older than this, including this build's own writes

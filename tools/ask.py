@@ -233,38 +233,6 @@ def side_evidence(question, q):
     return out
 
 
-def evidence_scan(question, n_passages=14, card_lines=8):
-    """The first one-step pack (before the search index): every source scored, best passages of the top ones.
-    Kept for comparison on the evaluation set; evidence() replaced it on 2026-10-11."""
-    e = collect(question, n_docs=8)
-    q = e["q"]
-    pool = {}
-    for _, d in e["top_d"]:
-        p = M / "02_digests" / f"{d}.md"
-        for i, c in enumerate(chunks(frontmatter.split(p.read_text(encoding="utf-8"))[1])):
-            pool[f"{d}#{i}"] = {"text": c, "doc": d}
-    best = [k for _, k in bm25(q, pool)[:n_passages]]
-    best.sort(key=lambda k: (k.split("#")[0], int(k.split("#")[1])))   # keep each source's passages in its own order
-    cpool = {}
-    for _, slug in e["top_c"]:
-        for i, line in enumerate(c for c in chunks(e["cards"][slug]["curated"]) if not c.startswith("|---")):
-            cpool[f"{slug}#{i}"] = {"text": line}
-    cbest = [k for _, k in bm25(q, cpool)[:card_lines]]
-    parts = [f"QUESTION: {question}", "", "=== CARD LINES (curated summaries; they cite their sources) ==="]
-    parts += [f"[{k.split('#')[0]}] {cpool[k]['text'][:700]}" for k in cbest]
-    parts += ["", "=== SOURCE PASSAGES (quote only from these) ==="]
-    for k in best:
-        d = pool[k]["doc"]
-        parts.append(f"[{d} \"{e['docs'][d]['title'][:80]}\"] {pool[k]['text'][:900]}")
-    if e["glossary"]:
-        parts += ["", "=== GLOSSARY ==="] + e["glossary"]
-    if e["open"]:
-        parts += ["", "=== OPEN QUESTIONS ==="] + [f"{o['id']} [{o['status']}]: {o['topic'][:220]}" for o in e["open"]]
-    if e["decisions"]:
-        parts += ["", "=== DECISIONS ==="] + [f"{d['id']} ({d['date']}): {d['decision'][:300]}" for d in e["decisions"]]
-    return "\n".join(parts)
-
-
 def answer(question):
     """One-step answer: evidence by code, one model call, quotes checked by code. Reuses a saved answer when the
     same question meets the same evidence. Returns {"summary", "usage", "reused"}."""

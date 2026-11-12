@@ -35,7 +35,7 @@ def check(name, ok, detail=""):
 
 
 def code():
-    for p in [*sorted(T.glob("*.py")), *sorted((T / "site_assets" / "js").glob("*.js")), T / "site_assets" / "style.css"]:
+    for p in [*sorted(T.glob("*.py")), *sorted((T / "site_assets" / "pages" / "js").glob("*.js"))]:
         bad = re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", p.read_text(encoding="utf-8"))
         if bad:   # a control character in code: the mark of a shell-quoting accident ("\b" becoming a backspace)
             line = p.read_text(encoding="utf-8")[:bad.start()].count("\n") + 1
@@ -56,15 +56,46 @@ def code():
 
 
 def js_css():
-    if shutil.which("node"):   # the site script is joined from site_assets/js/ at build time; check the joined whole
-        import tempfile, build_site
-        with tempfile.NamedTemporaryFile("wb", suffix=".js", delete=False) as f:
-            f.write(build_site.app_js())
-        r = subprocess.run(["node", "--check", f.name], capture_output=True, text=True)
-        Path(f.name).unlink(missing_ok=True)
-        check("js", r.returncode == 0, r.stderr.strip()[:300])
-    css = re.sub(r"/\*.*?\*/", "", (T / "site_assets" / "style.css").read_text(encoding="utf-8"), flags=re.S)
-    check("css", css.count("{") == css.count("}"), f"{css.count('{')} opening and {css.count('}')} closing braces")
+    if shutil.which("node"):   # each page type's script is joined from site_assets/pages/js at build time; check every joined whole
+        import tempfile, site_pages
+        for t in site_pages.config()["types"]:
+            with tempfile.NamedTemporaryFile("wb", suffix=".js", delete=False) as f:
+                f.write(site_pages.bundle_js(t))
+            r = subprocess.run(["node", "--check", f.name], capture_output=True, text=True)
+            Path(f.name).unlink(missing_ok=True)
+            check("js", r.returncode == 0, f"{t}: {r.stderr.strip()[:300]}")
+
+
+def theme_and_style():
+    """One theme file feeds every page; no new raw colours; every var(--x) names a token (MANTIS-IMP-107)."""
+    import theme, stylelint, layout, site_pages, wiring
+    for problem in theme.check():
+        check("theme", False, problem)
+    for problem in layout.check():
+        check("layout", False, problem)
+    for problem in site_pages.check():
+        check("pages", False, problem)
+    for problem in wiring.check()[0]:   # a control that is drawn but connected to nothing
+        check("wiring", False, problem)
+    colours, inline, undefined = stylelint.scan()
+    base = json.loads(stylelint.BASELINE.read_text(encoding="utf-8"))
+    for f, names in undefined.items():
+        check("style", False, f"{f} uses undefined {', '.join(names)}")
+    for kind, found in (("colours", {k: len(v) for k, v in colours.items()}), ("inline_styles", inline), ("repeated_selectors", stylelint.repeated())):
+        for f, n in found.items():
+            check("style", n <= base.get(kind, {}).get(f, 0), f"{f} has {n} {kind.replace('_', ' ')}, {base.get(kind, {}).get(f, 0)} allowed; use tokens in site_config/theme.json")
+    site = Path.home() / "AppData" / "Local" / "Mantis" / "site"
+    if site.exists():   # a rule whose class nothing writes is dead weight: python tools/unusedcss.py --apply removes it
+        import unusedcss
+        for sheet, (rules, dead) in unusedcss.run(False, site).items():
+            check("css", dead == 0, f"{sheet} has {dead} rule(s) no page or script uses; run python tools/unusedcss.py --apply")
+    for p in sorted((T / "site_assets").rglob("*.css")):
+        css = re.sub(r"/\*.*?\*/", "", p.read_text(encoding="utf-8"), flags=re.S)
+        check("css", css.count("{") == css.count("}"), f"{p.name}: {css.count('{')} opening and {css.count('}')} closing braces")
+    if shutil.which("node"):
+        for p in sorted([*(T / "site_assets" / "app").glob("*.js"), *(T / "site_assets" / "pages" / "js").glob("*.js")]):
+            r = subprocess.run(["node", "--check", str(p)], capture_output=True, text=True)
+            check("js", r.returncode == 0, f"{p.name}: {r.stderr.strip()[:200]}")
 
 
 def docs():
@@ -218,7 +249,7 @@ def data():
 
 if __name__ == "__main__":
     quick = "--quick" in sys.argv
-    code(); js_css(); docs(); readiness_rules(); decision_watch(); search_index(); pull_logic(); repeats_rule()
+    code(); js_css(); theme_and_style(); docs(); readiness_rules(); decision_watch(); search_index(); pull_logic(); repeats_rule()
     if not quick:
         tools(); data()
     if fails:

@@ -38,67 +38,6 @@ def nq(c):
     return f'<span class="t-meta f-q">{n_(n, "question")}</span>' if n else '<span class="t-meta f-q"></span>'
 
 
-def focus_html(features):
-    """Mine: the cards the owner follows, in their own order, grouped into business and technical work. Each row
-    says one thing beyond its name: a warning, its stage and its open questions. Drag (or Alt+↑/↓) to rank."""
-    by_slug = {c["slug"]: (c, c in features) for c in features + TOPICS}
-    mine = [by_slug[s] for s in FOCUS["following"] if s in by_slug]
-
-    def focus_row(c, feat):
-        return (f'<li class="f-row" draggable="true" data-slug="{c["slug"]}" data-work="{c.get("work", "")}" tabindex="-1">'
-                f'<a class="row-t" href="{"features" if feat else "topics"}/{c["slug"]}.html">{esc(c["title"])}</a>{flag(c["slug"])}{stage(c, feat)}{nq(c)}</li>')
-
-    def section(g, xs):
-        """A group's label and rows. A group of ideas only (topics not on the roadmap) starts as one line, "Technical
-        · 6 ideas", since its rows would all say just "Idea"; the page remembers whether the owner opened it."""
-        rows = f'<ol class="rows focus-list">{"".join(focus_row(c, f) for c, f in xs)}</ol>'
-        if all(not f and not on_roadmap(c, False) for c, f in xs):
-            return f'<details class="f-fold" data-work="{g}"><summary class="grp-l">{wk(g)} <span class="n">{n_(len(xs), "idea")}</span></summary>{rows}</details>'
-        return f'<p class="grp-l">{wk(g)}</p>{rows}'
-
-    groups = [(w, [x for x in mine if x[0].get("work", "") == w]) for w in ("business", "technical", "both")] \
-        + [("", [x for x in mine if x[0].get("work", "") not in WK])]
-    return ('<div id="focus-list">' + "".join(section(g, xs) for g, xs in groups if xs) + "</div>") if mine \
-        else '<p class="empty">You follow nothing yet. Open <b>All</b> and press Follow on the subjects you own.</p>'
-
-
-def page_features(features, later, built):
-    """Features (2026-10-31 redesign, after MANTIS-IMP-094): Mine, Roadmap and All under three tabs, and one Filter
-    menu for type, stage, priority and the archive. Mine is the ranked list, Roadmap the board, list and timeline."""
-    rd = roadmap_html(features, later)
-    cards = [(f, True) for f in features] + [(t, False) for t in TOPICS]
-    n_f = sum(1 for s in FOCUS["following"] if not archived(s))
-    n_r = sum(1 for c, f in cards if on_roadmap(c, f))
-    n_a = sum(1 for c, f in cards if archived(c["slug"]))
-    n_epics, n_stories = len({e["id"] for f in features for e in f["epics"]}), sum(len(f["stories"]) for f in features)
-    chips = "".join(f'<button data-v="{k}">{v[0]}</button>' for k, v in STATUS.items())
-    body = f"""<div class="page-h"><div><h1>Features</h1></div><div class="ph-acts nocopy"><a class="btn-line" href="work.html">Epics and stories <span class="n">{n_epics + n_stories}</span></a></div></div>
-<div class="tabs-row"><div class="tabs-u" id="ttab" role="tablist" aria-label="Which features"><button data-v="focus" class="on" role="tab">Mine <span class="n">{n_f}</span></button>
-<button data-v="roadmap" role="tab">Roadmap <span class="n">{n_r}</span></button><button data-v="all" role="tab">All <span class="n">{len(cards) - n_a}</span></button><button data-v="ideas" role="tab" hidden>Ideas</button></div>
-<details class="pop nocopy" id="f-pop"><summary class="btn-line">Filter</summary><div class="pop-b">
-<p class="grp-l">Type</p>{work_chips([c for c, f in cards if not archived(c["slug"])])}
-<div class="rd-only"><p class="grp-l">Stage</p><div class="chips" id="f-status"><button data-v="all" class="on">Any</button>{chips}</div>
-<p class="grp-l">Priority</p><div class="chips" id="f-prio"><button data-v="all" class="on">Any</button><button data-v="P1">P1</button><button data-v="P2">P2</button><button data-v="P3">P3</button></div></div>
-<p class="grp-l">Show</p><div class="chipset"><button type="button" data-ideas>Ideas only</button><button type="button" data-arch>Archived · {n_a}</button></div>
-<div id="t-bulk-box" hidden><p class="grp-l">Change everything shown</p><div class="chipset bulk" id="t-bulk"></div></div></div></details></div>
-<section data-scope-panel="focus">{focus_html(features)}</section>
-<section data-scope-panel="roadmap" hidden>{rd}</section>
-<section data-scope-panel="tiles" hidden><div class="toolbar"><input id="tq" type="search" placeholder="Find a feature or idea" aria-label="Find a feature or idea"></div>
-<p class="empty" id="t-empty" hidden>Nothing here yet.</p>
-<ol class="rows all-list">{"".join(tile(c, f) for c, f in cards)}</ol></section>"""
-    return shell("Features", body, active="features", built=built)
-
-
-def work_chips(cards):
-    """The quick filter by work type, shared by Following, Roadmap and the cards. Business and Technical
-    each include the cards that are both; Not set finds topics still to classify."""
-    n = {w: sum(1 for c in cards if c.get("work", "") == w) for w in ("business", "technical", "both", "")}
-    chip = lambda v, label, k: f'<button data-v="{v}"{" class=\"on\"" if v == "all" else ""}>{label} <span class="n">{k}</span></button>'
-    return ('<div class="chips" id="t-work" data-k="work" aria-label="Type">'
-            + chip("all", "Any", len(cards)) + chip("business", "Business", n["business"] + n["both"])
-            + chip("technical", "Technical", n["technical"] + n["both"]) + chip("none", "Not set", n[""]) + "</div>")
-
-
 def tile(c, feat):
     """A row in All: the name and its one-line summary, stage and questions; Follow, Roadmap and Archive show on hover."""
     url = ("features/" if feat else "topics/") + c["slug"] + ".html"
@@ -109,31 +48,6 @@ def tile(c, feat):
             f'<span class="row-acts nocopy"><button type="button" class="act follow{" on" if fol else ""}" data-a="follow" aria-pressed="{str(fol).lower()}">{"Following" if fol else "Follow"}</button>'
             f'<button type="button" class="act road{" on" if road else ""}" data-a="roadmap" aria-pressed="{str(road).lower()}">{"On roadmap" if road else "Roadmap"}</button>'
             f'<button type="button" class="act arc" data-a="archive" title="Hide this card everywhere; restore it from Archived">{"Restore" if arc else "Archive"}</button></span></li>')
-
-
-def roadmap_html(features, later):
-    data = [{k: f[k] for k in ("slug", "title", "type", "status", "status_note", "priority", "jira", "estimate", "updated", "summary", "open")}
-            | {"epics": len(f["epics"]), "page": bool(f["page"]), "stories": len(f["stories"]),
-               "storiesDone": sum(1 for s in f["stories"] if s["status"] in ("in-jira", "done"))}
-            | {"work": f.get("work", ""), "workTag": wk(f)} for f in features if on_roadmap(f, True)]
-    for f in data:
-        f["url"] = f"features/{f['slug']}.html"
-    for t in TOPICS:
-        if on_roadmap(t, False):
-            fm = read(t["card"])[0]
-            data.append({"slug": t["slug"], "url": f"topics/{t['slug']}.html", "title": t["title"], "type": "topic",
-                         "status": fm.get("status", "discovery") if fm.get("status") in STATUS else "discovery", "status_note": "",
-                         "priority": fm.get("priority", "") if fm.get("priority") in ("P1", "P2", "P3") else "", "jira": "none",
-                         "estimate": "", "updated": t["updated"], "summary": t["summary"], "open": t["open"], "epics": 0,
-                         "page": False, "stories": 0, "storiesDone": 0, "work": t.get("work", ""), "workTag": wk(t)})
-    data += [{"slug": "", "title": l["title"], "type": "feature", "status": "none", "status_note": "", "priority": "", "jira": "",
-              "estimate": "", "updated": "", "summary": l["note"], "open": 0, "epics": 0, "page": False, "stories": 0, "storiesDone": 0,
-              "work": "", "workTag": ""} for l in later]
-    labels = {k: v[0] for k, v in STATUS.items()}
-    return f"""<div class="toolbar rd-bar"><div class="seg" id="view" aria-label="Layout"><button data-v="board" class="on">Board</button><button data-v="list">List</button><button data-v="timeline">Timeline</button></div>
-<div class="rd-tools" id="rd-tools"><input id="q" type="search" placeholder="Find on the roadmap" aria-label="Find on the roadmap"></div></div>
-<div id="board"></div><div id="list" hidden></div><div id="tl-view" hidden>{page_timeline("", embed=True)}</div>
-<script id="data" type="application/json">{json.dumps({"items": data, "labels": labels})}</script>"""
 
 
 MARK = "<!-- GENERATED"
@@ -298,7 +212,7 @@ def page_feature(f, features, epics_by_id, built):
 <div class="feat-main"><nav class="tabs" aria-label="This feature">{tabs}</nav>{ph}</div>
 <aside class="side rail">{card_tasks(f["slug"])}{confluence_pages(f["docs"], f["title"])}{side_people(f["slug"])}{drafts}</aside>
 </div>"""
-    return shell(t, body, base="../", active="features", built=built)
+    return shell(t, body, base="../", active="features", built=built, kind="feature")
 
 
 def feature_questions(slug):
@@ -366,7 +280,7 @@ def page_work(work, features, built):
 <select id="f-feature" class="sel" aria-label="Filter by feature"><option value="all">All features</option><option value="mine">Following</option><optgroup label="Feature">{feats}<option value="none">No feature</option></optgroup><option value="archived">Archived</option></select></div>
 <div id="board"></div><div id="list" hidden></div>
 <script id="work" type="application/json">{json.dumps({"items": data, "labels": {k: v[0] for k, v in WORK.items()}})}</script>"""
-    return shell("Epics & stories", body, active="features", built=built)
+    return shell("Epics & stories", body, active="features", built=built, kind="work")
 
 
 def page_loose(x, work, built):
@@ -381,7 +295,7 @@ def page_loose(x, work, built):
 {f'<button class="pill p-jira copy-text" data-text="{esc(x["jira"])}">Jira {esc(x["jira"])}</button>' if x["jira"] not in ("", "none") else ""}</div></div>
 <div class="feat{"" if kids else " solo"}"><div class="feat-main"><div class="tab-panel">{copy_bar("Copy " + ("epic" if x["kind"] == "epic" else "story"), x["file"])}
 <article class="doc">{render(x["md"], breaks=True, sections=False)}</article></div></div>{side}</div>"""
-    return shell(x["title"], body, base="../", active="features", built=built)
+    return shell(x["title"], body, base="../", active="features", built=built, kind="document")
 
 
 def page_topic(t, topics, built):
@@ -406,77 +320,5 @@ def page_topic(t, topics, built):
 <div class="tab-panel" id="p-sources" hidden>{sources_tab(t["card_md"])}</div></div>
 <aside class="side rail">{card_tasks(t["slug"])}{confluence_pages(t["docs"], t["title"])}{side_people(t["slug"], "topic") or '<p class="empty">No people or systems named yet.</p>'}</aside>
 </div>"""
-    return shell(t["title"], body, base="../", active="features", built=built)
+    return shell(t["title"], body, base="../", active="features", built=built, kind="topic")
 
-
-def page_timeline(built, embed=False):
-    """Timeline (MANTIS-IMP-052): each roadmap feature over 8 weeks back and 10 ahead. Past: when sources,
-    decisions and stage moves arrived. Ahead: dated steps, chase dates and regular meetings. Time away spans all rows."""
-    from datetime import date as _d, timedelta as _td
-    tl = CHANGES.get("timeline") or {}
-    if not tl.get("rows"):
-        return shell("Timeline", '<div class="page-h"><div><h1>Timeline</h1></div></div><p class="empty">No roadmap features yet.</p>', active="timeline", built=built)
-    start, end, today = (_d.fromisoformat(tl[k]) for k in ("start", "end", "today"))
-    span = (end - start).days
-    pct = lambda iso: max(0.0, min(100.0, (_d.fromisoformat(iso[:10]) - start).days / span * 100))
-    weeks = [start + _td(weeks=i) for i in range(tl["weeks"])]
-    months, last = [], None
-    for i, w in enumerate(weeks):
-        if w.month != last:
-            months.append((i, w.strftime("%b")))
-            last = w.month
-    head = "".join(f'<span class="tl-m" style="left:{i / len(weeks) * 100:.3f}%">{m}</span>' for i, m in months)
-    ticks = "".join(f'<span class="tl-w" style="left:{i / len(weeks) * 100:.3f}%">{w.day}</span>' for i, w in enumerate(weeks))
-    grid = "".join(f'<span class="tl-g" style="left:{i / len(weeks) * 100:.3f}%"></span>' for i in range(1, len(weeks)))
-    now = f'<span class="tl-now" style="left:{pct(today.isoformat()):.3f}%" aria-hidden="true"></span>'
-    away = "".join(f'<span class="tl-away" style="left:{pct(a["start"]):.3f}%;width:{max(0.6, pct(a["end"]) - pct(a["start"]) + 100 / span):.3f}%" title="{esc(a["label"])}: {esc(a["start"])} to {esc(a["end"])}"></span>'
-                   for a in tl["away"])
-    nice = lambda iso: _d.fromisoformat(iso).strftime("%a %d %b").replace(" 0", " ")
-
-    def marks(r):
-        out = []
-        weeks_src = {}
-        for m in r["marks"]:
-            if m["kind"] == "source":   # sources fold into one dot per week, sized by count
-                wk = (_d.fromisoformat(m["date"]) - start).days // 7
-                weeks_src.setdefault(wk, []).append(m)
-        for wk, ms in weeks_src.items():
-            n = len(ms)
-            tip = f'{n} source{"s" if n != 1 else ""} added to Mantis in the week of {nice((start + _td(weeks=wk)).isoformat())}: ' + "; ".join(m["label"] for m in ms[:4]) + ("…" if n > 4 else "")
-            out.append(f'<span class="tl-k tl-src{" tl-many" if n > 2 else ""}" style="left:{(wk + .5) / len(weeks) * 100:.3f}%" title="{esc(tip)}" aria-label="{esc(tip)}">{n if n > 1 else ""}</span>')
-        for m in r["marks"]:
-            if m["kind"] == "source":
-                continue
-            label = f'{TL_KINDS.get(m["kind"], m["kind"])}, {nice(m["date"])}: {m["label"]}'
-            out.append(f'<span class="tl-k tl-{m["kind"]}" style="left:{pct(m["date"]):.3f}%" title="{esc(label)}" aria-label="{esc(label)}"></span>')
-        return "".join(out)
-
-    def row(r):
-        days = (today - _d.fromisoformat(r["last"])).days if r["last"] else None
-        quiet = f'active {"today" if days == 0 else "yesterday" if days == 1 else f"{days} days ago"}' if days is not None else "quiet in this window"
-        return (f'<div class="tl-row"><div class="tl-label"><a href="{esc(r["href"])}">{esc(r["title"])}</a>'
-                f'<span class="tl-meta">{pill(*STATUS.get(r["status"], ("?", "s-none")))}<span class="muted small">{esc(quiet)}</span></span></div>'
-                f'<div class="tl-track">{marks(r)}</div></div>')
-
-    legend = "".join(f'<span class="tl-leg"><span class="tl-k tl-{k}" aria-hidden="true"></span>{esc(v)}</span>'
-                     for k, v in (("src", "Added to Mantis (one dot a week)"), ("decision", "Decision"), ("stage", "Stage changed"),
-                                  ("possible", "Possible conflict"), ("due", "Step due"), ("chase", "Chase"), ("meeting", "Meeting")))
-    legend += '<span class="tl-leg"><span class="tl-away-key" aria-hidden="true"></span>You are away</span>' if tl["away"] else ""
-    up = "".join(f'<a class="row" href="{esc(m["href"])}"><span class="tl-up-d">{esc(nice(m["date"]))}</span><span class="tl-k tl-{m["kind"]}" aria-hidden="true"></span>'
-                 f'<span class="row-t">{esc(m["label"])}</span><span class="muted small">{esc(m["card"])}</span></a>' for m in tl["upcoming"])
-    up += "".join(f'<div class="row"><span class="tl-up-d">{esc(nice(a["start"]))}</span><span class="tl-away-key" aria-hidden="true"></span>'
-                  f'<span class="row-t">{esc(a["label"])} until {esc(nice(a["end"]))}</span></div>' for a in tl["away"] if a["end"] >= tl["today"])
-    nodates = not any(m["kind"] in ("due", "chase") for r in tl["rows"] for m in r["marks"])
-    body = f"""<div class="page-h"><div><h1>Timeline</h1><p class="lead">Your roadmap over the last 8 weeks and the next 10: what moved, and what is dated ahead. Features you follow come first. Sources show the week they were added to Mantis, not when they were written.</p></div></div>
-<div class="tl-legend nocopy">{legend}</div>
-<section class="tl panel-box" aria-label="Timeline, {esc(nice(tl['start']))} to {esc(nice(tl['end']))}">
-<div class="tl-scroll"><div class="tl-inner">
-<div class="tl-row tl-head"><div class="tl-label"></div><div class="tl-track">{head}{ticks}</div></div>
-<div class="tl-body"><div class="tl-overlay" aria-hidden="true"><div class="tl-label"></div><div class="tl-track">{grid}{away}{now}</div></div>
-{"".join(row(r) for r in tl["rows"])}</div></div></div></section>
-<section class="panel-box tl-up"><div class="box-h"><h2>Coming up</h2><span class="muted small">Dated steps, chases, meetings and time away</span></div>
-{up or '<p class="empty">Nothing dated ahead.</p>'}
-{'<p class="muted small tl-hint">No next step has a due date yet. Add a Due column to a card&#39;s Next steps table and it appears here.</p>' if nodates else ""}</section>"""
-    if embed:   # shown inside another page (MANTIS-IMP-068): no page header, no shell
-        return re.sub(r'^<div class="page-h">.*?</div></div>\n?', "", body, count=1, flags=re.S)
-    return shell("Timeline", body, active="timeline", built=built)

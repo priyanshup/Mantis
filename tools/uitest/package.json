@@ -1,0 +1,1 @@
+{"name":"mantis-uitest","private":true,"description":"Browser-free UI checks (jsdom). Run: cd tools/uitest && npm install && node smoke.js","devDependencies":{"jsdom":"24.1.0"}}

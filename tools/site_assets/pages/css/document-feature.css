@@ -1,0 +1,31 @@
+/* document-feature.css: rules used only by: document, feature.
+   Every rule starts with /*@n*/, its place in the cascade. The build merges a page type's modules by n, so rules keep the order they had in one file.
+   A new rule needs no number: it takes the place after the rule above it. */
+/*@156*/ .panel-bar { position: sticky; top: var(--top); z-index: 5; display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 0 -30px 4px; padding: 10px 14px 10px 30px;
+  background: var(--glass); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: .5px solid var(--line); border-radius: var(--radius) var(--radius) 0 0; }
+/*@157*/ .panel-bar.editing { background: color-mix(in srgb, var(--accent-soft) 85%, var(--surface)); }
+/*@248*/ .ed-toolbar { position: sticky; top: calc(var(--top) + 52px); z-index: 4; display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 0; margin-bottom: 6px; background: var(--surface); border-bottom: .5px solid var(--line); }
+/*@249*/ .ed-toolbar button { min-width: 34px; height: 32px; padding: 0 9px; border: 0; background: var(--fill); color: var(--ink); border-radius: 8px; font-size: 13px; font-weight: 600; }
+/*@250*/ .ed-toolbar button:hover { background: var(--fill-2); }
+/*@251*/ .ed-sep { width: 1px; background: var(--line); margin: 4px; }
+/*@252*/ .editor { min-height: 300px; padding: 14px 6px; outline: none; border-radius: 10px; }
+/*@253*/ .editor:focus { box-shadow: inset 0 0 0 2px var(--accent-soft); }
+/*@254*/ .editor table td, .editor table th { min-width: 60px; }
+/*@263*/ @media (max-width: 900px) { .panel-bar { margin: 0 -16px 4px; padding-left: 16px; } }
+/*@274*/ @media (max-width: 560px) { .panel-bar .muted { display: none; } }
+/*@396*/ .sync > span:not(.sync-ico) { flex: 1 1 300px; }
+/*@400*/ .sync.changed > summary > span:not(.sync-ico) { flex: 1 1 300px; }
+/*@401*/ .sync-ico { width: 16px; height: 16px; flex: none; display: inline-block; background: var(--accent); -webkit-mask: var(--i-sync) center / contain no-repeat; mask: var(--i-sync) center / contain no-repeat; }
+/*@402*/ .sync.changed .sync-ico { background: var(--carry); }
+/*@403*/ .sync-sec { margin: 8px 0 0; padding: 8px 10px; border-radius: 10px; background: var(--surface); box-shadow: inset 0 0 0 .5px var(--line-soft); }
+/*@404*/ .sync-sec > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; }
+/*@405*/ .sync-sec > summary::-webkit-details-marker { display: none; }
+/*@406*/ .sync-sec > summary .copy-sec { margin-left: auto; }
+/*@407*/ .sync-sec.gone { display: flex; align-items: center; gap: 8px; }
+/*@408*/ .sync-body { padding: 6px 4px 2px; }
+/*@409*/ .sync-body > h2 { font-size: 18px; margin: 6px 0; }
+/*@483*/ .sync.jira > span:not(.sync-ico) { flex: 1 1 300px; }
+/*@486*/ .jf-row { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px 14px; padding-top: 4px; }
+/*@487*/ .jf { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/*@755*/ .flag { color: var(--ref); width: 150px; overflow: hidden; text-overflow: ellipsis; }
+/*@825*/ @media (max-width: 900px) { .flag, .f-q, .flt-type { display: none; } }
