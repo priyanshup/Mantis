@@ -29,7 +29,12 @@ batch), then `python tools/pull.py plan --rebuild`. Their cards now show them as
 1. `python tools/pull.py packet <card>`. The packet is the whole change: diffs, new comments, new
    tickets, the card's open questions and new sources. Open a mirror file or a digest only when the
    packet points to it and the change cannot be judged without it.
-2. **Digest: one per card per month.** If the changes say something new, copy the packet to
+2. **Digest: one per card per month.** When the packet names this month's pull digest, run
+   `python tools/pulldraft.py apply <card>`: code writes the dated section (cited to ticket keys or page
+   sections), the Summary sentence and the Change Log line, and copies the packet to `01_sources/`.
+   Read the section it wrote, fix what is wrong or thin, and add what it means for the owner; delete
+   it if the changes add nothing. If the packet names no digest, write one by hand as below. Otherwise,
+   if the changes say something new, copy the packet to
    `01_sources/<ID>/<date>.md` and:
    - the packet names this month's pull digest: add a `## <date>` section to it, cited to ticket keys
      or page sections, rewrite its Summary to cover the month and add a Change Log line (rules:
@@ -48,7 +53,9 @@ batch), then `python tools/pull.py plan --rebuild`. Their cards now show them as
      Conflicts and assumptions never close without the owner;
    - a change that disagrees with the card: an unconfirmed conflict (`ingest.md` step 7); the card keeps its claim;
    - a new question: `ingest.md` step 6.
-4. **Card.** Edit the curated part once: fold in what matters, cited, and add the new DOC IDs and the
+4. **Card.** After `apply`, run `python tools/pulldraft.py cardnote <card>`: it writes the card's
+   "Changes of <date>" paragraph from the digest section, so the same fact is never typed twice. Read
+   it and edit it. Then edit the curated part once: fold in what matters, cited, and add the new DOC IDs and the
    packet's new sources to `source_documents`.
 5. **To-dos.** A deadline, or something the owner must do or ask: write suggestions as in `day.md`
    ("Daily brief") and save them with `python tools/tasks.py suggest <file> --add`. Something owed by

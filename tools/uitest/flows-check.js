@@ -156,6 +156,26 @@ const flows = {
     click(w, await waitFor(d, "[data-qx]")); await sleep(300); const ta = d.querySelector("textarea[id^=qa]"); type(w, ta, "My answer"); click(w, d.querySelector("[data-qsave]")); await sleep(400);
     check(posted(posts, "api/answers", (b) => (b.answers || []).length === 1), "Questions: saving an answer sends it");
   },
+  async capture() {
+    const { w, d, posts } = await load("sources");   // from any page: C opens the box when no field has focus
+    const press = (key) => d.dispatchEvent(new w.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+    const enter = (el) => el.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+    press("c"); await sleep(200);
+    check(!!d.querySelector("#capin"), "Capture: C opens the quick capture box with its field");
+    click(w, d.querySelector("[data-kind=followup]")); await sleep(200);
+    type(w, d.querySelector("#capin"), "no colon here"); enter(d.querySelector("#capin")); await sleep(300);
+    check(!!d.querySelector("#capin") && !posted(posts, "api/followups"), "Capture: a follow-up without Name: text is refused and the box stays open");
+    type(w, d.querySelector("#capin"), "Pat: share the release notes"); enter(d.querySelector("#capin")); await sleep(500);
+    check(posted(posts, "api/followups", (b) => b.action === "add" && b.person === "Pat" && b.topic === "share the release notes"), "Capture: a follow-up sends add with the person and the topic");
+    check(!d.querySelector("#capin"), "Capture: the box closes after saving");
+    press("c"); await sleep(200); click(w, d.querySelector("[data-kind=note]")); await sleep(200);
+    type(w, d.querySelector("#capin"), "A thought about pricing"); enter(d.querySelector("#capin")); await sleep(500);
+    check(posted(posts, "api/inbox", (b) => /^note-\d+\.md$/.test(b.name) && /pricing/.test(b.text)), "Capture: a note goes to the inbox as a file");
+    press("c"); await sleep(200); type(w, d.querySelector("#capin"), "Ring the distributor"); enter(d.querySelector("#capin")); await sleep(300);
+    check(w.eval('ST.newTasks.some((x) => x.t === "Ring the distributor" && x.g === "Other tasks")'), "Capture: a task is added to Other tasks");
+    check(!d.querySelector("#capin"), "Capture: the box closes after a task");
+    d.querySelector("#capin") || (press("c"), await sleep(100)); press("Escape"); await sleep(100);
+  },
   async today() {
     const { w, d, posts } = await load("today");
     click(w, d.querySelector("[data-pull]")); await sleep(500); check(posted(posts, "api/jobs"), "Today: Start a pull starts a job");

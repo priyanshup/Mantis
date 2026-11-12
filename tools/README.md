@@ -130,6 +130,7 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 | `inputscheck.py` | Does the incremental build know every file it reads? (IMP-111 step 7) | standard library |
 | `meetingnotes.py` | Recurring-meeting notes without a full source and digest each time (IMP-105). | standard library |
 | `noconsole.py` | No console windows from background work (Windows). | standard library |
+| `pulldraft.py` | Draft a pull pass by code, so the AI proofreads instead of retyping (IMP-114 items 1 and 2). | standard library |
 | `site_pages.py` | Page types and their bundles for the content pages. | standard library |
 | `site_shell.py` | The shell of the content pages (feature, topic, people, library, documents, changes, work): the app's header, a main area, and | standard library |
 | `skillscan.py` | Run every Claude skill through NVIDIA SkillSpector before it is trusted, and keep a record (owner rule, 2026-11-12). | standard library |

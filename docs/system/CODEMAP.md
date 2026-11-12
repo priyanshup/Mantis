@@ -7,7 +7,7 @@ Columns: lines, what it does, what it uses.
 
 file | lines | purpose | uses
 ---|---|---|---
-affected.py | 101 | Which checks does a change need? (IMP-112 item 8) | noconsole
+affected.py | 102 | Which checks does a change need? (IMP-112 item 8) | noconsole
 answered.py | 182 | What the owner has already settled, so Mantis never asks it again (MANTIS-IMP-088). Stdlib only, no AI. | mishear
 answers.py | 121 | Check the owner's answers before recording them (MANTIS-IMP-050). Stdlib only. | mishear
 apply_edits.py | 66 | Apply page, epic and story edits the owner saved from the site (mantis/00_inbox/edit-*.md). | edit_common
@@ -77,6 +77,7 @@ peek.py | 97 | Read a digest in two tiers: the short form (title, confidence, op
 people.py | 104 | People the owner works with (MANTIS-IMP-022), read from mantis/knowledge/people.md. | followups, local_config
 prune_sources.py | 147 | Free space in the source snapshots without losing evidence (MANTIS-IMP-089). Stdlib for planning; pypdf to keep text. | extract
 pull.py | 77 | Pull: what changed in Jira, Confluence and the inbox since the last pull, digested card by card (MANTIS-IMP-094). | atl_client, noconsole, pullkit/brief, pullkit/commands, pullkit/filters, pullkit/grouping, pullkit/state
+pulldraft.py | 251 | Draft a pull pass by code, so the AI proofreads instead of retyping (IMP-114 items 1 and 2). | 
 readiness.py | 203 | Decision readiness of roadmap features: problem evidence, measurement plan, launch review (MANTIS-IMP-074 to 076). | frontmatter, textcache
 refresh_report.py | 114 | What a card refresh changed and what it cost: curated part before and after, plus exact token use (MANTIS-IMP-090). Stdlib only. | 
 repeats.py | 102 | Repetition check: what an output says twice (MANTIS-IMP-094). Stdlib, no AI. | answered
@@ -139,7 +140,7 @@ pullkit/state.py | 73 | Where a pull keeps things, the pull state and the cards 
 file | lines | purpose
 ---|---|---
 app/agenda-calendar.js | 15 | v9: rest-of-the-week agenda, calendar with meeting and due dots, type-to-filter pickers
-app/app.css | 694 | The app's styles. Colours, type, radii and motion come from tokens.css (site_config/theme.json); nothing here may define a colour.
+app/app.css | 695 | The app's styles. Colours, type, radii and motion come from tokens.css (site_config/theme.json); nothing here may define a colour.
 app/behaviour-agenda.js | 17 | v9 behaviour
 app/behaviour-controls.js | 32 | v8 controls behaviour
 app/behaviour-core.js | 88 | behaviour: motion, toasts, delegated clicks, drawers, search
@@ -150,6 +151,7 @@ app/behaviour-tasks-palette.js | 98 | v6 behaviour: add and edit tasks, drag bet
 app/boot.js | 31 | boot.js: the app loader. It fetches the live data, runs the scripts in order, and decides when to say something went wrong. Rule: a failure 
 app/controls-kit.js | 16 | v8 controls kit: themed combobox, date picker, auto-growing text. Replaces every native select, datalist and date input.
 app/data-stub.js | 8 | Empty containers for what the mock's scripts expect to find; live.js fills them from the live data.
+app/feature-capture.js | 54 | feature-capture.js: quick capture from anywhere (IMP-114 item 8). Press C when no field has focus: one line, three kinds. Task: added to Oth
 app/feature-filters.js | 30 | feature-filters.js: add, edit, test and remove what a pull reads from Jira and Confluence (the Sources tab). Saved through POST api/filters.
 app/feature-growth.js | 48 | feature-growth.js: the Growth tab's actions. The server holds the record (tools/growth.py); this file only asks it to change and redraws. Ad
 app/feature-inbox.js | 22 | feature-inbox.js: files go to the inbox for the next pull: Choose a file, or drop one on the box (Sources tab). Saved through POST api/inbox
@@ -220,4 +222,4 @@ pages/js/whats-new.js | 42 | whats-new: visits and What's new.
 
 ## Over budget (600 lines)
 
-app/app.css (694), pages/css/common.css (646)
+app/app.css (695), pages/css/common.css (646)

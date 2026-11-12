@@ -4,7 +4,7 @@ const base = process.argv[2] || "http://localhost:8000/";
 const tabs = (process.argv[3] || "today,meetings,features,questions,sources,growth").split(",");
 const errors = [];
 const vc = new VirtualConsole();
-vc.on("jsdomError", (e) => errors.push("jsdomError: " + String(e.message).split("\n")[0]));
+vc.on("jsdomError", (e) => { if (!/Not implemented: navigation/.test(e.message)) errors.push("jsdomError: " + String(e.message).split("\n")[0]); });   // jsdom cannot navigate: a page reloading itself after a rebuild is not a fault
 vc.on("error", (...a) => errors.push("console.error: " + a.join(" ").slice(0, 200)));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 (async () => {

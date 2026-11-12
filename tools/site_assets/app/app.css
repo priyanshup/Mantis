@@ -690,4 +690,5 @@ html.locked { overflow:hidden; }
   .totop, .pick, .chipf, .star, .btnl, .btn2, .gdis, .snz, .wdm, .sw { min-height:40px; }
   .star, .wdm { min-width:40px; }
 }
-
+/* quick capture (feature-capture.js) */
+.sheet.capture { top:120px; width:min(520px,calc(100% - 32px)); } .cap-kinds { margin-bottom:12px; } .cap-hint { margin:10px 0 0; font-size:13px; }

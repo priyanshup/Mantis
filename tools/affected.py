@@ -38,6 +38,7 @@ FLOWS_OF = [
     (r"^tools/site_assets/app/(feature-meetings|widgets-meetings-questions)\.js$", ["meetings", "meetingFilter", "preview", "questions"]),
     (r"^tools/site_assets/app/(feature-filters|feature-inbox|widgets-sources)\.js$", ["sources"]),
     (r"^tools/site_assets/app/(feature-growth|widgets-growth)\.js$", ["growth"]),
+    (r"^tools/site_assets/app/feature-capture\.js$", ["capture"]),
     (r"^tools/site_assets/app/(widgets-features|feature-reader)\.js$", ["features"]),
     (r"^tools/site_assets/app/(widgets-today|groups-refill|group-ranking|week-view|agenda-calendar|snooze-history)\.js$", ["today"]),
 ]

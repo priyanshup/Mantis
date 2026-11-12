@@ -115,7 +115,7 @@ def static_json(features, built):
 
 
 # Load order matters: a later file may extend or wrap an earlier one. Define each function once (tools/stylelint.py checks).
-SCRIPTS = ["ui.js", "platform.js", "screens-base.js", "screens-questions-growth.js", "tasks-add-edit-inbox.js", "controls-kit.js", "agenda-calendar.js", "week-view.js", "today-features-layout.js", "snooze-history.js", "groups-refill.js", "group-ranking.js", "widgets-today.js", "widgets-sources.js", "widgets-growth.js", "widgets-meetings-questions.js", "widgets-features.js", "feature-meetings.js", "feature-filters.js", "feature-inbox.js", "feature-growth.js", "live-data.js", "feature-reader.js", "behaviour-core.js", "behaviour-questions-growth.js", "behaviour-tasks-palette.js", "behaviour-controls.js", "behaviour-agenda.js", "motion-delight.js", "motion-indicators-peek.js", "behaviour-plan-settle.js", "behaviour-group-reorder.js", "save-live.js", "start.js", "tooltips.js"]
+SCRIPTS = ["ui.js", "platform.js", "screens-base.js", "screens-questions-growth.js", "tasks-add-edit-inbox.js", "controls-kit.js", "agenda-calendar.js", "week-view.js", "today-features-layout.js", "snooze-history.js", "groups-refill.js", "group-ranking.js", "widgets-today.js", "widgets-sources.js", "widgets-growth.js", "widgets-meetings-questions.js", "widgets-features.js", "feature-meetings.js", "feature-filters.js", "feature-inbox.js", "feature-capture.js", "feature-growth.js", "live-data.js", "feature-reader.js", "behaviour-core.js", "behaviour-questions-growth.js", "behaviour-tasks-palette.js", "behaviour-controls.js", "behaviour-agenda.js", "motion-delight.js", "motion-indicators-peek.js", "behaviour-plan-settle.js", "behaviour-group-reorder.js", "save-live.js", "start.js", "tooltips.js"]
 
 
 def _layout():

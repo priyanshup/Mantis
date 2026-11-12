@@ -5,7 +5,7 @@ const only = process.argv.slice(2).filter((a) => !a.startsWith("http"));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const errors = [];
 async function open(path) {
-  const vc = new VirtualConsole(); vc.on("jsdomError", (e) => errors.push(path + ": " + String(e.message).split("\n")[0])); vc.on("error", (...a) => errors.push(path + ": console.error " + a.join(" ").slice(0, 160)));
+  const vc = new VirtualConsole(); vc.on("jsdomError", (e) => { if (!/Not implemented: navigation/.test(e.message)) errors.push(path + ": " + String(e.message).split("\n")[0]); });   // jsdom cannot navigate: a page reloading itself after a rebuild is not a fault vc.on("error", (...a) => errors.push(path + ": console.error " + a.join(" ").slice(0, 160)));
   const dom = await JSDOM.fromURL(new URL(path, base).href, { runScripts: "dangerously", resources: "usable", pretendToBeVisual: true, virtualConsole: vc,
     beforeParse(w) { w.fetch = (u, o) => fetch(new URL(u, w.location.href).href, o); w.matchMedia = () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
       w.IntersectionObserver = class { observe() {} unobserve() {} disconnect() {} }; w.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }; w.scrollTo = () => {}; w.CSS = { escape: String }; w.HTMLElement.prototype.scrollIntoView = () => {}; } });

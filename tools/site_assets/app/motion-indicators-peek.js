@@ -50,7 +50,7 @@ addEventListener("resize",updTop); new MutationObserver(()=>requestAnimationFram
 
 /* 9. the shortcuts sheet, and G then a letter to go somewhere */
 const KEYS=[["Go anywhere",[["Search and commands",["Ctrl","K"]],["Same, from anywhere",["/"]],["Today, Meetings, Features",["G","T"],["G","M"],["G","F"]],["Questions, Sources, Growth",["G","Q"],["G","S"],["G","R"]]]],
-  ["Tasks",[["Add a task",["N"]],["Edit a task",["Enter"],"on its title"],["Rank a task up or down",["Alt","↑"],["Alt","↓"],"on its checkbox"],["Rank a group up or down",["Alt","↑"],["Alt","↓"],"on its header"],["Mark done",["Space"],"on its checkbox"],["Drag a task to another group",["Drag"]]]],
+  ["Tasks",[["Add a task",["N"]],["Quick capture from any page: task, follow-up or note",["C"]],["Edit a task",["Enter"],"on its title"],["Rank a task up or down",["Alt","↑"],["Alt","↓"],"on its checkbox"],["Rank a group up or down",["Alt","↑"],["Alt","↓"],"on its header"],["Mark done",["Space"],"on its checkbox"],["Drag a task to another group",["Drag"]]]],
   ["Menus and fields",[["Move through a list",["↑"],["↓"]],["Choose",["Enter"]],["Close anything",["Esc"]]]],
   ["This sheet",[["Show or hide the shortcuts",["?"]]]]];
 function keyRow(r){ const label=r[0], rest=r.slice(1), note=rest.find(x=>typeof x==="string"), combos=rest.filter(x=>Array.isArray(x)); return `<li><span class="kl">${esc(label)}${note?`<small>${esc(note)}</small>`:""}</span><span class="kc">${combos.map(c=>`<span class="kcombo">${c.map(k=>`<kbd>${esc(k)}</kbd>`).join("")}</span>`).join("")}</span></li>`; }
