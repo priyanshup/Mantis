@@ -35,7 +35,7 @@ def metrics(text):
     secs = [(p.split("\n", 1)[0][3:].strip(), len(p.encode("utf-8"))) for p in parts]
     get = lambda k: (re.search(rf'(?m)^{k}:\s*"?(.*?)"?\s*$', head) or [None, ""])[1]
     topics = [t.strip() for t in (re.search(r"(?m)^topics:\s*\[(.*?)\]", head) or [None, ""])[1].split(",") if t.strip()]
-    return {"bytes": len(text.encode("utf-8")), "front_bytes": len(text.encode("utf-8")) - len(body.encode("utf-8")), "reason_len": len(get("confidence_reason")),
+    return {"pull": bool(re.search(r"(?m)^pull_card:", head)), "bytes": len(text.encode("utf-8")), "front_bytes": len(text.encode("utf-8")) - len(body.encode("utf-8")), "reason_len": len(get("confidence_reason")),
             "sections": secs, "largest": max(secs, key=lambda s: s[1], default=("", 0)), "topics": topics, "source_file": get("source_file")}
 
 
@@ -53,8 +53,8 @@ def scan(mantis=M):
     old = []
     for i, m in digests.items():
         folder = mantis / "01_sources" / i
-        if not folder.is_dir():
-            continue
+        if not folder.is_dir() or m["pull"]:
+            continue   # a pull digest keeps every dated packet: each section of it cites its own
         files = sorted(f for f in folder.iterdir() if f.is_file())
         keep = {Path(m["source_file"]).name} if m["source_file"] else set()
         if len(files) > 1 and not keep:

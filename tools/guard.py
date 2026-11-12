@@ -97,6 +97,7 @@ def checks(level):
         out.append(sub("rule tests", [py, "-m", "unittest", "discover", "-s", str(tests), "-t", str(TOOLS), "-q"], 180))
     if level == "full":
         out.append(sub("self-test (full)", [py, str(TOOLS / "selftest.py")], 400))
+        out.append(sub("build reads only fingerprinted files", [py, str(TOOLS / "inputscheck.py")], 180))
         out += jsdom_checks(["flows-check", "pagefn-check", "detail-check", "smoke"])
         out.append(browser_check("all", sub))
     elif level == "affected":   # only what the changed files can affect (tools/affected.py); the quick set above always runs

@@ -90,6 +90,16 @@ class Snapshots(Case):
         got = self.scan()["old_snapshots"]
         self.assertEqual([(i, [f.name for f in files], size) for i, files, size in got], [(DOC(1), ["2026-10-01.md"], 300)])
 
+    def test_a_pull_digest_keeps_its_dated_packets_because_each_section_cites_one(self):
+        self.add(1)
+        d = self.m / "01_sources" / DOC(1)
+        d.mkdir()
+        (d / "2026-10-01.md").write_text("a", encoding="utf-8")
+        (d / "2026-11-01.md").write_text("b", encoding="utf-8")
+        p = self.m / "02_digests" / f"{DOC(1)}.md"
+        p.write_text(p.read_text(encoding="utf-8").replace("version: 1", "version: 1\npull_card: alpha"), encoding="utf-8")
+        self.assertEqual(self.scan()["old_snapshots"], [])
+
     def test_a_single_snapshot_or_no_folder_is_nothing_to_archive(self):
         self.add(1)
         self.add(2)

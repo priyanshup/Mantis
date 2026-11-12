@@ -71,10 +71,18 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
                 return self.reply(404, {"error": str(e)})
         return super().do_GET()
 
+    def drain(self, cap=65536):
+        """Read and drop a small request body before refusing, so the client that is still sending it gets the answer instead of a reset connection."""
+        try:
+            self.rfile.read(min(int(self.headers.get("Content-Length", "0")), cap))
+        except (ValueError, OSError):
+            pass
+
     def do_POST(self):
         # Only the site itself may post (blocks other web pages from writing to the inbox).
         origin = self.headers.get("Origin", "")
         if self.path not in routes.ROUTES or origin not in (f"http://localhost:{PORT}", f"http://127.0.0.1:{PORT}"):
+            self.drain()
             return self.reply(403, {"error": "not allowed"})
         route = routes.ROUTES[self.path]
         try:

@@ -53,10 +53,11 @@ followups.py | 172 | Follow-ups per person (MANTIS-IMP-020): topics to raise wit
 frontmatter.py | 37 | The one front-matter reader for Mantis files (MANTIS-IMP-063): digests, cards, outputs. | 
 graph.py | 103 | Query the Mantis entity graph (built by build_map.py into map/entities.json). | 
 growth.py | 436 | The owner's growth record (Growth tab): opportunities to step up, what came of them, learnings, recognition. | datafile, people, steps, tasks_store
-guard.py | 211 | The self-running safety net (IMP-112 item 1): runs the checks without anyone asking, records the result for the Health page. | affected
+guard.py | 212 | The self-running safety net (IMP-112 item 1): runs the checks without anyone asking, records the result for the Health page. | affected
 guard_browser.py | 143 | Real-browser checks of the running site, run by the Playwright interpreter (not by Mantis's Python). IMP-112 item 1. | 
 index_gen.py | 137 | Generate the knowledge index entries (registers/documents/<ID>.md) from digests (MANTIS-IMP-013). | textcache
 init.py | 166 | Create an empty Mantis knowledge base on a new machine (MANTIS-IMP-036). | 
+inputscheck.py | 85 | Does the incremental build know every file it reads? (IMP-111 step 7) | sitecache
 jobs.py | 347 | Background jobs started from the site's buttons (MANTIS-IMP-034, MANTIS-IMP-035). | ask, local_config, tasks_store
 kgraph.py | 188 | Entity knowledge graph for Mantis (MANTIS-IMP-004). Stdlib only, deterministic. | answered, local_config, textcache
 layout.py | 88 | The layout: site_config/layout.json -> window.APP_LAYOUT, plus checks (stdlib only; MANTIS-IMP-107). | 

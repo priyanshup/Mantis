@@ -59,29 +59,13 @@ html[data-kind]
             span.ev-n.muted
           ol.ev-list
             li.ev[data-kind][data-group][data-date]
-              span.ev-c.ev-k
+              span.ev-a.ev-k
                 span.ev-ico
               span.ev-main
                 span.ev-t
                   a
                 span.ev-d.muted.small
               a.ev-card.muted.small
-            li.ev.ev-fold[data-kind][data-group][data-date][data-n]
-              details
-                summary
-                  span.ev-k.ev-q
-                    span.ev-ico
-                  span.ev-main
-                    span.ev-t
-                    span.ev-d.muted.small
-                ol.ev-sub
-                  li.ev[data-kind][data-group][data-date] *
-                    span.ev-k.ev-q
-                      span.ev-ico
-                    span.ev-main
-                      span.ev-t
-                        a
-                    a.ev-card.muted.small
       p.empty#
     footer.foot.wrap
       span *

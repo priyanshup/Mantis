@@ -122,6 +122,7 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 | `growth.py` | The owner's growth record (Growth tab): opportunities to step up, what came of them, learnings, recognition. | standard library |
 | `guard.py` | The self-running safety net (IMP-112 item 1): runs the checks without anyone asking, records the result for the Health page. | standard library |
 | `guard_browser.py` | Real-browser checks of the running site, run by the Playwright interpreter (not by Mantis's Python). IMP-112 item 1. | standard library |
+| `inputscheck.py` | Does the incremental build know every file it reads? (IMP-111 step 7) | standard library |
 | `meetingnotes.py` | Recurring-meeting notes without a full source and digest each time (IMP-105). | standard library |
 | `site_pages.py` | Page types and their bundles for the content pages. | standard library |
 | `site_shell.py` | The shell of the content pages (feature, topic, people, library, documents, changes, work): the app's header, a main area, and | standard library |
