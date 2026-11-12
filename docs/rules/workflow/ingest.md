@@ -7,6 +7,7 @@ Part of the workflow (index and the rules for every task: `../WORKFLOW.md`). Use
 - Ingest in batches. The owner drops files or pastes into `00_inbox/`; one session ingests
   them all. Avoid parallel ingest sessions. If one cannot be avoided, `entry.py` still
   keeps IDs unique.
+- Pasted notes or a transcript of a recurring meeting use the lighter flow (section "Meeting notes", below), not the steps for each document.
 - Pasted meeting notes (owner instruction, 2026-10-08): do not stop to ask about
   classification or a missing date. Treat each paste as a new document, cross-check it
   against existing digests, log garbled names and missing dates as gaps, and report.
@@ -74,6 +75,23 @@ Part of the workflow (index and the rules for every task: `../WORKFLOW.md`). Use
    sets decorative ones aside. Candidates are reviewed when a page needs a visual (OUTPUTS_GUIDE
    step 3) or the owner asks, never as a routine ingest step: that is where the cost pays off
    (MANTIS-IMP-057).
+
+## Meeting notes: the lighter flow (IMP-105)
+
+For a recurring meeting on the Meetings page (the weekly sync, a regular one-to-one). It replaces a full source and a full digest for every session, which added about 25 KB of
+small talk to the repository each week. The owner's rule: only the owner marks a meeting important.
+
+1. Read the notes or transcript (`extract.py` first for a file; `mishear.py` for transcripts). Write one JSON file from `mantis/TEMPLATES/meeting-notes.md`: the session's
+   **facts** that will still matter in a month, its **decisions**, the owner's actions (`mine`), what others owe (`theirs`), chances to step up (`opportunities`), and **copy**: where the
+   owner's own copy of the transcript or recording is (a path, a link, or "not kept"). At most 10 lines of facts and decisions together; actions are not repeated there.
+2. `python tools/meetingnotes.py add <file>`. It adds a dated section to the meeting's rolling digest (one digest per meeting, front matter `meeting_series`; the first session creates it and claims
+   its ID), records the pointer in `01_sources/<ID>/pointers.md`, and saves the takeaways (tasks for the owner, follow-ups for others, growth proposals) as before. The transcript is not copied into the repository.
+   Adding the same date again replaces that session. The first session also needs `summary` (one sentence saying what the meeting is) and `topics` (tags a card matches: `classify.py` lists them).
+3. Durable facts go on the card (curated part), cited as the tool prints it: `<digest id> (Weekly sync, 2026-11-12)`. A claim about a decision or a date is cited the same way. Check the open
+   questions and conflicts the session bears on (steps 6 and 7 above) as for any document.
+4. A meeting the owner marks **important** (a decision meeting, a kickoff, a review with the sponsor) is ingested in full by the steps above, with `"important": true` left out of the JSON
+   (`meetingnotes.py` refuses it).
+5. Then `python tools/build_map.py`. Nothing else in the batch changes.
 
 ## End of batch
 

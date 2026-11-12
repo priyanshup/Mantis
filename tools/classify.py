@@ -129,7 +129,8 @@ def classify(fp, docs, cfg):
     top = ranked[0][0] if ranked else 0
     verdict = ("NEW VERSION of " + ranked[0][1]) if top >= cfg["version"] else "NEW DOCUMENT" if top < cfg["new"] else "AMBIGUOUS: ask the owner"
     if verdict.startswith("NEW VERSION") and RECURRING.search(fp["title"] + " " + ranked[0][2]):
-        verdict = "AMBIGUOUS: ask the owner (recurring meeting: a new instance is a new document, not a version)"
+        verdict = ("AMBIGUOUS: ask the owner (recurring meeting: a new instance is not a version. Use the lighter flow, python tools/meetingnotes.py add FILE, "
+                   "unless the owner marked it important: then it is a new document)")
     return verdict, ranked[:5]
 
 

@@ -31,7 +31,7 @@ buildlock.py | 57 | One build at a time (MANTIS-IMP-063): the site server, a bac
 cards.py | 204 | Cards: the reading layer for every subject (MANTIS-IMP-014). Stdlib only, deterministic. | 
 changes.py | 352 | What changed, and which card summaries are behind (MANTIS-IMP-043, MANTIS-IMP-044). Stdlib only. | followups, frontmatter, schedule, steps, textcache
 citations.py | 137 | Citation checks that code can do (MANTIS-IMP-078): do the cited sources exist and belong where they are cited? | entry, frontmatter
-classify.py | 207 | Classify a new document against the corpus before ingest (MANTIS-IMP-005). Stdlib only. | frontmatter, kgraph, local_config, textcache
+classify.py | 208 | Classify a new document against the corpus before ingest (MANTIS-IMP-005). Stdlib only. | frontmatter, kgraph, local_config, textcache
 codemap.py | 82 | Write docs/system/CODEMAP.md: every tool and front-end file with its one-line purpose, size and neighbours (stdlib only). | 
 contradictions.py | 152 | Contradiction check (MANTIS-IMP-047): what to compare when a source arrives or a summary is refreshed. | classify
 csskit.py | 79 | A small CSS walker (stdlib only): list a stylesheet's rules with their positions, and rewrite it keeping only the rules a test keeps. | 
@@ -59,6 +59,7 @@ layout.py | 88 | The layout: site_config/layout.json -> window.APP_LAYOUT, plus 
 leakcheck.py | 108 | Check that files bound for the public engine repo carry no knowledge (MANTIS-IMP-036). | 
 local_config.py | 39 | Read this instance's local settings (mantis/config/settings.json). Never committed (MANTIS-IMP-036). | 
 maintain.py | 274 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, atl_client, atl_updates, backup, citations, classify, entry
+meetingnotes.py | 194 | Recurring-meeting notes without a full source and digest each time (IMP-105). | brief, schedule
 mishear.py | 56 | Mishearings: words speech-to-text gets wrong (MANTIS-IMP-051). Stdlib only. | 
 pagecheck.py | 88 | Static checks for the packages tools/pagebuild/ (page builders), tools/webserver/ (the site server) and tools/pullkit/ (the pull), run by selftest.py. | 
 peek.py | 30 | Print the short form of one or more digests: title, confidence, open items and Summary. | 

@@ -78,7 +78,8 @@ meeting's brief starts from its last takeaways and their status now, then what c
 After the meeting, when the owner pastes or drops notes (Meetings page, or the inbox for the next
 pull), write the takeaways from `mantis/TEMPLATES/meeting-notes.md`: decisions, the owner's own
 actions (`mine`, verb first, a due date only if the owner gave one) and actions owed by others
-(`theirs`). Save with `python tools/brief.py takeaways <file>`:
+(`theirs`). Save with `python tools/meetingnotes.py add <file>` (the lighter flow: it also keeps the session's durable facts in the meeting's rolling digest, and keeps no transcript;
+`ingest.md`, "Meeting notes") or, for something that is not a recurring meeting, `python tools/brief.py takeaways <file>`:
 the owner's actions become tasks on Today, the others' become follow-ups, and the next brief lists every
 one of them until it is done. Decisions taken there are reported to the owner; they go into the
 decision register only through `docs/rules/workflow/answers.md` ("Decisions") when the owner confirms.
