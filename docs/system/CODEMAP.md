@@ -13,13 +13,14 @@ answers.py | 121 | Check the owner's answers before recording them (MANTIS-IMP-0
 apply_edits.py | 66 | Apply page, epic and story edits the owner saved from the site (mantis/00_inbox/edit-*.md). | edit_common
 ask.py | 348 | Ask Mantis a question; get a sourced answer (MANTIS-IMP-081). | classify, decisions, frontmatter, search, support
 assets.py | 456 | Knowledge assets: reusable diagrams and visuals from the sources (MANTIS-IMP-008). | 
-atl.py | 439 | Jira and Confluence, read-only: fetch, mirror and compare with what Mantis already holds (MANTIS-IMP-087). Stdlib only. | atl_client, atl_compare, atl_confluence, atl_jira, atl_media, atl_store, atl_updates
+atl.py | 462 | Jira and Confluence, read-only: fetch, mirror and compare with what Mantis already holds (MANTIS-IMP-087). Stdlib only. | atl_client, atl_compare, atl_confluence, atl_jira, atl_media, atl_rules, atl_store, atl_updates
 atl_client.py | 134 | Read-only Jira and Confluence Cloud client: login, API gateway fallback, pacing (MANTIS-IMP-087). Stdlib only. | datafile
-atl_compare.py | 232 | Match mirrored Confluence pages to Mantis digests by title and content, and diff the ones that changed (MANTIS-IMP-087). Stdlib only. | atl_confluence, atl_store, extract, frontmatter
+atl_compare.py | 278 | Match mirrored Confluence pages to Mantis digests by title and content, and diff the ones that changed (MANTIS-IMP-087). Stdlib only. | atl_confluence, atl_store, extract, frontmatter
 atl_confluence.py | 155 | Confluence reads: a folder or page tree, one page as Markdown, its old versions, and a mirror sync (MANTIS-IMP-087). Stdlib only. | atl_convert, atl_store
 atl_convert.py | 177 | Turn Confluence storage XHTML and Jira wiki markup into short Markdown, and pull out their links (MANTIS-IMP-087). Stdlib only. | 
 atl_jira.py | 150 | Jira reads: JQL search, saved filters, a Feature with all its children, issues as Markdown, a mirror sync (MANTIS-IMP-087). Stdlib only. | atl_convert, atl_store
 atl_media.py | 70 | Confluence attachments: download a page's images and diagram previews once, by content hash (MANTIS-IMP-087). Stdlib only. | atl_store
+atl_rules.py | 68 | Rule checks on the mirrored Jira tickets (IMP-087, step 4). Code only: no AI, no network. Reads mantis/mirror/jira. | 
 atl_store.py | 51 | The local mirror of Jira and Confluence: one Markdown file per item plus an index (MANTIS-IMP-087). Stdlib only. | 
 atl_updates.py | 403 | What changed in Jira and Confluence since the last pull, per filter (MANTIS-IMP-092, MANTIS-IMP-094). Stdlib only. | atl_client, atl_compare, atl_confluence, atl_convert, atl_jira, atl_store, frontmatter
 away.py | 160 | Away planner and handover (MANTIS-IMP-038). | brief, followups, people, schedule, steps, tasks_store

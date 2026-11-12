@@ -9,6 +9,8 @@
     python tools/atl.py sync-confluence [filter] [--refresh]   mirror every page under a Confluence filter's tree
                                                       whose version changed (--refresh: every page, after a converter fix)
     python tools/atl.py compare                       mirrored pages against digests: same, changed, ours, related, new
+    python tools/atl.py backfill-ids [--apply]        put the page ID and version into digests matched by content (lists first; --apply writes)
+    python tools/atl.py rules                         rule checks on mirrored tickets: no acceptance criteria, Story with no parent, Feature closed with open children
     python tools/atl.py link-page <file> <id | url>   record the Confluence page a Mantis page was published as, so the comparison calls it "ours"
     python tools/atl.py sync-jira [filter | query]    a query's issues with all their children, plus linked pages
                                                       (default: the first active Jira filter)
@@ -188,11 +190,13 @@ def cmd_compare(_):
         if at:
             old = atl_confluence.body_at(c, pid, at)
             text, add, rem, secs = atl_compare.section_diff(old, atl_compare.page_body(pid))
+            m["wording_only"] = atl_compare.wording_only(old, atl_compare.page_body(pid))
             m["how"] = f"page edited since our copy (v{at} on {d['snapshot']} to v{e.get('version')} on {e.get('when')})"
         else:
             m["how"] = f"the page has no version as old as our copy of {d['snapshot']}; compared with our copy's text"
-            text, add, rem, secs = atl_compare.section_diff(atl_compare.source_text(m["doc"], d["source_file"]),
-                                                            atl_compare.page_body(pid))
+            old = atl_compare.source_text(m["doc"], d["source_file"])
+            text, add, rem, secs = atl_compare.section_diff(old, atl_compare.page_body(pid))
+            m["wording_only"] = atl_compare.wording_only(old, atl_compare.page_body(pid))
         m.update(added=add, removed=rem, sections=secs[:12])
         if not add and not rem:
             m.update(verdict="same", how=m["how"] + ", formatting only")
@@ -224,7 +228,7 @@ def write_confluence_report(index, matches, digests):
             where = ("archive: " if e.get("archived") else "") + " / ".join(e["path"][-2:])
             detail = ""
             if verdict == "changed":
-                detail = f"+{m.get('added', 0)} / -{m.get('removed', 0)} lines; {', '.join(m.get('sections', [])[:4])}"
+                detail = ("wording only (skip reading); " if m.get("wording_only") else "") + f"+{m.get('added', 0)} / -{m.get('removed', 0)} lines; {', '.join(m.get('sections', [])[:4])}"
             elif verdict in ("new", "check", "related"):
                 detail = f"{e.get('chars', 0)} chars, {e.get('comments', 0)} comments, {e.get('images', 0)} images"
             elif m.get("how"):
@@ -406,6 +410,25 @@ def cmd_attachments(args):
         f"(not an image, temporary or too large). {c.calls} calls. Files: mantis/mirror/attachments/")
 
 
+def cmd_backfill_ids(args):
+    """Write the page ID and version into digests matched by content, so later matches are exact. Lists them; --apply writes."""
+    index, digests = atl_store.load_index("confluence"), atl_compare.load_digests()
+    matches = json.loads(atl_store.read("confluence/matches.json") or "{}")
+    got = atl_compare.backfill_ids(matches, index, digests, apply="--apply" in args)
+    for doc, pid, ver in got:
+        say(f"{doc}: page {pid}, version {ver}")
+    say(f"{len(got)} digest(s) " + ("updated. Run python tools/build_map.py." if "--apply" in args else "would be updated; add --apply."))
+
+
+def cmd_rules(_):
+    import atl_rules
+    findings, text = atl_rules.run(atl_store.MIRROR)
+    atl_store.write("reports/ticket-rules.md", text)
+    for rule in ("no-criteria", "no-parent", "closed-with-open-children"):
+        say(f"{rule}: {sum(1 for _, r, _ in findings if r == rule)}")
+    say("Report: mantis/mirror/reports/ticket-rules.md")
+
+
 def cmd_summary(_):
     index = atl_store.load_index("confluence")
     matches = json.loads(atl_store.read("confluence/matches.json") or "{}")
@@ -418,7 +441,7 @@ def cmd_summary(_):
 
 COMMANDS = {"link-page": cmd_link_page, "login": cmd_login, "filters": cmd_filters, "jira": cmd_jira, "issue": cmd_issue, "page": cmd_page,
             "tree": cmd_tree, "sync-confluence": cmd_sync_confluence, "compare": cmd_compare,
-            "sync-jira": cmd_sync_jira, "attachments": cmd_attachments, "summary": cmd_summary}
+            "sync-jira": cmd_sync_jira, "attachments": cmd_attachments, "summary": cmd_summary, "backfill-ids": cmd_backfill_ids, "rules": cmd_rules}
 
 
 def main(argv):

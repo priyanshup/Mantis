@@ -113,6 +113,7 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 | Tool | What it does | Needs |
 |---|---|---|
 | `affected.py` | Which checks does a change need? (IMP-112 item 8) | standard library |
+| `atl_rules.py` | Rule checks on the mirrored Jira tickets (IMP-087, step 4). Code only: no AI, no network. Reads mantis/mirror/jira. | standard library |
 | `backup.py` | Daily local copy of the owner's data, with a restore command (IMP-112 item 6). | standard library |
 | `consolidate.py` | Consolidation proposals and safe archiving of digests (IMP-109). Nothing is ever deleted: originals move to mantis/03_archive and each move is logged. | standard library |
 | `context.py` | Where do things stand on a subject? A few hundred tokens instead of the card and its digests (IMP-109). | standard library |

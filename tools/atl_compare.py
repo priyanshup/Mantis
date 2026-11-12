@@ -119,6 +119,52 @@ def link_page(path, page):
     return pid
 
 
+def wording_only(old, new, similar=0.9):
+    """True when every changed line is a small rewording of a line that was there: the same number of lines either side and each pair over 90% alike by characters
+    (a spelling fix, a product rename). Such a diff needs no AI reading. A page with an added or removed line is never wording only."""
+    a, b = [l.strip() for l in old.splitlines() if l.strip()], [l.strip() for l in new.splitlines() if l.strip()]
+    key = lambda l: " ".join(words(l))
+    sm = difflib.SequenceMatcher(None, [key(l) for l in a], [key(l) for l in b], autojunk=False)
+    changed = False
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+        if tag == "equal":
+            continue
+        changed = True
+        if tag != "replace" or i2 - i1 != j2 - j1:
+            return False
+        if any(difflib.SequenceMatcher(None, x, y).ratio() < similar for x, y in zip(a[i1:i2], b[j1:j2])):
+            return False
+    return changed
+
+
+def backfill_ids(matches, index, digests, apply=False, folder=None):
+    """Write the Confluence page ID and version into digests that were matched by content and carry neither, so every later match is exact.
+    Only a match that is 'same' with full cover, whose page no other digest claims and whose digest holds no page yet. Returns [(doc, page id, version)]."""
+    folder = Path(folder) if folder else DIGESTS
+    claimed = {d["page_id"] for d in digests.values() if d["page_id"]} | {p for d in digests.values() for p in d["pages"]}
+    per_doc = {}
+    for m in matches.values():
+        per_doc[m.get("doc")] = per_doc.get(m.get("doc"), 0) + 1
+    out = []
+    for pid, m in sorted(matches.items()):
+        d = digests.get(m.get("doc", ""))
+        if m.get("verdict") != "same" or m.get("linked") or not d or d["page_id"] or d["pages"] or pid in claimed or m.get("cover", 0) < 0.9 or per_doc[m["doc"]] > 1:
+            continue   # a digest two pages both match is ambiguous: left for the owner
+        version = index.get(pid, {}).get("version")
+        if not str(version).isdigit():
+            continue
+        out.append((m["doc"], pid, int(version)))
+        if apply:
+            p = folder / f"{m['doc']}.md"
+            text = p.read_text(encoding="utf-8").replace("\r\n", "\n")
+            fm = re.match(r"(---\n)(.*?)(\n---\n)", text, re.S)
+            if not fm:
+                raise ValueError(f"{p.name} has no front matter to put the page ID in")
+            lines = [l for l in fm.group(2).split("\n") if not l.startswith(("confluence_page_id:", "confluence_version:"))]
+            p.write_text(fm.group(1) + "\n".join(lines + [f"confluence_page_id: {pid}", f"confluence_version: {version}"]) + fm.group(3) + text[fm.end():], encoding="utf-8")
+    return out
+
+
 def load_digests():
     sys.path.insert(0, str(ROOT / "tools"))
     import frontmatter
