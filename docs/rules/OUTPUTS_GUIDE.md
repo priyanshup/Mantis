@@ -134,7 +134,7 @@ its feature. A page with no feature card shows in the site's Library.
 
 ## Terms
 
-Use the product names and spellings the glossary and `CLAUDE.local.md` prescribe.
+Use the product names and spellings the glossary and `CLAUDE.local.md` prescribe. Do not open the whole glossary: `python tools/glossary.py check <draft>` lists the terms the draft uses and any wrong product name, and `python tools/glossary.py lookup <term>` gives one row.
 Spell out every acronym on first use or link the glossary.
 
 ## Self-check before handing over

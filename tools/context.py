@@ -115,6 +115,10 @@ def card_context(c, features_open, entities, max_chars):
             head += f", {c[key]}"
     head += (f", Jira {c['jira']}" if c.get("jira") and c["jira"] != "none" else "") + (f", updated {c['updated']}" if c.get("updated") else "") + ")"
     lines = [head]
+    import cardkeys
+    keys = cardkeys.summary(_json("card-keys.json", {}).get(c["slug"]))
+    if keys:
+        lines.append("Keys: " + keys)
     if lead(cur):
         lines.append("Lead: " + lead(cur))
     for label in ("Outcome wanted", "Next decision"):

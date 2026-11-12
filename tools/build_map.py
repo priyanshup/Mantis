@@ -323,6 +323,8 @@ def stage_cards_and_changes(docs, summaries, gaps, asms, cfls, all_cards, cards,
     _cc = OUT / "cards-cited.json"
     import topicmap   # the file-to-topic map (IMP-109)
     topicmap.write(OUT, M)
+    import cardkeys   # the Jira keys and page IDs each card stands on (IMP-113)
+    cardkeys.write(OUT, M)
     import digesthealth   # size budgets, roll-up and archive candidates (IMP-109)
     digesthealth.write(OUT / "digest-health.json", M)
     _alerts, _cstate = cards_mod.citation_changes(all_cards, json.loads(textcache.read(_cc)) if _cc.exists() else {}, time.strftime("%Y-%m-%d"))

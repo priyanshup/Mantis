@@ -81,22 +81,28 @@ try:  # once a day: Claude prepares the owner's daily brief suggestions for the 
     import json as _j
     sug = ROOT / "mantis" / "tasks" / "suggestions.json"
     from datetime import date as _d
-    def _something_to_brief():   # MANTIS-IMP-060: no Claude run for the brief on a day with nothing in it
+    def _something_to_brief():   # MANTIS-IMP-060 and IMP-099: no Claude run for a brief that would repeat the last one
         sys.path.insert(0, str(ROOT / "tools"))
-        import tasks_store, followups, schedule, steps, people, readiness
+        import tasks_store, followups, schedule, steps, people, readiness, briefcheck
         today = _d.today()
-        if any(r["state"] in ("review-overdue", "live-no-review") for r in readiness.scan()):
-            return True
-        if any(t["status"] in ("todo", "blocked") for t in tasks_store.load()["tasks"]):
-            return True
-        if any(f["status"] == "open" for g in followups.grouped().values() for f in g["items"]):
-            return True
-        if any(schedule.next_date(m, today) == today for m in schedule.meetings()):
-            return True
+        pb = ROOT / "mantis" / "tasks" / "pull-brief.json"
+        try:
+            last_pull = briefcheck.parse(_j.loads(pb.read_text(encoding="utf-8")).get("last", {}).get("at"))
+        except (OSError, ValueError):
+            last_pull = None
+        try:
+            last_brief = briefcheck.parse(_j.loads(sug.read_text(encoding="utf-8")).get("date"))
+        except (OSError, ValueError):
+            last_brief = None
         away = schedule.next_away(today)
-        if away and (_d.fromisoformat(away["start"]) - today).days <= 7:
-            return True
-        return any(not s["done"] and people.is_owner(s["who"]) for s in steps.load())
+        return briefcheck.needed(
+            today, last_brief, last_pull,
+            meeting_today=any(schedule.next_date(m, today) == today for m in schedule.meetings()),
+            review_due=any(r["state"] in ("review-overdue", "live-no-review") for r in readiness.scan()),
+            away_soon=bool(away and (_d.fromisoformat(away["start"]) - today).days <= 7),
+            open_work=(any(t["status"] in ("todo", "blocked") for t in tasks_store.load()["tasks"])
+                       or any(f["status"] == "open" for g in followups.grouped().values() for f in g["items"])
+                       or any(not s["done"] and people.is_owner(s["who"]) for s in steps.load())))
     if first_today and (not sug.exists() or _j.loads(sug.read_text(encoding="utf-8")).get("date") != _d.today().isoformat()) and _something_to_brief():
         notes.append("Today's brief has no suggestions yet. Prepare them per docs/rules/workflow/day.md, 'Daily brief': run "
                      "`python tools/tasks.py context`, write up to 5 suggestions, save with `python tools/tasks.py suggest <file>`, "

@@ -13,6 +13,7 @@ confidence_reason: "[one line, 160 characters at most: why this level, not a res
 assumptions_referenced: []
 conflicts_referenced: []
 gaps_referenced: []
+document_date: YYYY-MM-DD
 generated_on: YYYY-MM-DD
 generated_by:
   tool: Claude Code

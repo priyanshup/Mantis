@@ -256,6 +256,12 @@ def behind(all_cards, work, today):
     return found
 
 
+def doc_day(fm):
+    """The day a source belongs to on the Timeline: its document_date when that is a real date, else generated_on."""
+    d = str(fm.get("document_date", ""))[:10]
+    return d if re.match(r"\d{4}-\d{2}-\d{2}$", d) else str(fm.get("generated_on", ""))[:10]
+
+
 def timeline(docs, all_cards, features, events, focus, today, back=8, ahead=10):
     """The Timeline page (MANTIS-IMP-052): one row per roadmap feature over 8 weeks back and 10 ahead.
     Each row shows when sources and decisions arrived (activity), stage moves, and dated things ahead:
@@ -276,7 +282,7 @@ def timeline(docs, all_cards, features, events, focus, today, back=8, ahead=10):
     card = {c["slug"]: c for c in all_cards}
     for slug, r in rows.items():
         for d in card[slug]["linked"] if slug in card else []:
-            day = docs[d].get("generated_on", "")[:10]
+            day = doc_day(docs[d])   # when the document was written, else when Mantis added it (IMP-055)
             if inside(day):
                 r["marks"].append({"date": day, "kind": "source", "label": plain(docs[d].get("original_title", ""), 90)})
     by_title = {r["title"]: r for r in rows.values()}

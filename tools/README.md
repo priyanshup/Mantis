@@ -113,12 +113,17 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 | Tool | What it does | Needs |
 |---|---|---|
 | `affected.py` | Which checks does a change need? (IMP-112 item 8) | standard library |
+| `atl_crawl.py` | A bounded crawl of Confluence pages that mirrored Jira tickets point to but the mirror does not hold (IMP-113). Read-only. | standard library |
 | `atl_rules.py` | Rule checks on the mirrored Jira tickets (IMP-087, step 4). Code only: no AI, no network. Reads mantis/mirror/jira. | standard library |
 | `backup.py` | Daily local copy of the owner's data, with a restore command (IMP-112 item 6). | standard library |
+| `briefcheck.py` | Is today's daily brief worth preparing? (IMP-099) A pure rule used by session_start.py. | standard library |
+| `cardkeys.py` | The Jira keys and Confluence page IDs each card stands on (IMP-113): a generated map, never hand-kept. | standard library |
 | `consolidate.py` | Consolidation proposals and safe archiving of digests (IMP-109). Nothing is ever deleted: originals move to mantis/03_archive and each move is logged. | standard library |
 | `context.py` | Where do things stand on a subject? A few hundred tokens instead of the card and its digests (IMP-109). | standard library |
 | `datafile.py` | Reading and writing the owner's own data files (tasks, follow-ups, Growth, schedule, focus, the Atlassian settings). IMP-112 item 6. | standard library |
 | `digesthealth.py` | The digest-health report (IMP-109): is the knowledge staying cheap to read? | standard library |
+| `docdate.py` | When was the document written, not when did Mantis add it? (IMP-055) | standard library |
+| `glossary.py` | Look up glossary terms instead of reading the whole glossary (IMP-100). | standard library |
 | `growth.py` | The owner's growth record (Growth tab): opportunities to step up, what came of them, learnings, recognition. | standard library |
 | `guard.py` | The self-running safety net (IMP-112 item 1): runs the checks without anyone asking, records the result for the Health page. | standard library |
 | `guard_browser.py` | Real-browser checks of the running site, run by the Playwright interpreter (not by Mantis's Python). IMP-112 item 1. | standard library |
@@ -129,6 +134,7 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 | `skillscan.py` | Run every Claude skill through NVIDIA SkillSpector before it is trusted, and keep a record (owner rule, 2026-11-12). | standard library |
 | `snapshots.py` | Structure snapshots of the built pages: a change to markup shows up as a diff the owner can accept (IMP-112 item 1). | standard library |
 | `tempcheck.py` | Leftover browser profiles and headless browsers in %TEMP% (IMP-112 item 7). Reports on Health; cleans only when asked. | standard library |
+| `ticketsuggest.py` | Which card should the tickets no card owns go to, and which look like a new epic? (IMP-113) Words only, no AI, nothing written to the cards. | standard library |
 | `topicmap.py` | The file-to-topic map (IMP-109): for every feature and topic card, which files hold its knowledge and what each costs to read. | standard library |
 
 ## Files that are not commands

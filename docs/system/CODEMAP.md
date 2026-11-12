@@ -13,11 +13,12 @@ answers.py | 121 | Check the owner's answers before recording them (MANTIS-IMP-0
 apply_edits.py | 66 | Apply page, epic and story edits the owner saved from the site (mantis/00_inbox/edit-*.md). | edit_common
 ask.py | 348 | Ask Mantis a question; get a sourced answer (MANTIS-IMP-081). | classify, decisions, frontmatter, search, support
 assets.py | 456 | Knowledge assets: reusable diagrams and visuals from the sources (MANTIS-IMP-008). | 
-atl.py | 462 | Jira and Confluence, read-only: fetch, mirror and compare with what Mantis already holds (MANTIS-IMP-087). Stdlib only. | atl_client, atl_compare, atl_confluence, atl_jira, atl_media, atl_rules, atl_store, atl_updates
+atl.py | 485 | Jira and Confluence, read-only: fetch, mirror and compare with what Mantis already holds (MANTIS-IMP-087). Stdlib only. | atl_client, atl_compare, atl_confluence, atl_crawl, atl_jira, atl_media, atl_rules, atl_store
 atl_client.py | 134 | Read-only Jira and Confluence Cloud client: login, API gateway fallback, pacing (MANTIS-IMP-087). Stdlib only. | datafile
 atl_compare.py | 278 | Match mirrored Confluence pages to Mantis digests by title and content, and diff the ones that changed (MANTIS-IMP-087). Stdlib only. | atl_confluence, atl_store, extract, frontmatter
 atl_confluence.py | 155 | Confluence reads: a folder or page tree, one page as Markdown, its old versions, and a mirror sync (MANTIS-IMP-087). Stdlib only. | atl_convert, atl_store
 atl_convert.py | 177 | Turn Confluence storage XHTML and Jira wiki markup into short Markdown, and pull out their links (MANTIS-IMP-087). Stdlib only. | 
+atl_crawl.py | 45 | A bounded crawl of Confluence pages that mirrored Jira tickets point to but the mirror does not hold (IMP-113). Read-only. | 
 atl_jira.py | 150 | Jira reads: JQL search, saved filters, a Feature with all its children, issues as Markdown, a mirror sync (MANTIS-IMP-087). Stdlib only. | atl_convert, atl_store
 atl_media.py | 70 | Confluence attachments: download a page's images and diagram previews once, by content hash (MANTIS-IMP-087). Stdlib only. | atl_store
 atl_rules.py | 68 | Rule checks on the mirrored Jira tickets (IMP-087, step 4). Code only: no AI, no network. Reads mantis/mirror/jira. | 
@@ -26,22 +27,25 @@ atl_updates.py | 403 | What changed in Jira and Confluence since the last pull, 
 away.py | 160 | Away planner and handover (MANTIS-IMP-038). | brief, followups, people, schedule, steps, tasks_store
 backup.py | 166 | Daily local copy of the owner's data, with a restore command (IMP-112 item 6). | 
 brief.py | 408 | Meeting briefs (MANTIS-IMP-037): "I'm meeting Sam now, what should I discuss?" | followups, growth, people, readiness, repeats, schedule, steps, tasks_store
-build_map.py | 431 | Build Mantis's navigation map and reference graph (stdlib only, deterministic). | answered, assets, backup, build_site, buildlock, cards, changes, codemap
+briefcheck.py | 32 | Is today's daily brief worth preparing? (IMP-099) A pure rule used by session_start.py. | 
+build_map.py | 543 | Build Mantis's navigation map and reference graph (stdlib only, deterministic). | answered, assets, backup, build_site, buildlock, cardkeys, cards, changes
 build_site.py | 174 | Build the read-only Mantis website from the Markdown files. | buildlock, layout, pagebuild/changes, pagebuild/feature, pagebuild/frame, pagebuild/library, pagebuild/loaders, pagebuild/paths
 buildlock.py | 57 | One build at a time (MANTIS-IMP-063): the site server, a background job and a chat session can all start one. | 
+cardkeys.py | 91 | The Jira keys and Confluence page IDs each card stands on (IMP-113): a generated map, never hand-kept. | textcache
 cards.py | 261 | Cards: the reading layer for every subject (MANTIS-IMP-014). Stdlib only, deterministic. | frontmatter
-changes.py | 352 | What changed, and which card summaries are behind (MANTIS-IMP-043, MANTIS-IMP-044). Stdlib only. | followups, frontmatter, schedule, steps, textcache
+changes.py | 358 | What changed, and which card summaries are behind (MANTIS-IMP-043, MANTIS-IMP-044). Stdlib only. | followups, frontmatter, schedule, steps, textcache
 citations.py | 137 | Citation checks that code can do (MANTIS-IMP-078): do the cited sources exist and belong where they are cited? | entry, frontmatter
 classify.py | 208 | Classify a new document against the corpus before ingest (MANTIS-IMP-005). Stdlib only. | frontmatter, kgraph, local_config, textcache
 codemap.py | 82 | Write docs/system/CODEMAP.md: every tool and front-end file with its one-line purpose, size and neighbours (stdlib only). | 
 consolidate.py | 159 | Consolidation proposals and safe archiving of digests (IMP-109). Nothing is ever deleted: originals move to mantis/03_archive and each move is logged. | classify, digesthealth, textcache
-context.py | 228 | Where do things stand on a subject? A few hundred tokens instead of the card and its digests (IMP-109). | 
+context.py | 232 | Where do things stand on a subject? A few hundred tokens instead of the card and its digests (IMP-109). | cardkeys
 contradictions.py | 152 | Contradiction check (MANTIS-IMP-047): what to compare when a source arrives or a summary is refreshed. | classify
 csskit.py | 79 | A small CSS walker (stdlib only): list a stylesheet's rules with their positions, and rewrite it keeping only the rules a test keeps. | 
 datafile.py | 50 | Reading and writing the owner's own data files (tasks, follow-ups, Growth, schedule, focus, the Atlassian settings). IMP-112 item 6. | 
 deadlines.py | 139 | Suggested deadlines for undated tasks (MANTIS-IMP-041). | people, schedule, steps, tasks_store
 decisions.py | 146 | Decisions know what they rest on (MANTIS-IMP-080). | frontmatter, textcache
 digesthealth.py | 132 | The digest-health report (IMP-109): is the knowledge staying cheap to read? | textcache
+docdate.py | 98 | When was the document written, not when did Mantis add it? (IMP-055) | 
 edit_common.py | 63 | Shared by build_site.py and apply_edits.py: what part of an output file the owner can edit. | 
 entities.py | 126 | Batch changes to the entity register in one call (MANTIS-IMP-057). Stdlib only. | 
 entry.py | 385 | Read and write Mantis registers: one file per entry (stdlib only). | answered, textcache
@@ -51,6 +55,7 @@ extra.py | 192 | Live data for the Today and People pages: follow-ups, suggested
 extract.py | 182 | Turn inbox files into clean Markdown before Claude reads them (saves most of the reading tokens). | mishear
 followups.py | 172 | Follow-ups per person (MANTIS-IMP-020): topics to raise with someone, or things waiting on them. | datafile, people, steps
 frontmatter.py | 37 | The one front-matter reader for Mantis files (MANTIS-IMP-063): digests, cards, outputs. | 
+glossary.py | 82 | Look up glossary terms instead of reading the whole glossary (IMP-100). | local_config
 graph.py | 103 | Query the Mantis entity graph (built by build_map.py into map/entities.json). | 
 growth.py | 436 | The owner's growth record (Growth tab): opportunities to step up, what came of them, learnings, recognition. | datafile, people, steps, tasks_store
 guard.py | 212 | The self-running safety net (IMP-112 item 1): runs the checks without anyone asking, records the result for the Health page. | affected
@@ -78,7 +83,7 @@ schedule.py | 258 | The owner's recurring meetings and away periods (MANTIS-IMP-
 search.py | 239 | Search index for questions: SQLite full-text search plus the entity graph (MANTIS-IMP-086). | ask, frontmatter
 selftest.py | 347 | Self-test for the Mantis engine (MANTIS-IMP-061). Run before every commit (the pre-commit hook does). | atl_updates, decisions, layout, pagecheck, pull, readiness, repeats, search
 serve.py | 71 | Serve the Mantis site at http://localhost:8000 and rebuild it when Markdown changes. | jobs, webserver/config, webserver/handler, webserver/lifecycle, webserver/watching
-session_start.py | 121 | SessionStart hook: start the site and tell Claude what is waiting in the inbox. | brief, followups, guard, people, readiness, schedule, skillscan, steps
+session_start.py | 127 | SessionStart hook: start the site and tell Claude what is waiting in the inbox. | brief, briefcheck, followups, guard, people, readiness, schedule, skillscan
 site_app.py | 155 | The front end (2026-11-11): the approved mock's own screens, run on live data. | layout, pagebuild/day, pagebuild/paths, pagebuild/registry, site_chrome
 site_chrome.py | 48 | Page chrome both page shells share: head links, theme-colour meta tags and the theme switch (stdlib only; MANTIS-IMP-107). | theme
 site_pages.py | 114 | Page types and their bundles for the content pages (stdlib only; MANTIS-IMP-107). | 
@@ -94,6 +99,7 @@ tasks_store.py | 254 | The owner's task list (MANTIS-IMP-018): storage, validati
 tempcheck.py | 100 | Leftover browser profiles and headless browsers in %TEMP% (IMP-112 item 7). Reports on Health; cleans only when asked. | 
 textcache.py | 92 | Cached file reads for the rebuild (MANTIS-IMP-016). Stdlib only. | 
 theme.py | 98 | The theme: site_config/theme.json -> assets/tokens.css, plus checks (stdlib only; MANTIS-IMP-107). | 
+ticketsuggest.py | 93 | Which card should the tickets no card owns go to, and which look like a new epic? (IMP-113) Words only, no AI, nothing written to the cards. | atl_store
 toollist.py | 83 | Write tools/README.md, the one list of tools, from each tool's own first help line (MANTIS-IMP-062). | 
 topicmap.py | 65 | The file-to-topic map (IMP-109): for every feature and topic card, which files hold its knowledge and what each costs to read. | textcache
 unusedcss.py | 93 | Find (and with --apply remove) CSS rules whose class or id appears nowhere in the site (stdlib only; MANTIS-IMP-107). | csskit
@@ -116,7 +122,7 @@ pagebuild/topic.py | 32 | The topic card page. | pagebuild/feature, pagebuild/fr
 pagebuild/work.py | 40 | The epic and story pages (a feature's work, and work that belongs to no feature). | pagebuild/frame, pagebuild/labels, pagebuild/markup, pagebuild/registry, pagebuild/text
 webserver/config.py | 35 | Where the server lives: the port, the folders it watches and the site it serves. | 
 webserver/focus.py | 71 | The owner's follow, archive and roadmap choices from the Features page (knowledge/focus.json). | datafile, webserver/config, webserver/watching
-webserver/handler.py | 92 | The request handler: the static files, the GET routes, and POST through webserver/routes.py (one plain function per route). | extra, growth, jobs, pull, tasks_store, webserver/config, webserver/inbox
+webserver/handler.py | 100 | The request handler: the static files, the GET routes, and POST through webserver/routes.py (one plain function per route). | extra, growth, jobs, pull, tasks_store, webserver/config, webserver/inbox
 webserver/inbox.py | 126 | What the site posts to the inbox: answers, edited pages, dropped files and Undo of an automatic close. | jobs, webserver/config, webserver/watching
 webserver/lifecycle.py | 30 | Stop a running site by the process ID it recorded at start. | webserver/config
 webserver/routes.py | 158 | The site's POST routes as plain functions: body in, (status, answer) out. IMP-112 item 10. | edit_common, extra, growth, jobs, pull, tasks_store, webserver/config, webserver/focus

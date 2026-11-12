@@ -10,6 +10,8 @@
                                                       whose version changed (--refresh: every page, after a converter fix)
     python tools/atl.py compare                       mirrored pages against digests: same, changed, ours, related, new
     python tools/atl.py backfill-ids [--apply]        put the page ID and version into digests matched by content (lists first; --apply writes)
+    python tools/atl.py frontier                      pages tickets link to that the mirror lacks, most linked first (no network)
+    python tools/atl.py crawl [--max N]               mirror up to N of them, once each (read-only)
     python tools/atl.py rules                         rule checks on mirrored tickets: no acceptance criteria, Story with no parent, Feature closed with open children
     python tools/atl.py link-page <file> <id | url>   record the Confluence page a Mantis page was published as, so the comparison calls it "ours"
     python tools/atl.py sync-jira [filter | query]    a query's issues with all their children, plus linked pages
@@ -420,6 +422,27 @@ def cmd_backfill_ids(args):
     say(f"{len(got)} digest(s) " + ("updated. Run python tools/build_map.py." if "--apply" in args else "would be updated; add --apply."))
 
 
+def cmd_frontier(_):
+    import atl_crawl
+    tried = atl_crawl.load_tried(atl_store)
+    todo = atl_crawl.frontier(atl_store.load_index("jira"), atl_store.load_index("confluence"), tried)
+    for pid, n in todo[:30]:
+        say(f"{pid}: linked by {n} ticket(s)")
+    say(f"{len(todo)} page(s) linked from tickets and not mirrored; {len(tried)} tried before. `atl.py crawl` mirrors them.")
+
+
+def cmd_crawl(args):
+    import atl_crawl
+    limit = int(args[args.index("--max") + 1]) if "--max" in args else 10
+    todo = atl_crawl.frontier(atl_store.load_index("jira"), atl_store.load_index("confluence"), atl_crawl.load_tried(atl_store))
+    if not todo:
+        return say("Nothing to crawl: every linked page is mirrored or was tried.")
+    c, conf = atl_client.connect("confluence"), cfg()
+    scope = conf.get("scope", {}).get("confluence_spaces")
+    atl_crawl.crawl(todo, lambda pid: atl_confluence.fetch_one(c, pid, scope), atl_store, limit, log=say)
+    say(f"{c.calls} calls.")
+
+
 def cmd_rules(_):
     import atl_rules
     findings, text = atl_rules.run(atl_store.MIRROR)
@@ -441,7 +464,7 @@ def cmd_summary(_):
 
 COMMANDS = {"link-page": cmd_link_page, "login": cmd_login, "filters": cmd_filters, "jira": cmd_jira, "issue": cmd_issue, "page": cmd_page,
             "tree": cmd_tree, "sync-confluence": cmd_sync_confluence, "compare": cmd_compare,
-            "sync-jira": cmd_sync_jira, "attachments": cmd_attachments, "summary": cmd_summary, "backfill-ids": cmd_backfill_ids, "rules": cmd_rules}
+            "sync-jira": cmd_sync_jira, "attachments": cmd_attachments, "summary": cmd_summary, "backfill-ids": cmd_backfill_ids, "rules": cmd_rules, "frontier": cmd_frontier, "crawl": cmd_crawl}
 
 
 def main(argv):
