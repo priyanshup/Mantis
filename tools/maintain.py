@@ -208,6 +208,14 @@ def report():
     except Exception as e:
         add("info", "Commits", f"Uncommitted-work check skipped: {e}")
 
+    try:   # a Jira Feature two cards list as theirs sends every unlisted ticket to the first card (IMP-101)
+        import atl_client, atl_updates
+        for feat, cards_ in atl_updates.shared_features(atl_client.load_config()).items():
+            add("info", "Jira mapping", f"{feat} is the Jira Feature of {len(cards_)} cards ({', '.join(cards_)}); its tickets with no item of their own go to {cards_[0]}. "
+                                        "List each story under its card in mantis/config/atlassian.json, or put `jira:` and `feature:` in the story so it maps itself.")
+    except (ImportError, OSError, ValueError) as e:
+        add("info", "Jira mapping", f"Shared-Feature check skipped: {e}")
+
     import tempcheck   # old browser profiles and headless browsers left running in %TEMP% (tools/tempcheck.py)
     if tempcheck.problem():
         add("warn", "Temp", tempcheck.problem())

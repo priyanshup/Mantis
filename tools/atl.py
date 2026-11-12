@@ -90,10 +90,16 @@ def cmd_jira(args):
 def cmd_issue(args):
     c, conf = atl_client.connect("jira"), cfg()
     names, custom = jira_fields(c, conf)
+    projects = conf.get("scope", {}).get("jira_projects", ["CUD"])
+    index = atl_store.load_index("jira")
     for i in atl_jira.search(c, f"key in ({','.join(args)})", atl_jira.BASE_FIELDS + custom):
         atl_jira.full_comments(c, i)
-        p = atl_store.write(f"jira/issues/{i['key']}.md", atl_jira.render(i, names, custom, atl_jira.remote_pages(c, i["key"])))
+        remote = atl_jira.remote_pages(c, i["key"])
+        md = atl_jira.render(i, names, custom, remote)
+        p = atl_store.write(f"jira/issues/{i['key']}.md", md)
+        index[i["key"]] = atl_jira.index_entry(i, md, remote, projects)   # the Jira tab reads the index, so the issue is visible at once (IMP-101)
         say(f"{i['key']}: {p.relative_to(atl_store.ROOT)}")
+    atl_store.save_index("jira", index)
 
 
 def cmd_page(args):
@@ -275,11 +281,7 @@ def cmd_sync_jira(args):
             md = atl_jira.render(i, names, custom, remote)
             atl_store.write(f"jira/issues/{key}.md", md)
             stats["updated" if old else "new"] += 1
-            links = atl_jira.atl_convert.links_in(atl_jira.raw_text(i) + " ".join(r["url"] for r in remote), projects)
-            old = {"summary": f.get("summary"), "type": atl_jira._name(f.get("issuetype")), "status": atl_jira._name(f.get("status")),
-                   "parent": (f.get("parent") or {}).get("key"), "updated": f.get("updated"), "hash": atl_store.digest(md),
-                   "remote": remote, "pages": sorted(links["pages"]), "tiny": sorted(links["tiny"]),
-                   "comments": len((f.get("comment") or {}).get("comments", [])), "attachments": len(f.get("attachment") or [])}
+            old = atl_jira.index_entry(i, md, remote, projects)
         index[key] = old
         for pid in old.get("pages", []):
             page_refs.setdefault(pid, set()).add(key)

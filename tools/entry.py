@@ -308,6 +308,12 @@ def cmd_show(ids):
         print(f"<!-- {p.relative_to(REG.parent).as_posix()} -->\n" + text.strip() + "\n")
 
 
+def files_with_bom(paths):
+    """The files whose text starts with a byte-order mark (IMP-101): the front matter is still read, but a tool that does not strip it would not see it."""
+    import textcache
+    return [p for p in paths if textcache.read(p).startswith("\ufeff")]
+
+
 def check():
     """Return a list of problems. Used by build_map.py as well."""
     sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -327,6 +333,8 @@ def check():
     problems += [f"{d}: index entry has no digest" for d in sorted(indexed - digests)]
     problems += [f"{d}: digest has no source folder" for d in sorted(digests - sources)]
     problems += [f"{d}: source folder has no digest" for d in sorted(sources - digests)]
+    cards = [*sorted((ROOT / "mantis" / "knowledge" / "features").glob("*.md")), *sorted((ROOT / "mantis" / "knowledge" / "topics").glob("*.md")), *sorted(DIGESTS.glob("MANTIS-DOC-*.md"))]
+    problems += [f"{p.relative_to(ROOT).as_posix()}: starts with a byte-order mark; save it as UTF-8 without one" for p in files_with_bom(cards)]
     known = {r for kind in ("gap", "asm", "cfl") for r in ids_in(kind)}
     for p in sorted(DIGESTS.glob("MANTIS-DOC-*.md")):
         head = textcache.read(p).split("\n---", 2)[0]

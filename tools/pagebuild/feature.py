@@ -166,6 +166,17 @@ def side_people(slug, kind="feature"):
             + (f'<section class="rail-blk"><h2>Systems</h2><p class="ri-v">{esc(" · ".join(sysl))}</p></section>' if sysl else ""))
 
 
+def first_draft(f):
+    """Where the Drafts tab opens: the Confluence page, else the first epic, else the first story (not an empty placeholder), else the page placeholder."""
+    if f["page_md"]:
+        return "page"
+    if f["epics"]:
+        return f'epic-{f["epics"][0]["anchor"]}'
+    if f["stories"]:
+        return f'story-{f["stories"][0]["anchor"]}'
+    return "page"
+
+
 def page_feature(f, features, epics_by_id, built):
     """A feature card (2026-10-31 redesign): the title and one line of facts, then Overview, Questions, Jira and
     Sources, with Drafts only when one exists. Refresh and the other features sit in the ⋯ menu."""
@@ -182,12 +193,12 @@ def page_feature(f, features, epics_by_id, built):
     qs = feature_questions(f["slug"])
     tickets = jira_tickets(f["slug"])
     has_drafts = bool(f["page_md"] or epics or f["stories"])
-    first_draft = "page" if f["page_md"] else (f'epic-{epics[0]["anchor"]}' if epics else "page")
+    opens = first_draft(f)
     tabs = (f'<a href="#overview" data-match="overview">Overview</a>'
             f'<a href="#questions" data-match="questions">Questions{f" <span class=\"n\">{len(qs)}</span>" if qs else ""}</a>'
             f'<a href="#jira" data-match="jira">Jira{f" <span class=\"n\">{len(tickets)}</span>" if tickets else ""}</a>'
             f'<a href="#sources" data-match="sources">Sources <span class="n">{ndocs}</span></a>'
-            + (f'<a href="#{first_draft}" data-match="page epic- story-">Drafts</a>' if has_drafts else ""))
+            + (f'<a href="#{opens}" data-match="page epic- story-">Drafts</a>' if has_drafts else ""))
     # Drafts: the Confluence page, the epics and the stories, one at a time, with a switcher above each
     drafts = [("page", "Confluence page", f["page_status"])] + [(f"epic-{e['anchor']}", f"Epic: {e['title']}", e["status"]) for e in epics]
     switcher = lambda here: (f'<div class="epic-switch nocopy" aria-label="Drafts">' + "".join(

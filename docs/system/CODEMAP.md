@@ -13,15 +13,15 @@ answers.py | 121 | Check the owner's answers before recording them (MANTIS-IMP-0
 apply_edits.py | 66 | Apply page, epic and story edits the owner saved from the site (mantis/00_inbox/edit-*.md). | edit_common
 ask.py | 348 | Ask Mantis a question; get a sourced answer (MANTIS-IMP-081). | classify, decisions, frontmatter, search, support
 assets.py | 456 | Knowledge assets: reusable diagrams and visuals from the sources (MANTIS-IMP-008). | 
-atl.py | 428 | Jira and Confluence, read-only: fetch, mirror and compare with what Mantis already holds (MANTIS-IMP-087). Stdlib only. | atl_client, atl_compare, atl_confluence, atl_jira, atl_media, atl_store, atl_updates
+atl.py | 430 | Jira and Confluence, read-only: fetch, mirror and compare with what Mantis already holds (MANTIS-IMP-087). Stdlib only. | atl_client, atl_compare, atl_confluence, atl_jira, atl_media, atl_store, atl_updates
 atl_client.py | 134 | Read-only Jira and Confluence Cloud client: login, API gateway fallback, pacing (MANTIS-IMP-087). Stdlib only. | datafile
 atl_compare.py | 174 | Match mirrored Confluence pages to Mantis digests by title and content, and diff the ones that changed (MANTIS-IMP-087). Stdlib only. | atl_store, extract, frontmatter
 atl_confluence.py | 155 | Confluence reads: a folder or page tree, one page as Markdown, its old versions, and a mirror sync (MANTIS-IMP-087). Stdlib only. | atl_convert, atl_store
 atl_convert.py | 177 | Turn Confluence storage XHTML and Jira wiki markup into short Markdown, and pull out their links (MANTIS-IMP-087). Stdlib only. | 
-atl_jira.py | 139 | Jira reads: JQL search, saved filters, a Feature with all its children, issues as Markdown, a mirror sync (MANTIS-IMP-087). Stdlib only. | atl_convert, atl_store
+atl_jira.py | 150 | Jira reads: JQL search, saved filters, a Feature with all its children, issues as Markdown, a mirror sync (MANTIS-IMP-087). Stdlib only. | atl_convert, atl_store
 atl_media.py | 70 | Confluence attachments: download a page's images and diagram previews once, by content hash (MANTIS-IMP-087). Stdlib only. | atl_store
 atl_store.py | 51 | The local mirror of Jira and Confluence: one Markdown file per item plus an index (MANTIS-IMP-087). Stdlib only. | 
-atl_updates.py | 372 | What changed in Jira and Confluence since the last pull, per filter (MANTIS-IMP-092, MANTIS-IMP-094). Stdlib only. | atl_client, atl_compare, atl_confluence, atl_convert, atl_jira, atl_store, frontmatter
+atl_updates.py | 403 | What changed in Jira and Confluence since the last pull, per filter (MANTIS-IMP-092, MANTIS-IMP-094). Stdlib only. | atl_client, atl_compare, atl_confluence, atl_convert, atl_jira, atl_store, frontmatter
 away.py | 160 | Away planner and handover (MANTIS-IMP-038). | brief, followups, people, schedule, steps, tasks_store
 backup.py | 166 | Daily local copy of the owner's data, with a restore command (IMP-112 item 6). | 
 brief.py | 408 | Meeting briefs (MANTIS-IMP-037): "I'm meeting Sam now, what should I discuss?" | followups, growth, people, readiness, repeats, schedule, steps, tasks_store
@@ -40,13 +40,13 @@ deadlines.py | 139 | Suggested deadlines for undated tasks (MANTIS-IMP-041). | p
 decisions.py | 146 | Decisions know what they rest on (MANTIS-IMP-080). | frontmatter, textcache
 edit_common.py | 63 | Shared by build_site.py and apply_edits.py: what part of an output file the owner can edit. | 
 entities.py | 126 | Batch changes to the entity register in one call (MANTIS-IMP-057). Stdlib only. | 
-entry.py | 368 | Read and write Mantis registers: one file per entry (stdlib only). | answered, textcache
+entry.py | 376 | Read and write Mantis registers: one file per entry (stdlib only). | answered, textcache
 estimates.py | 155 | Import the team's estimation sheet onto the roadmap cards (MANTIS-IMP-053). | build_site, local_config
 evaluate.py | 353 | Evaluation set: does Mantis still get known cases right? (MANTIS-IMP-077) | ask, classify, contradictions, support
 extra.py | 192 | Live data for the Today and People pages: follow-ups, suggested deadlines, meetings, away, briefs. | brief, deadlines, followups, people, schedule, steps, tasks_store
 extract.py | 118 | Turn inbox files into clean Markdown before Claude reads them (saves most of the reading tokens). | mishear
 followups.py | 172 | Follow-ups per person (MANTIS-IMP-020): topics to raise with someone, or things waiting on them. | datafile, people, steps
-frontmatter.py | 35 | The one front-matter reader for Mantis files (MANTIS-IMP-063): digests, cards, outputs. | 
+frontmatter.py | 37 | The one front-matter reader for Mantis files (MANTIS-IMP-063): digests, cards, outputs. | 
 graph.py | 103 | Query the Mantis entity graph (built by build_map.py into map/entities.json). | 
 growth.py | 434 | The owner's growth record (Growth tab): opportunities to step up, what came of them, learnings, recognition. | datafile, people, steps, tasks_store
 guard.py | 211 | The self-running safety net (IMP-112 item 1): runs the checks without anyone asking, records the result for the Health page. | affected
@@ -58,7 +58,7 @@ kgraph.py | 188 | Entity knowledge graph for Mantis (MANTIS-IMP-004). Stdlib onl
 layout.py | 88 | The layout: site_config/layout.json -> window.APP_LAYOUT, plus checks (stdlib only; MANTIS-IMP-107). | 
 leakcheck.py | 108 | Check that files bound for the public engine repo carry no knowledge (MANTIS-IMP-036). | 
 local_config.py | 39 | Read this instance's local settings (mantis/config/settings.json). Never committed (MANTIS-IMP-036). | 
-maintain.py | 266 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, backup, citations, classify, entry, guard, local_config
+maintain.py | 274 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, atl_client, atl_updates, backup, citations, classify, entry
 mishear.py | 56 | Mishearings: words speech-to-text gets wrong (MANTIS-IMP-051). Stdlib only. | 
 pagecheck.py | 88 | Static checks for the packages tools/pagebuild/ (page builders), tools/webserver/ (the site server) and tools/pullkit/ (the pull), run by selftest.py. | 
 peek.py | 30 | Print the short form of one or more digests: title, confidence, open items and Summary. | 
@@ -95,7 +95,7 @@ pagebuild/changes.py | 70 | The changes page. | pagebuild/frame, pagebuild/label
 pagebuild/day.py | 66 | Rules for what is yours, what needs attention today and the health line. No page of its own; the app and the tests use it. | pagebuild/labels, pagebuild/markup, pagebuild/paths, pagebuild/registry
 pagebuild/decisions.py | 25 | The decisions page. | pagebuild/paths, pagebuild/text
 pagebuild/diagrams.py | 30 | The diagrams page. | pagebuild/registry, pagebuild/text
-pagebuild/feature.py | 270 | The feature card page, and the helpers a card shares with the topic page. | atl_client, atl_store, atl_updates, pagebuild/day, pagebuild/frame, pagebuild/labels, pagebuild/loaders, pagebuild/markup
+pagebuild/feature.py | 281 | The feature card page, and the helpers a card shares with the topic page. | atl_client, atl_store, atl_updates, pagebuild/day, pagebuild/frame, pagebuild/labels, pagebuild/loaders, pagebuild/markup
 pagebuild/frame.py | 174 | The pieces of a page around its content: the shell call, copy bar, Jira and sync panels, redirects and small widgets. | edit_common, pagebuild/markup, pagebuild/paths, pagebuild/registry, pagebuild/text, site_shell
 pagebuild/labels.py | 91 | Status words, pill classes and the vocabularies the pages share. | pagebuild/text
 pagebuild/library.py | 70 | The library page, the single-document page and the search index. | pagebuild/decisions, pagebuild/diagrams, pagebuild/frame, pagebuild/labels, pagebuild/markup, pagebuild/paths, pagebuild/registry, pagebuild/text

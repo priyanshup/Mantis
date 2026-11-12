@@ -18,6 +18,8 @@ def parse(text, lists=True):
 
 
 def split(text, lists=True):
+    if text.startswith("\ufeff"):   # a byte-order mark (a PowerShell write adds one) must not hide the front matter (IMP-101)
+        text = text[1:]
     m = FRONT.match(text)
     fm = {}
     if not m:

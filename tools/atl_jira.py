@@ -93,6 +93,17 @@ def remote_pages(c, key):
     return out
 
 
+def index_entry(issue, md, remote, projects):
+    """What the local index keeps about one issue: enough for the Jira tab and for finding what changed. Used by the sync and by `atl.py issue`."""
+    import atl_store
+    f = issue["fields"]
+    links = atl_convert.links_in(raw_text(issue) + " ".join(r["url"] for r in remote), projects)
+    return {"summary": f.get("summary"), "type": _name(f.get("issuetype")), "status": _name(f.get("status")),
+            "parent": (f.get("parent") or {}).get("key"), "updated": f.get("updated"), "hash": atl_store.digest(md),
+            "remote": remote, "pages": sorted(links["pages"]), "tiny": sorted(links["tiny"]),
+            "comments": len((f.get("comment") or {}).get("comments", [])), "attachments": len(f.get("attachment") or [])}
+
+
 def render(issue, names, custom, remote=()):
     f = issue["fields"]
     parent = f.get("parent") or {}

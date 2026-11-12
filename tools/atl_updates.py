@@ -205,14 +205,45 @@ def _md_section(md, head):
     return m.group(1).strip() if m else ""
 
 
-def card_of(key, index, conf):
-    """The card whose Jira Feature or items cover this issue, walking up the parent chain."""
+def shared_features(conf):
+    """{Jira Feature: [cards]} for every Feature two or more cards list as theirs (IMP-101): tickets under it with no item of their own go to the first card."""
+    by = {}
+    for slug_, v in conf.get("card_jira", {}).items():
+        if v.get("feature"):
+            by.setdefault(v["feature"], []).append(slug_)
+    return {f: cards for f, cards in by.items() if len(cards) > 1}
+
+
+def story_owners(folders=None):
+    """{Jira key: card slug} for each Mantis epic or story whose front matter has both `jira:` and `feature:`: the story names its own card (IMP-101)."""
+    import frontmatter
+    out = {}
+    for d in folders if folders is not None else [ROOT / "mantis" / "outputs" / "epics", ROOT / "mantis" / "outputs" / "user-stories"]:
+        for p in sorted(Path(d).glob("*.md")) if Path(d).exists() else []:
+            fm = frontmatter.parse(p.read_text(encoding="utf-8"))
+            if re.fullmatch(r"[A-Z][A-Z0-9]+-\d+", str(fm.get("jira", ""))) and fm.get("feature") and fm["feature"] != "none":   # a real key, and a real card
+                out[str(fm["jira"])] = str(fm["feature"])
+    return out
+
+
+_STORY_OWNERS = None
+
+
+def card_of(key, index, conf, extra=None):
+    """The card whose Jira Feature or items cover this issue, walking up the parent chain. A Mantis story that names its card (extra) wins over a Feature two cards share."""
+    global _STORY_OWNERS
+    if extra is None:
+        if _STORY_OWNERS is None:
+            _STORY_OWNERS = story_owners()
+        extra = _STORY_OWNERS
     owners = {}
     for slug_, v in conf.get("card_jira", {}).items():
         for k in ([v.get("feature")] if v.get("feature") else []) + list(v.get("items", [])):
             owners.setdefault(k, slug_)
     seen = set()
     while key and key not in seen:
+        if key in extra:
+            return extra[key]
         if key in owners:
             return owners[key]
         seen.add(key)
