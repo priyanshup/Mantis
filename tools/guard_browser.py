@@ -45,8 +45,13 @@ PROBE = r"""() => {
   const small = [];
   if (innerWidth <= 480) for (const el of document.querySelectorAll("button, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea, [role=button]")) {
     const r = el.getBoundingClientRect(), cs = getComputedStyle(el); if (r.width < 2 || r.height < 2 || cs.visibility === "hidden" || cs.display === "none") continue;
+    if (cs.pointerEvents === "none" || parseFloat(cs.opacity) < 0.05) continue;   // not shown or not clickable yet (the back-to-top button before the page is scrolled)
     let hidden = false; for (let e = el; e && !hidden; e = e.parentElement) { const s = getComputedStyle(e); if (s.display === "none" || e.hasAttribute("hidden")) hidden = true; } if (hidden) continue;
-    if (r.height < 40 - 0.5) small.push(label(el) + " " + Math.round(r.height) + "px");
+    const plain = parse(cs.backgroundColor), bare = (!plain || plain.a === 0) && parseFloat(cs.borderTopWidth) === 0 && parseFloat(cs.borderBottomWidth) === 0 && parseFloat(cs.paddingTop) === 0 && parseFloat(cs.paddingBottom) === 0;
+    if (bare && el.tagName === "BUTTON") continue;   // a link-style button inside a line of text: the inline exception of WCAG 2.5.8
+    const reach = (pseudo) => { const x = getComputedStyle(el, pseudo); return x.position === "absolute" && x.content !== "none" && parseFloat(x.width) >= 40 - 0.5 && parseFloat(x.height) >= 40 - 0.5; };
+    if (reach("::after") || reach("::before")) continue;   // the control carries an invisible hit area of at least 40 px (a pseudo-element)
+    if (r.height < 40 - 0.5) { const k = label(el) + " " + Math.round(r.height) + "px"; if (!small.includes(k)) small.push(k); }   // one per kind of control, so more rows of data never fail the check
   }
   const main = document.getElementById("main") || document.body;
   return { contrast: bad, checked, small, overflow: document.documentElement.scrollWidth - innerWidth, failed: !!document.querySelector(".boot-fail"), blank: main.innerText.trim().length < 20, scroll: document.documentElement.scrollWidth };

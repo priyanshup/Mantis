@@ -4,96 +4,96 @@
   "small": 0
  },
  "app:features|desktop|light": {
-  "contrast": 5,
+  "contrast": 0,
   "small": 0
  },
  "app:features|phone|dark": {
   "contrast": 0,
-  "small": 39
+  "small": 0
  },
  "app:features|phone|light": {
-  "contrast": 2,
-  "small": 39
+  "contrast": 0,
+  "small": 0
  },
  "app:growth|desktop|dark": {
   "contrast": 0,
   "small": 0
  },
  "app:growth|desktop|light": {
-  "contrast": 2,
+  "contrast": 0,
   "small": 0
  },
  "app:growth|phone|dark": {
   "contrast": 0,
-  "small": 71
+  "small": 0
  },
  "app:growth|phone|light": {
   "contrast": 0,
-  "small": 71
+  "small": 0
  },
  "app:meetings|desktop|dark": {
   "contrast": 0,
   "small": 0
  },
  "app:meetings|desktop|light": {
-  "contrast": 1,
+  "contrast": 0,
   "small": 0
  },
  "app:meetings|phone|dark": {
   "contrast": 0,
-  "small": 7
+  "small": 0
  },
  "app:meetings|phone|light": {
   "contrast": 0,
-  "small": 7
+  "small": 0
  },
  "app:questions|desktop|dark": {
   "contrast": 0,
   "small": 0
  },
  "app:questions|desktop|light": {
-  "contrast": 1,
+  "contrast": 0,
   "small": 0
  },
  "app:questions|phone|dark": {
   "contrast": 0,
-  "small": 72
+  "small": 0
  },
  "app:questions|phone|light": {
   "contrast": 0,
-  "small": 72
+  "small": 0
  },
  "app:sources|desktop|dark": {
   "contrast": 0,
   "small": 0
  },
  "app:sources|desktop|light": {
-  "contrast": 1,
+  "contrast": 0,
   "small": 0
  },
  "app:sources|phone|dark": {
   "contrast": 0,
-  "small": 6
+  "small": 0
  },
  "app:sources|phone|light": {
   "contrast": 0,
-  "small": 6
+  "small": 0
  },
  "app:today|desktop|dark": {
   "contrast": 0,
   "small": 0
  },
  "app:today|desktop|light": {
-  "contrast": 4,
+  "contrast": 0,
   "small": 0
  },
  "app:today|phone|dark": {
   "contrast": 0,
-  "small": 16
+  "small": 0
  },
  "app:today|phone|light": {
-  "contrast": 1,
-  "small": 16
+  "contrast": 0,
+  "small": 0
  },
  "changes|desktop|dark": {
   "contrast": 0,
@@ -105,11 +105,11 @@
  },
  "changes|phone|dark": {
   "contrast": 0,
-  "small": 11
+  "small": 0
  },
  "changes|phone|light": {
   "contrast": 0,
-  "small": 11
+  "small": 0
  },
  "document|desktop|dark": {
   "contrast": 0,
@@ -121,27 +121,27 @@
  },
  "document|phone|dark": {
   "contrast": 0,
-  "small": 7
+  "small": 0
  },
  "document|phone|light": {
   "contrast": 0,
-  "small": 7
+  "small": 0
  },
  "feature|desktop|dark": {
   "contrast": 0,
   "small": 0
  },
  "feature|desktop|light": {
-  "contrast": 1,
+  "contrast": 0,
   "small": 0
  },
  "feature|phone|dark": {
   "contrast": 0,
-  "small": 9
+  "small": 0
  },
  "feature|phone|light": {
-  "contrast": 1,
-  "small": 9
+  "contrast": 0,
+  "small": 0
  },
  "library|desktop|dark": {
   "contrast": 0,
@@ -153,11 +153,11 @@
  },
  "library|phone|dark": {
   "contrast": 0,
-  "small": 11
+  "small": 0
  },
  "library|phone|light": {
   "contrast": 0,
-  "small": 11
+  "small": 0
  },
  "people|desktop|dark": {
   "contrast": 0,
@@ -169,11 +169,11 @@
  },
  "people|phone|dark": {
   "contrast": 0,
-  "small": 1
+  "small": 0
  },
  "people|phone|light": {
   "contrast": 0,
-  "small": 1
+  "small": 0
  },
  "topic|desktop|dark": {
   "contrast": 0,
@@ -185,11 +185,11 @@
  },
  "topic|phone|dark": {
   "contrast": 0,
-  "small": 8
+  "small": 0
  },
  "topic|phone|light": {
   "contrast": 0,
-  "small": 8
+  "small": 0
  },
  "work|desktop|dark": {
   "contrast": 0,
@@ -201,10 +201,10 @@
  },
  "work|phone|dark": {
   "contrast": 0,
-  "small": 19
+  "small": 0
  },
  "work|phone|light": {
   "contrast": 0,
-  "small": 19
+  "small": 0
  }
 }

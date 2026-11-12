@@ -50,7 +50,7 @@ frontmatter.py | 35 | The one front-matter reader for Mantis files (MANTIS-IMP-0
 graph.py | 103 | Query the Mantis entity graph (built by build_map.py into map/entities.json). | 
 growth.py | 434 | The owner's growth record (Growth tab): opportunities to step up, what came of them, learnings, recognition. | datafile, people, steps, tasks_store
 guard.py | 211 | The self-running safety net (IMP-112 item 1): runs the checks without anyone asking, records the result for the Health page. | affected
-guard_browser.py | 138 | Real-browser checks of the running site, run by the Playwright interpreter (not by Mantis's Python). IMP-112 item 1. | 
+guard_browser.py | 143 | Real-browser checks of the running site, run by the Playwright interpreter (not by Mantis's Python). IMP-112 item 1. | 
 index_gen.py | 137 | Generate the knowledge index entries (registers/documents/<ID>.md) from digests (MANTIS-IMP-013). | textcache
 init.py | 166 | Create an empty Mantis knowledge base on a new machine (MANTIS-IMP-036). | 
 jobs.py | 347 | Background jobs started from the site's buttons (MANTIS-IMP-034, MANTIS-IMP-035). | ask, local_config, tasks_store
@@ -124,7 +124,7 @@ pullkit/state.py | 73 | Where a pull keeps things, the pull state and the cards 
 file | lines | purpose
 ---|---|---
 app/agenda-calendar.js | 15 | v9: rest-of-the-week agenda, calendar with meeting and due dots, type-to-filter pickers
-app/app.css | 688 | The app's styles. Colours, type, radii and motion come from tokens.css (site_config/theme.json); nothing here may define a colour.
+app/app.css | 694 | The app's styles. Colours, type, radii and motion come from tokens.css (site_config/theme.json); nothing here may define a colour.
 app/behaviour-agenda.js | 17 | v9 behaviour
 app/behaviour-controls.js | 32 | v8 controls behaviour
 app/behaviour-core.js | 88 | behaviour: motion, toasts, delegated clicks, drawers, search
@@ -165,7 +165,7 @@ chrome.css | 36 | chrome.css: the theme switch, the one piece of header chrome b
 header.css | 81 | header.css: the page header (brand, tabs, search, icons) shared by the app and the content pages. Colours come from theme.json; layout is th
 pages/css/base.css | 28 | base.css: fonts, keyframes and other at-rules every page needs. Every rule starts with /*@n
 pages/css/changes.css | 41 | changes.css: rules used only by: changes. Every rule starts with /*@n
-pages/css/common.css | 639 | common.css: rules every content page uses. Every rule starts with /*@n
+pages/css/common.css | 646 | common.css: rules every content page uses. Every rule starts with /*@n
 pages/css/document-feature-topic.css | 16 | document-feature-topic.css: rules used only by: document, feature, topic. Every rule starts with /*@n
 pages/css/document-feature.css | 32 | document-feature.css: rules used only by: document, feature. Every rule starts with /*@n
 pages/css/feature-topic.css | 54 | feature-topic.css: rules used only by: feature, topic. Every rule starts with /*@n
@@ -205,4 +205,4 @@ pages/js/whats-new.js | 42 | whats-new: visits and What's new.
 
 ## Over budget (600 lines)
 
-app/app.css (688), pages/css/common.css (639)
+app/app.css (694), pages/css/common.css (646)

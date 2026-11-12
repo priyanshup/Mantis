@@ -8,7 +8,8 @@ const check = (ok, name, info = "") => results.push([ok, name, info]);
 // The meetings the checks see are a fixed set (Mon, Tue and Thu, none on Wed), not the owner's real schedule: a check that depends on live data
 // fails the day the data changes (found by the safety net on 2026-11-12). Everything else is read live.
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const nextDate = (day) => { const d = new Date(); while (DAYS[d.getDay()] !== day) d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); };
+const pad = (n) => String(n).padStart(2, "0");
+const nextDate = (day) => { const d = new Date(); while (DAYS[d.getDay()] !== day) d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };   // the local date: toISOString is UTC and is a day early just after midnight
 const FIXTURE_MEETINGS = [["Mon", "Planning sync"], ["Tue", "Design review"], ["Thu", "Weekly sync"]].map(([day, name], i) => ({
   id: "fx" + i, name, day, time: "10:00", attendees: [], purpose: "Fixture meeting", cards: [], every: 1, anchor: "2026-01-05", draws: [], next: nextDate(day),
   key: "fixture-" + i, written: "", set_cards: [], agenda: [] }));
@@ -25,9 +26,11 @@ async function load(tab) {
     beforeParse(w) { w.fetch = (u, o) => { if (o && o.method === "POST") { let b = {}; try { b = JSON.parse(o.body); } catch (e) {} posts.push({ url: String(u), body: b }); return Promise.resolve({ ok: true, status: 200, json: async () => (String(u).includes("filters") ? { filters: [] } : {}) }); } return fetchStubbed(String(u), o); };
       w.matchMedia = () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
       w.IntersectionObserver = class { observe() {} unobserve() {} disconnect() {} }; w.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }; w.CSS = { escape: String }; w.Element.prototype.animate = () => ({ finished: Promise.resolve(), cancel() {}, onfinish: null }); w.scrollTo = () => {}; w.HTMLElement.prototype.scrollIntoView = () => {}; } });
-  await sleep(2300); return { w: dom.window, d: dom.window.document, posts };
+  for (let i = 0; i < 60 && !dom.window.__appReady; i++) await sleep(250);   // wait for the app's first draw, not a fixed time: a slow machine failed a flow by 0.3 s
+  await sleep(600); return { w: dom.window, d: dom.window.document, posts };
 }
 const openMeeting = async (w, d) => { if (!d.querySelector("[data-act=meeting-edit]")) { click(w, d.querySelector("#mlist .mrow")); await sleep(300); } };   // a meeting's Edit button is in its detail, shown once a meeting is picked
+const waitFor = async (d, sel, ms = 8000) => { for (let t = 0; t < ms; t += 200) { const el = d.querySelector(sel); if (el) return el; await sleep(200); } return null; };   // a control that draws a moment after the app is ready
 const click = (w, el) => { if (!el) throw new Error("control not found"); el.dispatchEvent(new w.MouseEvent("click", { bubbles: true, cancelable: true })); };
 const type = (w, el, v) => { el.value = v; el.dispatchEvent(new w.Event("input", { bubbles: true })); el.dispatchEvent(new w.Event("change", { bubbles: true })); };
 const posted = (p, url, pred = () => true) => p.some((x) => x.url.includes(url) && pred(x.body));
@@ -117,7 +120,7 @@ const flows = {
   },
   async growth() {
     let { w, d, posts } = await load("growth");
-    const all = d.querySelector("[data-act=growth-select-all]"); if (!all) { check(false, "Growth: there is a Select all"); return; }
+    const all = await waitFor(d, "[data-act=growth-select-all]"); if (!all) { check(false, "Growth: there is a Select all"); return; }
     const before = all.textContent; click(w, all); await sleep(200);
     const after = d.querySelector("[data-act=growth-select-all]").textContent; check(/Deselect/.test(after) && before !== after, "Growth: Select all becomes Deselect all", `${before} -> ${after}`);
     click(w, d.querySelector("[data-act=growth-select-all]")); await sleep(200);
@@ -133,7 +136,7 @@ const flows = {
   },
   async questions() {
     const { w, d, posts } = await load("questions");
-    click(w, d.querySelector("[data-qx]")); await sleep(300); const ta = d.querySelector("textarea[id^=qa]"); type(w, ta, "My answer"); click(w, d.querySelector("[data-qsave]")); await sleep(400);
+    click(w, await waitFor(d, "[data-qx]")); await sleep(300); const ta = d.querySelector("textarea[id^=qa]"); type(w, ta, "My answer"); click(w, d.querySelector("[data-qsave]")); await sleep(400);
     check(posted(posts, "api/answers", (b) => (b.answers || []).length === 1), "Questions: saving an answer sends it");
   },
   async today() {

@@ -636,3 +636,10 @@
 /*@1162*/ @media (max-width: 760px) { html:has(body.drawer-open) { overflow: hidden; } }
 /*@1163*/ .dr-b { overscroll-behavior: contain; }
 /*@1164*/ .dr-title { margin: 0; font-family: var(--display, inherit); font-size: 17px; }
+
+/* ---- phone: controls are at least 40 px high (DEVELOPMENT_GUIDELINES; the browser check measures this at 375 px) ---- */
+@media (max-width: 480px) {
+  .totop, .v3-totop, .tile-x, .copy-sec, .seg button, .chips button, select.sel, select.sel-sm, .face { min-height: 40px; }
+  .face { min-width: 40px; }
+}
+

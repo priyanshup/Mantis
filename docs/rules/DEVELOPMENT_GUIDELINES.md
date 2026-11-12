@@ -195,7 +195,8 @@ more files, or any change older than a day, are uncommitted. Push only when the 
 ## 8. Gaps (not enforced yet)
 
 - Pixel comparison of screenshots: not done on purpose (dates and live data make it flaky); structure snapshots and rendered-style checks stand in for it.
-- The browser baseline (`tools/uitest/browser-baseline.json`) still allows 19 text-contrast and 554 touch-target findings; each fix lowers it.
+- The browser baseline (`tools/uitest/browser-baseline.json`) is 0 for text contrast and 0 for touch targets (2026-11-13): a new finding fails at once.
+  A button that looks like plain text inside a sentence, an element that is not clickable yet, and a control with an invisible 40 px hit area (a pseudo-element) are not counted.
 - The safety net runs only while the site server is up; a machine that is off runs nothing.
 - The app's older scripts (`screens-*.js`, `behaviour-*.js`) still hold mock-era code: 143 repeated CSS selectors and
   global handlers. New work goes in `feature-*.js` and `widgets-*.js`; move old code there when you next change it.

@@ -685,3 +685,9 @@ html.locked { overflow:hidden; }
 @media (prefers-reduced-motion: reduce) { .boot-bar { animation:none; } }
 .boot-fail { padding:48px 0; max-width:56ch; } .boot-fail h2 { margin-bottom:8px; } .boot-fail details { margin-top:16px; } .boot-fail pre { white-space:pre-wrap; font-family:var(--mono); font-size:12.5px; }
 
+/* ---- phone: controls are at least 40 px high (DEVELOPMENT_GUIDELINES; the browser check measures this at 375 px) ---- */
+@media (max-width: 480px) {
+  .totop, .pick, .chipf, .star, .btnl, .btn2, .gdis, .snz, .wdm, .sw { min-height:40px; }
+  .star, .wdm { min-width:40px; }
+}
+
