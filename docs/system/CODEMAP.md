@@ -109,9 +109,10 @@ pagebuild/topic.py | 32 | The topic card page. | pagebuild/feature, pagebuild/fr
 pagebuild/work.py | 40 | The epic and story pages (a feature's work, and work that belongs to no feature). | pagebuild/frame, pagebuild/labels, pagebuild/markup, pagebuild/registry, pagebuild/text
 webserver/config.py | 35 | Where the server lives: the port, the folders it watches and the site it serves. | 
 webserver/focus.py | 71 | The owner's follow, archive and roadmap choices from the Features page (knowledge/focus.json). | datafile, webserver/config, webserver/watching
-webserver/handler.py | 200 | The request handler: every /api route the site calls, and the static files. | edit_common, extra, growth, jobs, pull, tasks_store, webserver/config, webserver/focus
+webserver/handler.py | 92 | The request handler: the static files, the GET routes, and POST through webserver/routes.py (one plain function per route). | extra, growth, jobs, pull, tasks_store, webserver/config, webserver/inbox
 webserver/inbox.py | 126 | What the site posts to the inbox: answers, edited pages, dropped files and Undo of an automatic close. | jobs, webserver/config, webserver/watching
 webserver/lifecycle.py | 30 | Stop a running site by the process ID it recorded at start. | webserver/config
+webserver/routes.py | 158 | The site's POST routes as plain functions: body in, (status, answer) out. IMP-112 item 10. | edit_common, extra, growth, jobs, pull, tasks_store, webserver/config, webserver/focus
 webserver/watching.py | 75 | Rebuild the site when a hand edit changes a source; Claude and the site's buttons rebuild themselves. | backup, buildlock, guard, jobs, webserver/config
 pullkit/brief.py | 70 | The Since-last-pull brief: what it holds, what closed by itself, and how it prints. | atl_updates, pullkit/grouping, pullkit/state
 pullkit/commands.py | 236 | The pull's steps: fetch, plan, one card's packet, done, skip, headline, needs and finish. | atl_client, atl_store, atl_updates, jobs, pullkit/brief, pullkit/grouping, pullkit/state

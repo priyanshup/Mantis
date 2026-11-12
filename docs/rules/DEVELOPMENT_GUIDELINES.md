@@ -33,7 +33,7 @@ Look and layout rules are in `DESIGN.md`; this file is about how the code is org
 | A tab's widgets | `assets/app/widgets-*.js` | `layout.py` |
 | A feature's actions (a meeting, a filter, Growth) | `assets/app/feature-*.js` | `wiring.py`, `flows-check.js` |
 | Content pages: one Python module per page type | `tools/pagebuild/<type>.py` (feature, work, topic, people, library, decisions, diagrams, changes) | `pagecheck.py`, `site_pages.py`, `pagefn-check.js` |
-| The site server, by job | `tools/webserver/` (`config`, `watching`, `inbox`, `focus`, `lifecycle`, `handler`); `serve.py` only starts and stops it | `pagecheck.py` |
+| The site server, by job | `tools/webserver/` (`config`, `watching`, `inbox`, `focus`, `lifecycle`, `routes`, `handler`); `serve.py` only starts and stops it | `pagecheck.py` |
 | What the pages share | `tools/pagebuild/` `paths`, `text`, `labels`, `registry`, `markup`, `loaders`, `frame`, `day` | `pagecheck.py` |
 | The page frame, scripts and styles | `site_shell.py`, `assets/pages/js`, `assets/pages/css` | `site_pages.py`, `pagefn-check.js` |
 | The header and the theme switch, shared | `header.css`, `chrome.css`, `site_chrome.py` | |
