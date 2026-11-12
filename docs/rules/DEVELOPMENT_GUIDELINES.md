@@ -154,6 +154,9 @@ verification) are in `ENGINEERING_PLAYBOOK.md`. Read its section before starting
 5. Remove what is now dead. Update the backlog entry and, if a rule here was wrong or missing, this file.
 6. Report what was checked and what was not.
 
+Commit per finished task, in logical groups (code, docs, the owner's own edits apart), never a day's work in one commit. The Health page warns when 25 or
+more files, or any change older than a day, are uncommitted. Push only when the owner says so.
+
 ## 6. Definition of done
 
 - [ ] The owner's flow works end to end, including the failure case (server down, empty form, nothing selected).

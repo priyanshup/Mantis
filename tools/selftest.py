@@ -146,6 +146,19 @@ def skills():
         check("skills", False, f"project skill {r['name']} is {r['state']}; run python tools/skillscan.py")
 
 
+def requirements():
+    """Every third-party import in tools/ is listed in requirements.txt (IMP-112 item 3), so a fresh machine can build."""
+    dist = {"PIL": "pillow", "docx": "python-docx", "markdown": "markdown", "markdownify": "markdownify", "pypdf": "pypdf", "openpyxl": "openpyxl"}
+    local = {p.stem for p in T.glob("*.py")} | {"pagebuild", "webserver"}
+    listed = {re.split(r"[=<>~! #]", l.strip(), maxsplit=1)[0].lower() for l in (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith("#")}
+    for p in [*T.glob("*.py"), *(T / "pagebuild").glob("*.py"), *(T / "webserver").glob("*.py")]:
+        for n in ast.walk(ast.parse(p.read_text(encoding="utf-8"))):
+            mods = [a.name.split(".")[0] for a in n.names] if isinstance(n, ast.Import) else [n.module.split(".")[0]] if isinstance(n, ast.ImportFrom) and n.module and n.level == 0 else []
+            for m in mods:
+                if m not in sys.stdlib_module_names and m not in local:
+                    check("requirements", dist.get(m, m).lower() in listed, f"{p.name} imports {m}, which requirements.txt does not list")
+
+
 def readiness_rules():
     """Decision readiness judges evidence, not filled fields (MANTIS-IMP-074 to 076): fixed cards, expected states."""
     import tempfile, readiness
@@ -278,7 +291,7 @@ def data():
 
 if __name__ == "__main__":
     quick = "--quick" in sys.argv
-    code(); js_css(); theme_and_style(); docs(); incremental(); skills(); readiness_rules(); decision_watch(); search_index(); pull_logic(); repeats_rule()
+    code(); js_css(); theme_and_style(); docs(); incremental(); skills(); requirements(); readiness_rules(); decision_watch(); search_index(); pull_logic(); repeats_rule()
     if not quick:
         tools(); data()
     if fails:

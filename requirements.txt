@@ -1,0 +1,8 @@
+# Python packages the Mantis tools import. Install once: python -m pip install -r requirements.txt
+# Python 3.12 or newer. Everything else is the standard library. Checked by tools/selftest.py (every third-party import is listed here).
+Markdown==3.11          # build_site and the page builders: Markdown to HTML (required)
+markdownify==1.2.3      # extract.py: HTML to Markdown when reading dropped files
+python-docx==1.2.0      # extract.py: Word files
+pypdf==6.19.0           # extract.py, assets.py: PDF text and images
+pillow==12.3.0          # assets.py: diagram and image handling
+openpyxl==3.1.5         # estimates.py: Excel files

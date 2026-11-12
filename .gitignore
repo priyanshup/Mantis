@@ -4,6 +4,7 @@
 /*
 !/.gitignore
 !/.gitattributes
+!/requirements.txt
 !/CLAUDE.md
 !/AGENTS.md
 !/README.md

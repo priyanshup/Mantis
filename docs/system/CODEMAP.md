@@ -53,7 +53,7 @@ kgraph.py | 188 | Entity knowledge graph for Mantis (MANTIS-IMP-004). Stdlib onl
 layout.py | 88 | The layout: site_config/layout.json -> window.APP_LAYOUT, plus checks (stdlib only; MANTIS-IMP-107). | 
 leakcheck.py | 108 | Check that files bound for the public engine repo carry no knowledge (MANTIS-IMP-036). | 
 local_config.py | 13 | Read this instance's local settings (mantis/config/settings.json). Never committed (MANTIS-IMP-036). | 
-maintain.py | 238 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, citations, classify, entry, local_config, prune_sources, repeats
+maintain.py | 249 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, citations, classify, entry, local_config, prune_sources, repeats
 mishear.py | 56 | Mishearings: words speech-to-text gets wrong (MANTIS-IMP-051). Stdlib only. | 
 pagecheck.py | 88 | Static checks for the packages tools/pagebuild/ (page builders) and tools/webserver/ (the site server), run by selftest.py. | 
 peek.py | 30 | Print the short form of one or more digests: title, confidence, open items and Summary. | 
@@ -65,7 +65,7 @@ refresh_report.py | 114 | What a card refresh changed and what it cost: curated 
 repeats.py | 102 | Repetition check: what an output says twice (MANTIS-IMP-094). Stdlib, no AI. | answered
 schedule.py | 263 | The owner's recurring meetings and away periods (MANTIS-IMP-037, MANTIS-IMP-038). | people
 search.py | 239 | Search index for questions: SQLite full-text search plus the entity graph (MANTIS-IMP-086). | ask, frontmatter
-selftest.py | 288 | Self-test for the Mantis engine (MANTIS-IMP-061). Run before every commit (the pre-commit hook does). | atl_updates, decisions, layout, pagecheck, pull, readiness, repeats, search
+selftest.py | 301 | Self-test for the Mantis engine (MANTIS-IMP-061). Run before every commit (the pre-commit hook does). | atl_updates, decisions, layout, pagecheck, pull, readiness, repeats, search
 serve.py | 71 | Serve the Mantis site at http://localhost:8000 and rebuild it when Markdown changes. | jobs, webserver/config, webserver/handler, webserver/lifecycle, webserver/watching
 session_start.py | 107 | SessionStart hook: start the site and tell Claude what is waiting in the inbox. | brief, followups, people, readiness, schedule, skillscan, steps, tasks_store
 site_app.py | 155 | The front end (2026-11-11): the approved mock's own screens, run on live data. | layout, pagebuild/day, pagebuild/paths, pagebuild/registry, site_chrome

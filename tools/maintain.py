@@ -199,6 +199,17 @@ def report():
         add("info", "Repeats", f"Repetition check skipped: {e}")
     add("info", "Archive", f"03_archive holds {size / 1e6:.1f} MB" + (f"; older than 90 days: {', '.join(oldest[:6])}. The owner decides what to delete." if oldest else "."))
 
+    try:   # work that waits too long to be committed cannot be rolled back or bisected (IMP-112 item 2): warn after a day
+        import subprocess
+        out = subprocess.run(["git", "status", "--porcelain"], cwd=str(ROOT), capture_output=True, text=True, timeout=20).stdout.splitlines()
+        files = [ROOT / l[3:].strip().strip('"').split(" -> ")[-1] for l in out if l.strip()]
+        ages = [(time.time() - f.stat().st_mtime) / 3600 for f in files if f.exists()]
+        if len(files) >= 25 or any(a > 24 for a in ages):
+            add("warn", "Commits", f"{len(files)} file(s) are uncommitted" + (f", the oldest changed {max(ages):.0f} h ago" if ages else "")
+                + ". Commit per finished task so a change can be rolled back; ask Claude to commit.")
+    except Exception as e:
+        add("info", "Commits", f"Uncommitted-work check skipped: {e}")
+
     try:   # skills the owner has not had scanned by SkillSpector, or that changed since (python tools/skillscan.py)
         import skillscan
         if not skillscan.installed():

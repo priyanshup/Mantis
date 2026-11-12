@@ -158,7 +158,7 @@ def main(check):
         backlog.write_text("# IMPROVEMENT_BACKLOG\n\nIdeas for improving Mantis itself. Each entry: ID (MANTIS-IMP-001), title,\n"
                            "description, complexity, expected value, reasoning for deferral, trigger, status.\n", encoding="utf-8")
     print(f"Created {len(missing)} missing item(s)." if missing else "Nothing to create: the knowledge base exists.")
-    print("Next: python tools/build_map.py, then python tools/serve.py --open")
+    print("Next: python -m pip install -r requirements.txt, then python tools/build_map.py, then python tools/serve.py --open")
 
 
 if __name__ == "__main__":
