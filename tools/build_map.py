@@ -237,6 +237,12 @@ textcache.write((OUT / "assets.json"), json.dumps({"assets": asset_list, "tiers"
 lap("assets")
 _deferred = {rid: r for reg in (gaps, asms, cfls) for rid, r in reg.items() if r["status"].lower().startswith("deferred")}
 _c = cards_mod.write(all_cards, docs, summaries, gaps, kg["entities"], is_open, asset_list, _deferred)
+# A citation a card had last build and no longer has (a lost edit), or a source listed but never cited, is recorded for the Health page (IMP-093)
+_cc = OUT / "cards-cited.json"
+_alerts, _cstate = cards_mod.citation_changes(all_cards, json.loads(textcache.read(_cc)) if _cc.exists() else {}, time.strftime("%Y-%m-%d"))
+textcache.write(_cc, json.dumps(_cstate, indent=1, ensure_ascii=False))
+for _a in _alerts:
+    print(f"Card {_a['slug']}: {_a['what']}")
 
 # What's new and cards to refresh (tools/changes.py, MANTIS-IMP-043 and 044)
 import changes as changes_mod

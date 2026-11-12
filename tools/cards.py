@@ -184,16 +184,73 @@ def block(c, docs, summaries, gaps, entities, is_open, assets=(), deferred=None,
 
 
 def write(cards, docs, summaries, gaps, entities, is_open, assets=(), deferred=None):
-    """Rewrite each card's generated part. Returns the number of files changed."""
+    """Rewrite each card's generated part. Returns the number of files changed.
+
+    The card is read again just before it is written, and its curated part and front matter are taken from that fresh read, never from the copy made when the
+    build started: the build takes seconds, and a sentence added to a card in that time used to be overwritten with the old text (IMP-093). If the file changes
+    again between the read and the write, the write is repeated from the new text (up to three times)."""
     changed, works = 0, doc_works(cards, docs)
     for c in cards:
         gen = block(c, docs, summaries, gaps, entities, is_open, assets, deferred, works)
         c["gen_size"] = len(gen.encode("utf-8"))
-        new = c["curated"].rstrip() + "\n\n" + MARK + "\n\n" + gen
-        if new != c["old"]:
+        for _ in range(3):
+            if not c["path"].exists():   # deleted or renamed during the build: nothing to write
+                break
+            now = c["path"].read_text(encoding="utf-8")
+            new = now.split(MARK)[0].rstrip() + "\n\n" + MARK + "\n\n" + gen
+            if new == now:
+                break
             c["path"].write_text(new, encoding="utf-8")
             changed += 1
+            if c["path"].read_text(encoding="utf-8") == new:   # nothing wrote in between
+                break
     return changed
+
+
+def uncited_sources(c):
+    """Source documents the card's front matter lists but its curated text never cites (IMP-093): the sign of an edit that was lost while the front matter survived."""
+    src = c["fm"].get("source_documents", [])
+    if isinstance(src, str):
+        src = [x.strip() for x in src.strip("[]").split(",") if x.strip()]
+    import frontmatter
+    text = frontmatter.split(c["curated"].split(MARK)[0])[1]   # the text, not the front matter that lists the sources
+    return [d for d in src if d not in text and d.replace("MANTIS-", "") not in text]
+
+
+ALERT_DAYS = 7
+
+
+def _listed(c):
+    src = c["fm"].get("source_documents", [])
+    return [x.strip() for x in src.strip("[]").split(",") if x.strip()] if isinstance(src, str) else list(src)
+
+
+def _cited(c):
+    """The listed sources the curated text cites (the text, not the front matter)."""
+    return sorted(set(_listed(c)) - set(uncited_sources(c)))
+
+
+def citation_changes(cs, state, today):
+    """Compare each card with the last build (IMP-093). Returns (alerts, new state).
+
+    An alert is a source the curated text cited last build and no longer cites (a sentence was lost or rewritten), or a source newly listed in the front matter that the text never
+    cites (the front matter was updated, the sentence was not). A source that was already listed and uncited is not reported: 22 of 30 cards have some, by design.
+    Alerts are kept for ALERT_DAYS so the Health page shows them after the build that found them."""
+    from datetime import date, timedelta
+    cut = (date.fromisoformat(today) - timedelta(days=ALERT_DAYS)).isoformat()
+    alerts = [a for a in state.get("alerts", []) if a.get("on", "") >= cut]
+    cited, listed = {}, {}
+    for c in cs:
+        slug = c["slug"]
+        cited[slug], listed[slug] = _cited(c), sorted(_listed(c))
+        if slug not in state.get("cited", {}):
+            continue   # a new card has no history
+        lost = sorted(set(state["cited"][slug]) - set(cited[slug]))
+        fresh = sorted((set(listed[slug]) - set(state.get("listed", {}).get(slug, []))) - set(cited[slug]))
+        for what, ids in ((f"no longer cites {', '.join(lost)}: was a sentence lost or rewritten?", lost), (f"lists {', '.join(fresh)} as a source but never cites it", fresh)):
+            if ids and not any(a["slug"] == slug and a["what"] == what for a in alerts):
+                alerts.append({"slug": slug, "what": what, "on": today})
+    return alerts, {"cited": cited, "listed": listed, "alerts": alerts}
 
 
 def uncovered_tags(cards, docs, minimum=3):

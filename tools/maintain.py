@@ -216,6 +216,12 @@ def report():
     except (ImportError, OSError, ValueError) as e:
         add("info", "Jira mapping", f"Shared-Feature check skipped: {e}")
 
+    try:   # a card that lost a citation since the last build, or lists a source it never cites (IMP-093)
+        for al in json.loads(textcache.read(MAP / "cards-cited.json")).get("alerts", []):
+            add("warn", "Cards", f"{al['slug']} {al['what']} (found {al['on']}). Check the card's text; python tools/backup.py restore <card>.md brings back the last copy.")
+    except (OSError, ValueError):   # no record yet: the first build after this change only records
+        pass
+
     import tempcheck   # old browser profiles and headless browsers left running in %TEMP% (tools/tempcheck.py)
     if tempcheck.problem():
         add("warn", "Temp", tempcheck.problem())

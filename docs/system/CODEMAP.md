@@ -25,10 +25,10 @@ atl_updates.py | 403 | What changed in Jira and Confluence since the last pull, 
 away.py | 160 | Away planner and handover (MANTIS-IMP-038). | brief, followups, people, schedule, steps, tasks_store
 backup.py | 166 | Daily local copy of the owner's data, with a restore command (IMP-112 item 6). | 
 brief.py | 408 | Meeting briefs (MANTIS-IMP-037): "I'm meeting Sam now, what should I discuss?" | followups, growth, people, readiness, repeats, schedule, steps, tasks_store
-build_map.py | 421 | Build Mantis's navigation map and reference graph (stdlib only, deterministic). | answered, assets, backup, build_site, buildlock, cards, changes, codemap
+build_map.py | 427 | Build Mantis's navigation map and reference graph (stdlib only, deterministic). | answered, assets, backup, build_site, buildlock, cards, changes, codemap
 build_site.py | 174 | Build the read-only Mantis website from the Markdown files. | buildlock, layout, pagebuild/changes, pagebuild/feature, pagebuild/frame, pagebuild/library, pagebuild/loaders, pagebuild/paths
 buildlock.py | 57 | One build at a time (MANTIS-IMP-063): the site server, a background job and a chat session can all start one. | 
-cards.py | 204 | Cards: the reading layer for every subject (MANTIS-IMP-014). Stdlib only, deterministic. | 
+cards.py | 261 | Cards: the reading layer for every subject (MANTIS-IMP-014). Stdlib only, deterministic. | frontmatter
 changes.py | 352 | What changed, and which card summaries are behind (MANTIS-IMP-043, MANTIS-IMP-044). Stdlib only. | followups, frontmatter, schedule, steps, textcache
 citations.py | 137 | Citation checks that code can do (MANTIS-IMP-078): do the cited sources exist and belong where they are cited? | entry, frontmatter
 classify.py | 208 | Classify a new document against the corpus before ingest (MANTIS-IMP-005). Stdlib only. | frontmatter, kgraph, local_config, textcache
@@ -58,7 +58,7 @@ kgraph.py | 188 | Entity knowledge graph for Mantis (MANTIS-IMP-004). Stdlib onl
 layout.py | 88 | The layout: site_config/layout.json -> window.APP_LAYOUT, plus checks (stdlib only; MANTIS-IMP-107). | 
 leakcheck.py | 108 | Check that files bound for the public engine repo carry no knowledge (MANTIS-IMP-036). | 
 local_config.py | 39 | Read this instance's local settings (mantis/config/settings.json). Never committed (MANTIS-IMP-036). | 
-maintain.py | 274 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, atl_client, atl_updates, backup, citations, classify, entry
+maintain.py | 280 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, atl_client, atl_updates, backup, citations, classify, entry
 meetingnotes.py | 194 | Recurring-meeting notes without a full source and digest each time (IMP-105). | brief, schedule
 mishear.py | 56 | Mishearings: words speech-to-text gets wrong (MANTIS-IMP-051). Stdlib only. | 
 pagecheck.py | 88 | Static checks for the packages tools/pagebuild/ (page builders), tools/webserver/ (the site server) and tools/pullkit/ (the pull), run by selftest.py. | 
