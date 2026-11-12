@@ -78,6 +78,10 @@ Description, Acceptance criteria) since "I updated Jira", naming the labelled pa
 Keep the bold labels (**Problem statement**, **Acceptance criteria**) stable so that tracking
 can name them.
 
+When the owner has published a Mantis Confluence page, record which Confluence page it became: `python tools/atl.py link-page mantis/outputs/confluence/<page>.md <page ID or link>`.
+The page comparison then shows it as "ours" instead of "new: no digest matches", and a pull does not queue it as a new page.
+A digest that covers many pages lists them in `confluence_pages: [id, id@version, ...]`; a later edit to any of them is queued by the pull.
+
 - Change only what the update needs. Keep the page's existing section order unless the owner
   asks for a restructure.
 - When handing over, list every changed section by the heading it has **on the Confluence

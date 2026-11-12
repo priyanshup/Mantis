@@ -66,6 +66,59 @@ def source_text(doc_id, source_file):
     return text
 
 
+def parse_pages(value):
+    """{page id: version or None} from a digest's `confluence_pages`: a list or its text, each item `id`, `id@version` or `id:version`."""
+    items = value if isinstance(value, list) else str(value or "").strip("[]").split(",")
+    out = {}
+    for it in items:
+        m = re.fullmatch(r"\s*(\d+)\s*(?:[@:]\s*(\d+))?\s*", str(it))
+        if m:
+            out[m.group(1)] = int(m.group(2)) if m.group(2) else None
+    return out
+
+
+def page_owners(digests):
+    """{page id: (digest id, version or None)}: the digest that holds each page, the one with the newer recorded version when several do. Covers the
+    single `confluence_page_id` and the `confluence_pages` of a grouped digest (IMP-096)."""
+    out = {}
+    for d, v in digests.items():
+        held = dict(v.get("pages", {}))
+        if v.get("page_id"):
+            held.setdefault(v["page_id"], v.get("page_version"))
+        for pid, ver in held.items():
+            if pid not in out or (ver or 0) > (out[pid][1] or 0):
+                out[pid] = (d, ver)
+    return out
+
+
+def ours(folder=None, root=None):
+    """{page id: path} for each page Mantis wrote and the owner published: its file records the Confluence page in `confluence_page_id` (atl.py link-page)."""
+    import frontmatter
+    folder = Path(folder) if folder else ROOT / "mantis" / "outputs" / "confluence"
+    out = {}
+    for p in sorted(folder.glob("*.md")) if folder.exists() else []:
+        pid = str(frontmatter.parse(p.read_text(encoding="utf-8")).get("confluence_page_id", "") or "").strip()
+        if pid.isdigit():
+            out[pid] = p.relative_to(Path(root) if root else ROOT).as_posix()
+    return out
+
+
+def link_page(path, page):
+    """Record the Confluence page a Mantis page was published as (an id or a page URL) in the file's front matter."""
+    import atl_confluence
+    pid = atl_confluence.page_id(str(page))
+    if not pid.isdigit():
+        raise ValueError("give a page ID or the page's link (https://.../pages/<id>/...)")
+    p = Path(path)
+    text = p.read_text(encoding="utf-8").replace("\r\n", "\n")
+    m = re.match(r"(---\n)(.*?)(\n---\n)", text, re.S)
+    if not m:
+        raise ValueError(f"{p.name} has no front matter to put the page ID in")
+    lines = [l for l in m.group(2).split("\n") if not l.startswith("confluence_page_id:")] + [f"confluence_page_id: {pid}"]
+    p.write_text(m.group(1) + "\n".join(lines) + m.group(3) + text[m.end():], encoding="utf-8")
+    return pid
+
+
 def load_digests():
     sys.path.insert(0, str(ROOT / "tools"))
     import frontmatter
@@ -77,7 +130,8 @@ def load_digests():
         m = re.search(r"(\d{4}-\d{2}-\d{2})", sf)
         out[did] = {"title": fm.get("original_title", ""), "source_file": sf, "snapshot": m.group(1) if m else fm.get("generated_on", ""),
                     "version": fm.get("version", "1"), "page_id": str(fm.get("confluence_page_id", "") or ""),
-                    "page_version": int(fm["confluence_version"]) if str(fm.get("confluence_version", "")).isdigit() else None}
+                    "page_version": int(fm["confluence_version"]) if str(fm.get("confluence_version", "")).isdigit() else None,
+                    "pages": parse_pages(fm.get("confluence_pages"))}
     return out
 
 
@@ -88,7 +142,7 @@ def page_body(pid):
     return body
 
 
-def match_all(index, digests, log=print):
+def match_all(index, digests, log=print, ours=None):
     """Verdict per content page: {pid: {verdict, doc, title_score, cover, back, others}}."""
     log(f"  reading the source text of {len(digests)} digests (cached after the first run)")
     src = {d: shingles(source_text(d, v["source_file"])) for d, v in digests.items()}
@@ -97,16 +151,20 @@ def match_all(index, digests, log=print):
         for h in s:
             inverted.setdefault(h, []).append(d)
     titles = {d: norm_title(v["title"]) for d, v in digests.items()}
-    by_page = {v["page_id"]: d for d, v in digests.items() if v["page_id"]}
+    owners = page_owners(digests)
+    mine = ours if ours is not None else globals()["ours"]()
     out = {}
     for pid, e in index.items():
         if pid.startswith("_") or e.get("kind") != "content":
             continue
-        if pid in by_page:      # the digest names this page: exact match, decided by version number
-            d = by_page[pid]
-            same = digests[d]["page_version"] == e.get("version")
+        if pid in mine:         # a page Mantis wrote and the owner published: ours, not new (IMP-096)
+            out[pid] = {"verdict": "ours", "doc": None, "output": mine[pid], "cover": 1.0, "back": 1.0, "title_score": 1.0, "others": []}
+            continue
+        if pid in owners:       # a digest names this page, alone or in a group: exact match, decided by version number; no recorded version counts as covered
+            d, held = owners[pid]
+            same = held is None or held == e.get("version")
             out[pid] = {"verdict": "same" if same else "changed", "doc": d, "cover": 1.0, "back": 1.0, "title_score": 1.0,
-                        "others": [], "linked": True, "version_then": digests[d]["page_version"]}
+                        "others": [], "linked": True, "version_then": held}
             continue
         ps = shingles(page_body(pid))
         hits = {}

@@ -8,7 +8,8 @@
     python tools/atl.py tree <filter | url | id>      outline of a folder or page tree, titles only
     python tools/atl.py sync-confluence [filter] [--refresh]   mirror every page under a Confluence filter's tree
                                                       whose version changed (--refresh: every page, after a converter fix)
-    python tools/atl.py compare                       mirrored pages against digests: same, changed, related, new
+    python tools/atl.py compare                       mirrored pages against digests: same, changed, ours, related, new
+    python tools/atl.py link-page <file> <id | url>   record the Confluence page a Mantis page was published as, so the comparison calls it "ours"
     python tools/atl.py sync-jira [filter | query]    a query's issues with all their children, plus linked pages
                                                       (default: the first active Jira filter)
     python tools/atl.py attachments <url | id> ... | --digested   download page images and diagram previews
@@ -100,6 +101,14 @@ def cmd_issue(args):
         index[i["key"]] = atl_jira.index_entry(i, md, remote, projects)   # the Jira tab reads the index, so the issue is visible at once (IMP-101)
         say(f"{i['key']}: {p.relative_to(atl_store.ROOT)}")
     atl_store.save_index("jira", index)
+
+
+def cmd_link_page(args):
+    """python tools/atl.py link-page <Mantis page file> <Confluence page ID or link>: record the page a Mantis page was published as, so the comparison calls it ours."""
+    if len(args) != 2:
+        sys.exit("usage: python tools/atl.py link-page mantis/outputs/confluence/<page>.md <page ID or link>")
+    pid = atl_compare.link_page(args[0], args[1])
+    say(f"{args[0]} is Confluence page {pid}.")
 
 
 def cmd_page(args):
@@ -201,7 +210,7 @@ def write_confluence_report(index, matches, digests):
     pages = {p: e for p, e in index.items() if not p.startswith("_")}
     L = [f"# Confluence pages compared with Mantis, {TODAY}", "",
          "Made by code (tools/atl.py compare). Nothing has been digested. Diffs: mantis/mirror/diffs/<page id>.md.", ""]
-    for verdict, head in (("changed", "Changed since Mantis took its copy"), ("new", "New: no digest matches"),
+    for verdict, head in (("changed", "Changed since Mantis took its copy"), ("ours", "Ours: published from a Mantis page"), ("new", "New: no digest matches"),
                           ("check", "Check: same title as a digest, different content"),
                           ("related", "Related: overlaps a source, no clear match"), ("same", "Same as the Mantis copy")):
         rows = sorted((p for p, m in matches.items() if m["verdict"] == verdict),
@@ -237,7 +246,7 @@ def summary_confluence(index, matches):
         key = (m["verdict"], bool(index[p].get("archived")))
         by[key] = by.get(key, 0) + 1
     say("\nConfluence (content pages):")
-    for v in ("same", "changed", "check", "related", "new"):
+    for v in ("same", "changed", "ours", "check", "related", "new"):
         say(f"  {v:<8} {by.get((v, False), 0):>4} current, {by.get((v, True), 0):>4} in the archive")
     say(f"Report: mantis/mirror/reports/{TODAY}-confluence.md")
 
@@ -327,7 +336,7 @@ def page_status(pid, cidx, matches):
     if e.get("kind") in ("container", "empty", "template", "unreadable", "no access"):
         return e["kind"]
     return {"same": "already digested", "changed": "digested, page changed since", "related": "partly covered",
-            "check": "a digest has the same title, different content", "new": "new, not in Mantis"}.get(m.get("verdict"), "fetched, not compared")
+            "check": "a digest has the same title, different content", "new": "new, not in Mantis", "ours": "published from a Mantis page"}.get(m.get("verdict"), "fetched, not compared")
 
 
 def write_jira_report(jql, roots, issues, index, page_refs, tiny, cidx, matches, projects, stats, over_cap):
@@ -407,7 +416,7 @@ def cmd_summary(_):
         say(f"\nJira mirror: {len(j)} issues, {sum(1 for e in j.values() if e.get('type') == 'Feature')} Features.")
 
 
-COMMANDS = {"login": cmd_login, "filters": cmd_filters, "jira": cmd_jira, "issue": cmd_issue, "page": cmd_page,
+COMMANDS = {"link-page": cmd_link_page, "login": cmd_login, "filters": cmd_filters, "jira": cmd_jira, "issue": cmd_issue, "page": cmd_page,
             "tree": cmd_tree, "sync-confluence": cmd_sync_confluence, "compare": cmd_compare,
             "sync-jira": cmd_sync_jira, "attachments": cmd_attachments, "summary": cmd_summary}
 

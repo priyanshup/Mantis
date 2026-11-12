@@ -147,10 +147,8 @@ def check_confluence(c, conf, flts, s, log=print):
     """[(page id, row)] for pages changed under the active Confluence filters, plus digested pages anywhere."""
     index = atl_store.load_index("confluence")
     digests = atl_compare.load_digests()
-    by_page = {}
-    for d, v in digests.items():   # the latest digest of each page
-        if v["page_id"] and (v["page_version"] or 0) >= (digests.get(by_page.get(v["page_id"]), {}).get("page_version") or 0):
-            by_page[v["page_id"]] = d
+    by_page = {pid: d for pid, (d, _) in atl_compare.page_owners(digests).items()}   # the digest that holds each page, alone or in a group (IMP-096)
+    mine = atl_compare.ours()   # pages Mantis wrote and the owner published: not new, not digested from Confluence
     hits = {}
     for f in flts:
         for x in _search(c, f'{page_cql(f["value"])} and lastmodified > "{query_time(f.get("last_run") or first_run())}"'):
@@ -169,8 +167,10 @@ def check_confluence(c, conf, flts, s, log=print):
             continue                                            # already mirrored at this version
         if any(t.lower() in x["title"].lower() for t in conf.get("skip_titles", ["template"])):
             continue
+        if pid in mine:
+            continue                                            # published from Mantis: the owner's own page
         doc = by_page.get(pid)
-        held = max(digests[doc]["page_version"] or 0, s["base"].get(pid, 0)) if doc else s["base"].get(pid, 0)
+        held = max(atl_compare.page_owners(digests)[pid][1] or 0, s["base"].get(pid, 0)) if doc else s["base"].get(pid, 0)
         if held and held == new_v:
             continue                                            # digested at this version already
         body, md, meta = atl_confluence.fetch(c, pid)
