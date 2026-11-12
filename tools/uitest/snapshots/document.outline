@@ -1,0 +1,100 @@
+html[data-kind]
+  head
+    meta *
+    link *
+    title
+  body
+    header.top
+      div.top-in
+        a.brand
+          img
+          span
+        nav#
+          a *
+        div.tools
+          button.ic#
+            svg
+              circle
+              path
+          a.ic *
+            svg
+              path
+          button.ic.th#[role=switch]
+            svg.th-sun
+              defs
+                radialgradient#
+                  stop.sun-a
+                  stop.sun-b
+              g.sun-rays
+                line *
+              circle
+            svg.th-moon
+              defs
+                lineargradient#
+                  stop.moon-c
+                  stop.moon-d
+              path
+              path.moon-star
+              circle.moon-star
+      div#
+    main.wrap
+      div.crumbs
+        a
+        span *
+      div.tab-panel
+        div.nocopy.panel-bar
+          span.bar-note.muted.small
+          span.bar-btns
+            button.btn-line.edit-btn
+            button.btn.copy-all
+        template.edit-src[data-path][data-breaks]
+          h1
+          p *
+            strong
+            code *
+          hr
+          h2
+          ul
+            li *
+              strong
+          h2
+          ul
+            li *
+              strong
+          h2
+          ul
+            li *
+              strong
+              em
+          h2
+          ul
+            li *
+              strong
+          h2
+          ul
+            li *
+              strong
+          hr
+          p
+            em
+              code
+        article.doc
+          section.sec *
+            button.copy-sec.nocopy
+            h1
+            p *
+              strong
+            hr
+    footer.foot.wrap
+      span *
+    div.palette#[role=dialog]
+      div.pal
+        div.pal-in
+          input#
+          kbd
+        div.gresults#
+        div.pal-ft
+          span *
+          button.linkish[data-dopen] *
+    aside.drawer#[role=dialog]
+    div#[role=status]

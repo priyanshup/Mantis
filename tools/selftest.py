@@ -58,15 +58,27 @@ def code():
                 check("code", False, f"{p.name} does not import: {type(e).__name__}: {e}")
 
 
+def node_syntax(paths):
+    """{path: message} for scripts that do not parse. One Node process for all of them (one per file took about a second each)."""
+    r = subprocess.run(["node", str(T / "uitest" / "syntax-check.js"), *map(str, paths)], capture_output=True, text=True)
+    try:
+        return json.loads(r.stdout or "{}")
+    except ValueError:
+        return {str(p): f"syntax checker failed: {r.stderr.strip()[:200]}" for p in paths}
+
+
 def js_css():
     if shutil.which("node"):   # each page type's script is joined from site_assets/pages/js at build time; check every joined whole
         import tempfile, site_pages
+        joined = {}
         for t in site_pages.config()["types"]:
-            with tempfile.NamedTemporaryFile("wb", suffix=".js", delete=False) as f:
+            with tempfile.NamedTemporaryFile("wb", suffix=f"-{t}.js", delete=False) as f:
                 f.write(site_pages.bundle_js(t))
-            r = subprocess.run(["node", "--check", f.name], capture_output=True, text=True)
-            Path(f.name).unlink(missing_ok=True)
-            check("js", r.returncode == 0, f"{t}: {r.stderr.strip()[:300]}")
+            joined[t] = f.name
+        bad = node_syntax(list(joined.values()))
+        for t, name in joined.items():
+            Path(name).unlink(missing_ok=True)
+            check("js", name not in bad, f"{t}: {bad.get(name, '')}")
 
 
 def theme_and_style():
@@ -96,9 +108,10 @@ def theme_and_style():
         css = re.sub(r"/\*.*?\*/", "", p.read_text(encoding="utf-8"), flags=re.S)
         check("css", css.count("{") == css.count("}"), f"{p.name}: {css.count('{')} opening and {css.count('}')} closing braces")
     if shutil.which("node"):
-        for p in sorted([*(T / "site_assets" / "app").glob("*.js"), *(T / "site_assets" / "pages" / "js").glob("*.js")]):
-            r = subprocess.run(["node", "--check", str(p)], capture_output=True, text=True)
-            check("js", r.returncode == 0, f"{p.name}: {r.stderr.strip()[:200]}")
+        files = sorted([*(T / "site_assets" / "app").glob("*.js"), *(T / "site_assets" / "pages" / "js").glob("*.js")])
+        bad = node_syntax(files)
+        for p in files:
+            check("js", str(p) not in bad, f"{p.name}: {bad.get(str(p), '')}")
 
 
 def docs():
@@ -152,6 +165,8 @@ def requirements():
     local = {p.stem for p in T.glob("*.py")} | {"pagebuild", "webserver"}
     listed = {re.split(r"[=<>~! #]", l.strip(), maxsplit=1)[0].lower() for l in (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith("#")}
     for p in [*T.glob("*.py"), *(T / "pagebuild").glob("*.py"), *(T / "webserver").glob("*.py")]:
+        if p.stem == "guard_browser":   # runs under the Playwright tool's own interpreter (tools/uitest/README.md), not this one
+            continue
         for n in ast.walk(ast.parse(p.read_text(encoding="utf-8"))):
             mods = [a.name.split(".")[0] for a in n.names] if isinstance(n, ast.Import) else [n.module.split(".")[0]] if isinstance(n, ast.ImportFrom) and n.module and n.level == 0 else []
             for m in mods:

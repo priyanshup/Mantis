@@ -46,6 +46,8 @@ followups.py | 177 | Follow-ups per person (MANTIS-IMP-020): topics to raise wit
 frontmatter.py | 35 | The one front-matter reader for Mantis files (MANTIS-IMP-063): digests, cards, outputs. | 
 graph.py | 103 | Query the Mantis entity graph (built by build_map.py into map/entities.json). | 
 growth.py | 438 | The owner's growth record (Growth tab): opportunities to step up, what came of them, learnings, recognition. | people, steps, tasks_store
+guard.py | 181 | The self-running safety net (IMP-112 item 1): runs the checks without anyone asking, records the result for the Health page. | 
+guard_browser.py | 135 | Real-browser checks of the running site, run by the Playwright interpreter (not by Mantis's Python). IMP-112 item 1. | 
 index_gen.py | 137 | Generate the knowledge index entries (registers/documents/<ID>.md) from digests (MANTIS-IMP-013). | textcache
 init.py | 166 | Create an empty Mantis knowledge base on a new machine (MANTIS-IMP-036). | 
 jobs.py | 350 | Background jobs started from the site's buttons (MANTIS-IMP-034, MANTIS-IMP-035). | ask, local_config, tasks_store
@@ -53,7 +55,7 @@ kgraph.py | 188 | Entity knowledge graph for Mantis (MANTIS-IMP-004). Stdlib onl
 layout.py | 88 | The layout: site_config/layout.json -> window.APP_LAYOUT, plus checks (stdlib only; MANTIS-IMP-107). | 
 leakcheck.py | 108 | Check that files bound for the public engine repo carry no knowledge (MANTIS-IMP-036). | 
 local_config.py | 13 | Read this instance's local settings (mantis/config/settings.json). Never committed (MANTIS-IMP-036). | 
-maintain.py | 249 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, citations, classify, entry, local_config, prune_sources, repeats
+maintain.py | 256 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, citations, classify, entry, guard, local_config, prune_sources
 mishear.py | 56 | Mishearings: words speech-to-text gets wrong (MANTIS-IMP-051). Stdlib only. | 
 pagecheck.py | 88 | Static checks for the packages tools/pagebuild/ (page builders) and tools/webserver/ (the site server), run by selftest.py. | 
 peek.py | 30 | Print the short form of one or more digests: title, confidence, open items and Summary. | 
@@ -65,15 +67,16 @@ refresh_report.py | 114 | What a card refresh changed and what it cost: curated 
 repeats.py | 102 | Repetition check: what an output says twice (MANTIS-IMP-094). Stdlib, no AI. | answered
 schedule.py | 263 | The owner's recurring meetings and away periods (MANTIS-IMP-037, MANTIS-IMP-038). | people
 search.py | 239 | Search index for questions: SQLite full-text search plus the entity graph (MANTIS-IMP-086). | ask, frontmatter
-selftest.py | 301 | Self-test for the Mantis engine (MANTIS-IMP-061). Run before every commit (the pre-commit hook does). | atl_updates, decisions, layout, pagecheck, pull, readiness, repeats, search
+selftest.py | 316 | Self-test for the Mantis engine (MANTIS-IMP-061). Run before every commit (the pre-commit hook does). | atl_updates, decisions, layout, pagecheck, pull, readiness, repeats, search
 serve.py | 71 | Serve the Mantis site at http://localhost:8000 and rebuild it when Markdown changes. | jobs, webserver/config, webserver/handler, webserver/lifecycle, webserver/watching
-session_start.py | 107 | SessionStart hook: start the site and tell Claude what is waiting in the inbox. | brief, followups, people, readiness, schedule, skillscan, steps, tasks_store
+session_start.py | 115 | SessionStart hook: start the site and tell Claude what is waiting in the inbox. | brief, followups, guard, people, readiness, schedule, skillscan, steps
 site_app.py | 155 | The front end (2026-11-11): the approved mock's own screens, run on live data. | layout, pagebuild/day, pagebuild/paths, pagebuild/registry, site_chrome
 site_chrome.py | 48 | Page chrome both page shells share: head links, theme-colour meta tags and the theme switch (stdlib only; MANTIS-IMP-107). | theme
 site_pages.py | 114 | Page types and their bundles for the content pages (stdlib only; MANTIS-IMP-107). | 
 site_shell.py | 55 | The shell of the content pages (feature, topic, people, library, documents, changes, work): the app's header, a main area, and | layout, site_chrome
 sitecache.py | 139 | Incremental site build (Phase 3, task 1). Stdlib only. | 
 skillscan.py | 189 | Run every Claude skill through NVIDIA SkillSpector before it is trusted, and keep a record (owner rule, 2026-11-12). | 
+snapshots.py | 142 | Structure snapshots of the built pages: a change to markup shows up as a diff the owner can accept (IMP-112 item 1). | 
 steps.py | 108 | Next steps on cards (MANTIS-IMP-023): read the "## Next steps" table from every card's curated part. | people, textcache
 stylelint.py | 125 | Style lint: keeps colour, type and layout in the theme, not in widgets (stdlib only; MANTIS-IMP-107). | csskit, theme
 support.py | 359 | Does the cited source support the claim? An AI verifier, fed by code (MANTIS-IMP-079). | classify, entry, frontmatter, jobs, local_config
@@ -82,7 +85,7 @@ tasks_store.py | 259 | The owner's task list (MANTIS-IMP-018): storage, validati
 textcache.py | 92 | Cached file reads for the rebuild (MANTIS-IMP-016). Stdlib only. | 
 theme.py | 98 | The theme: site_config/theme.json -> assets/tokens.css, plus checks (stdlib only; MANTIS-IMP-107). | 
 toollist.py | 82 | Write tools/README.md, the one list of tools, from each tool's own first help line (MANTIS-IMP-062). | 
-unusedcss.py | 92 | Find (and with --apply remove) CSS rules whose class or id appears nowhere in the site (stdlib only; MANTIS-IMP-107). | csskit
+unusedcss.py | 93 | Find (and with --apply remove) CSS rules whose class or id appears nowhere in the site (stdlib only; MANTIS-IMP-107). | csskit
 wiring.py | 72 | Wiring check for the app: every control it draws must be connected to something (stdlib only; MANTIS-IMP-110). | 
 pagebuild/changes.py | 70 | The changes page. | pagebuild/frame, pagebuild/labels, pagebuild/registry, pagebuild/text
 pagebuild/day.py | 66 | Rules for what is yours, what needs attention today and the health line. No page of its own; the app and the tests use it. | pagebuild/labels, pagebuild/markup, pagebuild/paths, pagebuild/registry
@@ -105,7 +108,7 @@ webserver/focus.py | 71 | The owner's follow, archive and roadmap choices from t
 webserver/handler.py | 200 | The request handler: every /api route the site calls, and the static files. | edit_common, extra, growth, jobs, pull, tasks_store, webserver/config, webserver/focus
 webserver/inbox.py | 126 | What the site posts to the inbox: answers, edited pages, dropped files and Undo of an automatic close. | jobs, webserver/config, webserver/watching
 webserver/lifecycle.py | 30 | Stop a running site by the process ID it recorded at start. | webserver/config
-webserver/watching.py | 40 | Rebuild the site when a hand edit changes a source; Claude and the site's buttons rebuild themselves. | buildlock, jobs, webserver/config
+webserver/watching.py | 55 | Rebuild the site when a hand edit changes a source; Claude and the site's buttons rebuild themselves. | buildlock, guard, jobs, webserver/config
 
 ## Front end (tools/site_assets/)
 

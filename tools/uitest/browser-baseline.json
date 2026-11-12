@@ -1,0 +1,210 @@
+{
+ "app:features|desktop|dark": {
+  "contrast": 0,
+  "small": 0
+ },
+ "app:features|desktop|light": {
+  "contrast": 5,
+  "small": 0
+ },
+ "app:features|phone|dark": {
+  "contrast": 0,
+  "small": 39
+ },
+ "app:features|phone|light": {
+  "contrast": 2,
+  "small": 39
+ },
+ "app:growth|desktop|dark": {
+  "contrast": 0,
+  "small": 0
+ },
+ "app:growth|desktop|light": {
+  "contrast": 2,
+  "small": 0
+ },
+ "app:growth|phone|dark": {
+  "contrast": 0,
+  "small": 71
+ },
+ "app:growth|phone|light": {
+  "contrast": 0,
+  "small": 71
+ },
+ "app:meetings|desktop|dark": {
+  "contrast": 0,
+  "small": 0
+ },
+ "app:meetings|desktop|light": {
+  "contrast": 1,
+  "small": 0
+ },
+ "app:meetings|phone|dark": {
+  "contrast": 0,
+  "small": 7
+ },
+ "app:meetings|phone|light": {
+  "contrast": 0,
+  "small": 7
+ },
+ "app:questions|desktop|dark": {
+  "contrast": 0,
+  "small": 0
+ },
+ "app:questions|desktop|light": {
+  "contrast": 1,
+  "small": 0
+ },
+ "app:questions|phone|dark": {
+  "contrast": 0,
+  "small": 72
+ },
+ "app:questions|phone|light": {
+  "contrast": 0,
+  "small": 72
+ },
+ "app:sources|desktop|dark": {
+  "contrast": 0,
+  "small": 0
+ },
+ "app:sources|desktop|light": {
+  "contrast": 1,
+  "small": 0
+ },
+ "app:sources|phone|dark": {
+  "contrast": 0,
+  "small": 6
+ },
+ "app:sources|phone|light": {
+  "contrast": 0,
+  "small": 6
+ },
+ "app:today|desktop|dark": {
+  "contrast": 0,
+  "small": 0
+ },
+ "app:today|desktop|light": {
+  "contrast": 4,
+  "small": 0
+ },
+ "app:today|phone|dark": {
+  "contrast": 0,
+  "small": 16
+ },
+ "app:today|phone|light": {
+  "contrast": 1,
+  "small": 16
+ },
+ "changes|desktop|dark": {
+  "contrast": 0,
+  "small": 0
+ },
+ "changes|desktop|light": {
+  "contrast": 0,
+  "small": 0
+ },
+ "changes|phone|dark": {
+  "contrast": 0,
+  "small": 11
+ },
+ "changes|phone|light": {
+  "contrast": 0,
+  "small": 11
+ },
+ "document|desktop|dark": {
+  "contrast": 0,
+  "small": 0
+ },
+ "document|desktop|light": {
+  "contrast": 0,
+  "small": 0
+ },
+ "document|phone|dark": {
+  "contrast": 0,
+  "small": 7
+ },
+ "document|phone|light": {
+  "contrast": 0,
+  "small": 7
+ },
+ "feature|desktop|dark": {
+  "contrast": 0,
+  "small": 0
+ },
+ "feature|desktop|light": {
+  "contrast": 1,
+  "small": 0
+ },
+ "feature|phone|dark": {
+  "contrast": 0,
+  "small": 9
+ },
+ "feature|phone|light": {
+  "contrast": 1,
+  "small": 9
+ },
+ "library|desktop|dark": {
+  "contrast": 0,
+  "small": 0
+ },
+ "library|desktop|light": {
+  "contrast": 0,
+  "small": 0
+ },
+ "library|phone|dark": {
+  "contrast": 0,
+  "small": 11
+ },
+ "library|phone|light": {
+  "contrast": 0,
+  "small": 11
+ },
+ "people|desktop|dark": {
+  "contrast": 0,
+  "small": 0
+ },
+ "people|desktop|light": {
+  "contrast": 0,
+  "small": 0
+ },
+ "people|phone|dark": {
+  "contrast": 0,
+  "small": 1
+ },
+ "people|phone|light": {
+  "contrast": 0,
+  "small": 1
+ },
+ "topic|desktop|dark": {
+  "contrast": 0,
+  "small": 0
+ },
+ "topic|desktop|light": {
+  "contrast": 0,
+  "small": 0
+ },
+ "topic|phone|dark": {
+  "contrast": 0,
+  "small": 8
+ },
+ "topic|phone|light": {
+  "contrast": 0,
+  "small": 8
+ },
+ "work|desktop|dark": {
+  "contrast": 0,
+  "small": 0
+ },
+ "work|desktop|light": {
+  "contrast": 0,
+  "small": 0
+ },
+ "work|phone|dark": {
+  "contrast": 0,
+  "small": 19
+ },
+ "work|phone|light": {
+  "contrast": 0,
+  "small": 19
+ }
+}

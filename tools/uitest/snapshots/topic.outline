@@ -1,0 +1,90 @@
+html[data-kind]
+  head
+    meta *
+    link *
+    title
+  body
+    header.top
+      div.top-in
+        a.brand
+          img
+          span
+        nav#
+          a *
+        div.tools
+          button.ic#
+            svg
+              circle
+              path
+          a.ic *
+            svg
+              path
+          button.ic.th#[role=switch]
+            svg.th-sun
+              defs
+                radialgradient#
+                  stop.sun-a
+                  stop.sun-b
+              g.sun-rays
+                line *
+              circle
+            svg.th-moon
+              defs
+                lineargradient#
+                  stop.moon-c
+                  stop.moon-d
+              path
+              path.moon-star
+              circle.moon-star
+      div#
+    main.wrap
+      p.crumbs
+        a
+      div.feat-h.page-h
+        div
+          h1
+          p.meta-line
+            a
+        div.nocopy.ph-acts
+          details.pop.pop-r
+            summary.btn-line
+            div.pop-b
+              button.ai.btn-line.job.nocopy[data-job][data-arg]
+              select.sel.sel-sm#
+                option *
+          button.btn.copy-ov
+      div.feat
+        div.feat-main
+          nav.tabs
+            a[data-match] *
+          div.tab-panel# *
+            article.doc
+              section.sec
+                button.copy-sec.nocopy
+                h2
+                p *
+            div.big
+              p *
+            div.folds.rows
+        aside.rail.side
+          section.rail-blk#[data-slug]
+            h2
+            div#
+          section.rail-blk *
+            h2
+            span.faces
+              button.face[data-person] *
+            p.ri-s
+    footer.foot.wrap
+      span *
+    div.palette#[role=dialog]
+      div.pal
+        div.pal-in
+          input#
+          kbd
+        div.gresults#
+        div.pal-ft
+          span *
+          button.linkish[data-dopen] *
+    aside.drawer#[role=dialog]
+    div#[role=status]

@@ -210,6 +210,13 @@ def report():
     except Exception as e:
         add("info", "Commits", f"Uncommitted-work check skipped: {e}")
 
+    try:   # the self-running safety net (tools/guard.py): failing or stale checks
+        import guard
+        for lvl, msg in guard.problems():
+            add("warn" if lvl == "warn" else "info", "Safety net", msg)
+    except Exception as e:
+        add("info", "Safety net", f"Safety-net status skipped: {e}")
+
     try:   # skills the owner has not had scanned by SkillSpector, or that changed since (python tools/skillscan.py)
         import skillscan
         if not skillscan.installed():

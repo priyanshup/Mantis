@@ -39,11 +39,12 @@ def prefixes(text):
 
 def unused_tester(text):
     pref = prefixes(text)
+    words = set(re.findall(r"[\w-]+", text))   # a name is used when it is a whole word anywhere in the corpus (one pass instead of a search per name)
     cache = {}
 
     def used(name):
         if name not in cache:
-            cache[name] = bool(re.search(r"(?<![\w-])" + re.escape(name) + r"(?![\w-])", text)) or any(name.startswith(p) for p in pref)
+            cache[name] = name in words or any(name.startswith(p) for p in pref)
         return cache[name]
 
     def dead_selector(sel):

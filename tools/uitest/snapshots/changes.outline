@@ -1,0 +1,98 @@
+html[data-kind]
+  head
+    meta *
+    link *
+    title
+  body
+    header.top
+      div.top-in
+        a.brand
+          img
+          span
+        nav#
+          a *
+        div.tools
+          button.ic#
+            svg
+              circle
+              path
+          a.ic *
+            svg
+              path
+          button.ic.th#[role=switch]
+            svg.th-sun
+              defs
+                radialgradient#
+                  stop.sun-a
+                  stop.sun-b
+              g.sun-rays
+                line *
+              circle
+            svg.th-moon
+              defs
+                lineargradient#
+                  stop.moon-c
+                  stop.moon-d
+              path
+              path.moon-star
+              circle.moon-star
+      div#
+    main.wrap
+      div.page-h
+        div
+          h1
+          p.lead
+      div.ev-bar.nocopy.toolbar
+        div.seg#
+          button[data-v]
+          button.on[data-v]
+          button[data-v]
+        div.chips#
+          button.on[data-v]
+          button[data-v] *
+      p.ev-sum.muted.small#
+      div.ev-feed#[data-today]
+        section.ev-day[data-date] *
+          h3
+            span
+              span.muted
+            span.ev-n.muted
+          ol.ev-list
+            li.ev[data-kind][data-group][data-date]
+              span.ev-c.ev-k
+                span.ev-ico
+              span.ev-main
+                span.ev-t
+                  a
+                span.ev-d.muted.small
+              a.ev-card.muted.small
+            li.ev.ev-fold[data-kind][data-group][data-date][data-n]
+              details
+                summary
+                  span.ev-k.ev-q
+                    span.ev-ico
+                  span.ev-main
+                    span.ev-t
+                    span.ev-d.muted.small
+                ol.ev-sub
+                  li.ev[data-kind][data-group][data-date] *
+                    span.ev-k.ev-q
+                      span.ev-ico
+                    span.ev-main
+                      span.ev-t
+                        a
+                    a.ev-card.muted.small
+      p.empty#
+    footer.foot.wrap
+      span *
+    div.palette#[role=dialog]
+      div.pal
+        div.pal-in
+          input#
+          kbd
+        div.gresults#
+        div.pal-ft
+          span *
+          button.linkish[data-dopen] *
+    aside.drawer#[role=dialog]
+    div#[role=status]

@@ -1,0 +1,82 @@
+html[data-kind]
+  head
+    meta *
+    link *
+    title
+  body
+    header.top
+      div.top-in
+        a.brand
+          img
+          span
+        nav#
+          a *
+        div.tools
+          button.ic#
+            svg
+              circle
+              path
+          a.ic *
+            svg
+              path
+          button.ic.th#[role=switch]
+            svg.th-sun
+              defs
+                radialgradient#
+                  stop.sun-a
+                  stop.sun-b
+              g.sun-rays
+                line *
+              circle
+            svg.th-moon
+              defs
+                lineargradient#
+                  stop.moon-c
+                  stop.moon-d
+              path
+              path.moon-star
+              circle.moon-star
+      div#
+    main.wrap
+      div.page-h
+        div
+          h1
+          p.lead
+      div.toolbar
+        div.chips#
+          button.on[data-v]
+          button[data-v] *
+      section.lib-sec.panel-box[data-libsec]
+        a.lib.row[data-kind] *
+          span.row-t
+          span.tag
+          span.muted
+          span.pill.w-jira
+      section.lib-sec#[data-libsec] *
+        h2.lib-h
+        div.toolbar
+          div.chips#
+            button.on[data-v]
+            button[data-v] *
+        div.dia-grid
+          article.dia.tile[data-type] *
+            a.dia-img
+              img
+            div.dia-body
+              span.tag
+              h3
+              p
+              p.muted.small
+    footer.foot.wrap
+      span *
+    div.palette#[role=dialog]
+      div.pal
+        div.pal-in
+          input#
+          kbd
+        div.gresults#
+        div.pal-ft
+          span *
+          button.linkish[data-dopen] *
+    aside.drawer#[role=dialog]
+    div#[role=status]

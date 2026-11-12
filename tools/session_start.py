@@ -48,6 +48,14 @@ try:   # every skill goes through SkillSpector before it is trusted (owner rule,
 except Exception as e:
     notes.append(f"Skill check failed: {e}")
 
+try:   # the safety net's last result (tools/guard.py): read only, it runs inside the site server
+    import guard
+    failing = [m for lvl, m in guard.problems() if lvl == "warn"]
+    if failing:
+        notes.append("The safety net found problems: " + " ".join(failing)[:500] + " Tell the owner in one line.")
+except Exception as e:
+    notes.append(f"Safety-net status failed: {e}")
+
 # The daily brief and today's meeting briefs are prepared in the first session of a day only; after that the owner
 # asks for them (the owner's choice, 2026-10-27). The stamp lives outside OneDrive.
 import os as _os

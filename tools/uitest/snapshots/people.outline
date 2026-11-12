@@ -1,0 +1,79 @@
+html[data-kind]
+  head
+    meta *
+    link *
+    title
+  body
+    header.top
+      div.top-in
+        a.brand
+          img
+          span
+        nav#
+          a *
+        div.tools
+          button.ic#
+            svg
+              circle
+              path
+          a.ic *
+            svg
+              path
+          button.ic.th#[role=switch]
+            svg.th-sun
+              defs
+                radialgradient#
+                  stop.sun-a
+                  stop.sun-b
+              g.sun-rays
+                line *
+              circle
+            svg.th-moon
+              defs
+                lineargradient#
+                  stop.moon-c
+                  stop.moon-d
+              path
+              path.moon-star
+              circle.moon-star
+      div#
+    main.wrap
+      div.page-h
+        div
+          h1
+          p.lead
+        div.toolbar
+          input#
+      div.later.people-grid
+        article.person.tile#[data-name] *
+          h3
+            span
+            span.nocopy.pp-n
+          div.pp-f *
+            span.muted.small
+            span
+          div.pp-ask.pp-f
+            span.muted.small
+            div
+              ul.pp-q
+                li *
+                  a
+              a.small
+          div.nocopy.pp-live
+          div.nocopy.tile-acts
+            button.act.ai.job.nocopy[data-job][data-arg]
+            button.act.nocopy[data-draft]
+            button.act.pp-add[data-person]
+    footer.foot.wrap
+      span *
+    div.palette#[role=dialog]
+      div.pal
+        div.pal-in
+          input#
+          kbd
+        div.gresults#
+        div.pal-ft
+          span *
+          button.linkish[data-dopen] *
+    aside.drawer#[role=dialog]
+    div#[role=status]
