@@ -88,7 +88,7 @@ main { position:relative; z-index:1; max-width:1240px; margin:0 auto; padding:20
 .open > .gh .chev, .open > .hh .chev { transform:rotate(180deg); }
 .strip { display:flex; gap:3px; transition:opacity .3s; } .strip i { width:6px; height:6px; border-radius:50%; background:var(--fill-2); } .strip i.h { background:var(--accent); } .strip i.m { background:var(--ink); }
 .open > .gh .strip { opacity:0; }
-.acc { display:grid; grid-template-rows:0fr; transition:grid-template-rows .5s var(--glide); } .acc > .in { overflow:hidden; min-height:0; opacity:0; transition:opacity .3s; }
+.acc { display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:0fr; transition:grid-template-rows .5s var(--glide); } .acc > .in { overflow:hidden; min-height:0; min-width:0; opacity:0; transition:opacity .3s; }
 .open > .acc, .acc.open { grid-template-rows:1fr; } .open > .acc > .in, .acc.open > .in { opacity:1; transition-delay:.1s; }
 .decide { border-radius:var(--r-sm); background:var(--accent-soft); padding:0 16px; margin-bottom:12px; } .decide .gh { min-height:48px; } .decide .cnt { color:var(--accent-text); font-family:var(--font); font-size:14px; }
 .pulse { width:8px; height:8px; border-radius:50%; background:var(--accent); flex:none; animation:breathe 2.4s ease-in-out infinite; } @keyframes breathe { 50% { transform:scale(1.5); opacity:.5; } }

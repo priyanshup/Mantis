@@ -5,15 +5,29 @@ const base = process.argv[2] && process.argv[2].startsWith("http") ? process.arg
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const results = [], errors = [];
 const check = (ok, name, info = "") => results.push([ok, name, info]);
+// The meetings the checks see are a fixed set (Mon, Tue and Thu, none on Wed), not the owner's real schedule: a check that depends on live data
+// fails the day the data changes (found by the safety net on 2026-11-12). Everything else is read live.
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const nextDate = (day) => { const d = new Date(); while (DAYS[d.getDay()] !== day) d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); };
+const FIXTURE_MEETINGS = [["Mon", "Planning sync"], ["Tue", "Design review"], ["Thu", "Weekly sync"]].map(([day, name], i) => ({
+  id: "fx" + i, name, day, time: "10:00", attendees: [], purpose: "Fixture meeting", cards: [], every: 1, anchor: "2026-01-05", draws: [], next: nextDate(day),
+  key: "fixture-" + i, written: "", set_cards: [], agenda: [] }));
+async function fetchStubbed(u, o) {
+  const r = await fetch(new URL(u, base).href, o);
+  if (!/api\/extra/.test(u)) return r;
+  const body = await r.json(); body.meetings = FIXTURE_MEETINGS;
+  return { ok: r.ok, status: r.status, json: async () => body, text: async () => JSON.stringify(body) };
+}
 async function load(tab) {
   const posts = [];
   const vc = new VirtualConsole(); vc.on("jsdomError", (e) => { if (!/Not implemented/.test(e.message)) errors.push(String(e.message).split("\n")[0]); }); vc.on("error", (...a) => errors.push("console.error " + a.join(" ").slice(0, 140)));
   const dom = await JSDOM.fromURL(base + "#" + tab, { runScripts: "dangerously", resources: "usable", pretendToBeVisual: true, virtualConsole: vc,
-    beforeParse(w) { w.fetch = (u, o) => { if (o && o.method === "POST") { let b = {}; try { b = JSON.parse(o.body); } catch (e) {} posts.push({ url: String(u), body: b }); return Promise.resolve({ ok: true, status: 200, json: async () => (String(u).includes("filters") ? { filters: [] } : {}) }); } return fetch(new URL(u, base).href, o); };
+    beforeParse(w) { w.fetch = (u, o) => { if (o && o.method === "POST") { let b = {}; try { b = JSON.parse(o.body); } catch (e) {} posts.push({ url: String(u), body: b }); return Promise.resolve({ ok: true, status: 200, json: async () => (String(u).includes("filters") ? { filters: [] } : {}) }); } return fetchStubbed(String(u), o); };
       w.matchMedia = () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
       w.IntersectionObserver = class { observe() {} unobserve() {} disconnect() {} }; w.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }; w.CSS = { escape: String }; w.Element.prototype.animate = () => ({ finished: Promise.resolve(), cancel() {}, onfinish: null }); w.scrollTo = () => {}; w.HTMLElement.prototype.scrollIntoView = () => {}; } });
   await sleep(2300); return { w: dom.window, d: dom.window.document, posts };
 }
+const openMeeting = async (w, d) => { if (!d.querySelector("[data-act=meeting-edit]")) { click(w, d.querySelector("#mlist .mrow")); await sleep(300); } };   // a meeting's Edit button is in its detail, shown once a meeting is picked
 const click = (w, el) => { if (!el) throw new Error("control not found"); el.dispatchEvent(new w.MouseEvent("click", { bubbles: true, cancelable: true })); };
 const type = (w, el, v) => { el.value = v; el.dispatchEvent(new w.Event("input", { bubbles: true })); el.dispatchEvent(new w.Event("change", { bubbles: true })); };
 const posted = (p, url, pred = () => true) => p.some((x) => x.url.includes(url) && pred(x.body));
@@ -27,12 +41,12 @@ const flows = {
     type(w, d.querySelector("form.dlg [name=name]"), "Test sync"); d.querySelector("form.dlg").dispatchEvent(new w.Event("submit", { bubbles: true, cancelable: true })); await sleep(600);
     check(posted(posts, "api/schedule", (b) => b.action === "add-meeting" && b.name === "Test sync" && b.day), "Meetings: saving sends add-meeting", JSON.stringify((posts[0] || {}).body || {}).slice(0, 120));
     ({ w, d, posts } = await load("meetings"));
-    click(w, d.querySelector("[data-act=meeting-edit]")); await sleep(300);
+    await openMeeting(w, d); click(w, d.querySelector("[data-act=meeting-edit]")); await sleep(300);
     const nm = d.querySelector("form.dlg [name=name]"); check(!!nm && nm.value.length > 0, "Meetings: Edit opens the form filled in", nm && nm.value);
     type(w, nm, nm.value + " (edited)"); d.querySelector("form.dlg").dispatchEvent(new w.Event("submit", { bubbles: true, cancelable: true })); await sleep(600);
     check(posted(posts, "api/schedule", (b) => b.action === "edit-meeting" && b.id && /edited/.test(b.name)), "Meetings: saving an edit sends edit-meeting with the meeting's id");
     ({ w, d, posts } = await load("meetings"));
-    click(w, d.querySelector("[data-act=meeting-edit]")); await sleep(300); click(w, d.querySelector("[data-act=meeting-remove]")); await sleep(300);
+    await openMeeting(w, d); click(w, d.querySelector("[data-act=meeting-edit]")); await sleep(300); click(w, d.querySelector("[data-act=meeting-remove]")); await sleep(300);
     d.querySelector("form.dlg").dispatchEvent(new w.Event("submit", { bubbles: true, cancelable: true })); await sleep(600);
     check(posted(posts, "api/schedule", (b) => b.action === "remove-meeting" && b.id), "Meetings: Delete asks, then sends remove-meeting");
   },
