@@ -31,6 +31,7 @@ Part of the workflow (index and the rules for every task: `../WORKFLOW.md`). Use
    `peek.py` the top matches, then stop and ask), the cards the document joins through its
    tags, and the open items it may bear on. Pasted meeting notes skip the verdict (see Before
    you start). Cut-offs: `tools/classify_config.json`.
+   Keep a digest under 12 KB (split a bigger source by section) and its `confidence_reason` to one line of 160 characters; Health reports both (`tools/digesthealth.py`).
 3. **Identity.** New document: claim the next DOC ID. New version: keep the ID, raise
    `version`, move the old digest to `03_archive/`.
 4. **Source.** Save the original to `01_sources/{id}/{date}.{ext}`. Never overwrite a dated snapshot.

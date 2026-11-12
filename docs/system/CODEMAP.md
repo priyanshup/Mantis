@@ -25,7 +25,7 @@ atl_updates.py | 403 | What changed in Jira and Confluence since the last pull, 
 away.py | 160 | Away planner and handover (MANTIS-IMP-038). | brief, followups, people, schedule, steps, tasks_store
 backup.py | 166 | Daily local copy of the owner's data, with a restore command (IMP-112 item 6). | 
 brief.py | 408 | Meeting briefs (MANTIS-IMP-037): "I'm meeting Sam now, what should I discuss?" | followups, growth, people, readiness, repeats, schedule, steps, tasks_store
-build_map.py | 429 | Build Mantis's navigation map and reference graph (stdlib only, deterministic). | answered, assets, backup, build_site, buildlock, cards, changes, codemap
+build_map.py | 431 | Build Mantis's navigation map and reference graph (stdlib only, deterministic). | answered, assets, backup, build_site, buildlock, cards, changes, codemap
 build_site.py | 174 | Build the read-only Mantis website from the Markdown files. | buildlock, layout, pagebuild/changes, pagebuild/feature, pagebuild/frame, pagebuild/library, pagebuild/loaders, pagebuild/paths
 buildlock.py | 57 | One build at a time (MANTIS-IMP-063): the site server, a background job and a chat session can all start one. | 
 cards.py | 261 | Cards: the reading layer for every subject (MANTIS-IMP-014). Stdlib only, deterministic. | frontmatter
@@ -33,12 +33,14 @@ changes.py | 352 | What changed, and which card summaries are behind (MANTIS-IMP
 citations.py | 137 | Citation checks that code can do (MANTIS-IMP-078): do the cited sources exist and belong where they are cited? | entry, frontmatter
 classify.py | 208 | Classify a new document against the corpus before ingest (MANTIS-IMP-005). Stdlib only. | frontmatter, kgraph, local_config, textcache
 codemap.py | 82 | Write docs/system/CODEMAP.md: every tool and front-end file with its one-line purpose, size and neighbours (stdlib only). | 
+consolidate.py | 159 | Consolidation proposals and safe archiving of digests (IMP-109). Nothing is ever deleted: originals move to mantis/03_archive and each move is logged. | classify, digesthealth, textcache
 context.py | 228 | Where do things stand on a subject? A few hundred tokens instead of the card and its digests (IMP-109). | 
 contradictions.py | 152 | Contradiction check (MANTIS-IMP-047): what to compare when a source arrives or a summary is refreshed. | classify
 csskit.py | 79 | A small CSS walker (stdlib only): list a stylesheet's rules with their positions, and rewrite it keeping only the rules a test keeps. | 
 datafile.py | 50 | Reading and writing the owner's own data files (tasks, follow-ups, Growth, schedule, focus, the Atlassian settings). IMP-112 item 6. | 
 deadlines.py | 139 | Suggested deadlines for undated tasks (MANTIS-IMP-041). | people, schedule, steps, tasks_store
 decisions.py | 146 | Decisions know what they rest on (MANTIS-IMP-080). | frontmatter, textcache
+digesthealth.py | 132 | The digest-health report (IMP-109): is the knowledge staying cheap to read? | textcache
 edit_common.py | 63 | Shared by build_site.py and apply_edits.py: what part of an output file the owner can edit. | 
 entities.py | 126 | Batch changes to the entity register in one call (MANTIS-IMP-057). Stdlib only. | 
 entry.py | 385 | Read and write Mantis registers: one file per entry (stdlib only). | answered, textcache
@@ -59,7 +61,7 @@ kgraph.py | 188 | Entity knowledge graph for Mantis (MANTIS-IMP-004). Stdlib onl
 layout.py | 88 | The layout: site_config/layout.json -> window.APP_LAYOUT, plus checks (stdlib only; MANTIS-IMP-107). | 
 leakcheck.py | 108 | Check that files bound for the public engine repo carry no knowledge (MANTIS-IMP-036). | 
 local_config.py | 39 | Read this instance's local settings (mantis/config/settings.json). Never committed (MANTIS-IMP-036). | 
-maintain.py | 280 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, atl_client, atl_updates, backup, citations, classify, entry
+maintain.py | 283 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, atl_client, atl_updates, backup, citations, classify, digesthealth
 meetingnotes.py | 204 | Recurring-meeting notes without a full source and digest each time (IMP-105). | brief, schedule
 mishear.py | 56 | Mishearings: words speech-to-text gets wrong (MANTIS-IMP-051). Stdlib only. | 
 pagecheck.py | 88 | Static checks for the packages tools/pagebuild/ (page builders), tools/webserver/ (the site server) and tools/pullkit/ (the pull), run by selftest.py. | 
@@ -72,7 +74,7 @@ refresh_report.py | 114 | What a card refresh changed and what it cost: curated 
 repeats.py | 102 | Repetition check: what an output says twice (MANTIS-IMP-094). Stdlib, no AI. | answered
 schedule.py | 258 | The owner's recurring meetings and away periods (MANTIS-IMP-037, MANTIS-IMP-038). | datafile, people
 search.py | 239 | Search index for questions: SQLite full-text search plus the entity graph (MANTIS-IMP-086). | ask, frontmatter
-selftest.py | 345 | Self-test for the Mantis engine (MANTIS-IMP-061). Run before every commit (the pre-commit hook does). | atl_updates, decisions, layout, pagecheck, pull, readiness, repeats, search
+selftest.py | 347 | Self-test for the Mantis engine (MANTIS-IMP-061). Run before every commit (the pre-commit hook does). | atl_updates, decisions, layout, pagecheck, pull, readiness, repeats, search
 serve.py | 71 | Serve the Mantis site at http://localhost:8000 and rebuild it when Markdown changes. | jobs, webserver/config, webserver/handler, webserver/lifecycle, webserver/watching
 session_start.py | 121 | SessionStart hook: start the site and tell Claude what is waiting in the inbox. | brief, followups, guard, people, readiness, schedule, skillscan, steps
 site_app.py | 155 | The front end (2026-11-11): the approved mock's own screens, run on live data. | layout, pagebuild/day, pagebuild/paths, pagebuild/registry, site_chrome

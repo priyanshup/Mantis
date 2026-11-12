@@ -9,12 +9,12 @@ Tools: `docs/system/SKILLS.md`. Where things live: `README.md` and each folder's
 
 ## Read cheaply, in this order
 
-1. **The subject's card** (`mantis/knowledge/map/cards.md` lists them): `knowledge/features/<slug>.md`
-   or `knowledge/topics/<slug>.md`. Its generated part lists every source with a one-liner, the
-   open questions with live status, and the people and systems involved.
+1. **A subject:** `python tools/context.py <name>` (about 500 tokens: lead, open questions, people,
+   newest sources, pointers; `--files` shows what each file costs). Then its card
+   (`mantis/knowledge/map/cards.md` lists them): `knowledge/features/<slug>.md` or `topics/<slug>.md`.
 2. **A person, system or place:** `python tools/graph.py <name>` (or `path <A> <B>`); someone the
    owner works with: `python tools/people.py show <name>`.
-3. **A document:** `python tools/peek.py <ids>`; the whole digest only when the summary is not enough.
+3. **A document:** `python tools/peek.py <ids>`, then `--section "<name>"`; the whole digest rarely.
 4. **Open questions:** `knowledge/map/registers.md`; one with `python tools/entry.py show <ID>`.
 5. **What the owner owns:** `knowledge/focus.json` (followed, archived, on the roadmap; set on the
    Features page). Put those first in reports and checks.

@@ -114,8 +114,10 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 |---|---|---|
 | `affected.py` | Which checks does a change need? (IMP-112 item 8) | standard library |
 | `backup.py` | Daily local copy of the owner's data, with a restore command (IMP-112 item 6). | standard library |
+| `consolidate.py` | Consolidation proposals and safe archiving of digests (IMP-109). Nothing is ever deleted: originals move to mantis/03_archive and each move is logged. | standard library |
 | `context.py` | Where do things stand on a subject? A few hundred tokens instead of the card and its digests (IMP-109). | standard library |
 | `datafile.py` | Reading and writing the owner's own data files (tasks, follow-ups, Growth, schedule, focus, the Atlassian settings). IMP-112 item 6. | standard library |
+| `digesthealth.py` | The digest-health report (IMP-109): is the knowledge staying cheap to read? | standard library |
 | `growth.py` | The owner's growth record (Growth tab): opportunities to step up, what came of them, learnings, recognition. | standard library |
 | `guard.py` | The self-running safety net (IMP-112 item 1): runs the checks without anyone asking, records the result for the Health page. | standard library |
 | `guard_browser.py` | Real-browser checks of the running site, run by the Playwright interpreter (not by Mantis's Python). IMP-112 item 1. | standard library |

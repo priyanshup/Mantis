@@ -164,9 +164,12 @@ def report():
         add("info", "Diagrams", f"{tiers['candidate']} image(s) from the sources wait for a look ({tiers.get('registered', 0)} registered so far). "
                                 "`python tools/assets.py review` lists them, largest first.")
 
-    big = sorted(((p.stat().st_size, p.stem) for p in (M / "02_digests").glob("MANTIS-DOC-*.md") if p.stat().st_size > 16000), reverse=True)
-    if big:
-        add("info", "Digests", f"{len(big)} digest(s) over 16 KB (largest {big[0][1]}, {big[0][0] // 1024} KB); read their summary with peek.py first.")
+    try:
+        import digesthealth
+        for lvl, msg in digesthealth.problems(digesthealth.scan(M), digesthealth.mirror_sizes(M / "mirror")):
+            add(lvl, "Digests", msg)
+    except Exception as e:
+        add("info", "Digests", f"Digest-health check skipped: {e}")
 
     try:
         import classify

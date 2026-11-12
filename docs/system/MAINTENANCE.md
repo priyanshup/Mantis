@@ -29,6 +29,14 @@ regenerated or was always temporary; archive what was knowledge; let the owner d
 90 days; the owner decides whether to keep, compress or delete them. Name new snapshot folders
 `<what>-<YYYY-MM-DD>/`. The layout is in `mantis/03_archive/README.md`.
 
+## Digest size and retention (IMP-109)
+
+The Health page reports, as advice only: digests over 12 KB (split by section), a `confidence_reason` over 200 characters, tags shared by 8 or more small digests (roll-up
+candidates), older source snapshots beside the cited one, and a mirror over 150 MB. `python tools/consolidate.py propose` lists them; `archive <DOC> --reason` and
+`archive-snapshots --apply` move things to `03_archive` and log each move. A cited digest is refused, nothing is deleted, and a merge or roll-up needs a combined digest
+written first, with the owner's approval. The mirror is a working copy: a sync re-fetches pages and tickets, attachments are fetched once, and the owner decides what to prune.
+Read cheaply with `context.py <subject>`, `peek.py <id>` and `peek.py <id> --section "<name>"`.
+
 ## Where new things go
 
 | You are adding | Put it in |

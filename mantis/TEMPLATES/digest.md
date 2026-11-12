@@ -9,7 +9,7 @@ work: <optional: business, technical or both; delete the line to take the type o
 key_entities: [Entity1, Entity2, Entity3]
 related_documents: []
 document_confidence: High | Medium | Low | Very Low
-confidence_reason: "[one line explaining the document-level judgment, per docs/rules/WORKFLOW.md confidence rules — not just restating the level]"
+confidence_reason: "[one line, 160 characters at most: why this level, not a restatement of it; longer reasoning goes in a section]"
 assumptions_referenced: []
 conflicts_referenced: []
 gaps_referenced: []

@@ -241,6 +241,8 @@ _c = cards_mod.write(all_cards, docs, summaries, gaps, kg["entities"], is_open, 
 _cc = OUT / "cards-cited.json"
 import topicmap   # the file-to-topic map (IMP-109)
 topicmap.write(OUT, M)
+import digesthealth   # size budgets, roll-up and archive candidates (IMP-109)
+digesthealth.write(OUT / "digest-health.json", M)
 _alerts, _cstate = cards_mod.citation_changes(all_cards, json.loads(textcache.read(_cc)) if _cc.exists() else {}, time.strftime("%Y-%m-%d"))
 textcache.write(_cc, json.dumps(_cstate, indent=1, ensure_ascii=False))
 for _a in _alerts:

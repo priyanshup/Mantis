@@ -129,6 +129,8 @@ def docs():
             continue
         for path in set(re.findall(r"`((?:tools|docs)/[\w/.-]+\.(?:py|md|json))`", f.read_text(encoding="utf-8"))):
             check("docs", (ROOT / path).exists(), f"{f.relative_to(ROOT).as_posix()} mentions {path}, which does not exist")
+    size = len((ROOT / "CLAUDE.md").read_bytes())
+    check("docs", size <= 5000, f"CLAUDE.md is {size} bytes (budget 5000): it is read every session, move detail into docs/ (IMP-109)")
     import toollist
     check("docs", toollist.current(), "tools/README.md does not list the tools on disk; run python tools/toollist.py")
 
