@@ -144,7 +144,7 @@ def propose(items, source=""):
     def go(st):
         for x in items[:20]:
             try:
-                it = clean(dict(x, state="proposed", source=x.get("source") or source), by="mantis")
+                it = clean(dict(x, state="proposed", by="mantis", source=x.get("source") or source), by="mantis")   # a proposal file cannot claim to be the owner's
             except (ValueError, TypeError, AttributeError):
                 continue
             if _same(it["title"], st["items"]) or _same(it["title"], [{"title": t} for t in st.get("dismissed", [])]):

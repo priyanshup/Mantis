@@ -192,6 +192,17 @@ def broad_excepts():
             check("except", bool(uses or reraises or commented), f"{p.name} line {n.lineno}: a broad except that neither reports the error nor says why on the same line; narrow it, report it, or add a comment")
 
 
+def rule_tests():
+    """The business-rule tests in tools/tests (IMP-112 item 5): growth, jobs, filters, questions. They use temp folders and stubs only."""
+    import io, unittest
+    suite = unittest.defaultTestLoader.discover(str(T / "tests"), top_level_dir=str(T))
+    out = io.StringIO()
+    res = unittest.TextTestRunner(stream=out, verbosity=0).run(suite)
+    for t, tb in [*res.failures, *res.errors]:
+        check("rules", False, f"{t.id().split('.', 1)[-1]}: {tb.strip().splitlines()[-1][:200]}")
+    check("rules", res.testsRun > 0, "no rule tests were found")
+
+
 def readiness_rules():
     """Decision readiness judges evidence, not filled fields (MANTIS-IMP-074 to 076): fixed cards, expected states."""
     import tempfile, readiness
@@ -324,7 +335,7 @@ def data():
 
 if __name__ == "__main__":
     quick = "--quick" in sys.argv
-    code(); js_css(); theme_and_style(); docs(); incremental(); skills(); requirements(); broad_excepts(); readiness_rules(); decision_watch(); search_index(); pull_logic(); repeats_rule()
+    code(); js_css(); theme_and_style(); docs(); incremental(); skills(); requirements(); broad_excepts(); rule_tests(); readiness_rules(); decision_watch(); search_index(); pull_logic(); repeats_rule()
     if not quick:
         tools(); data()
     if fails:

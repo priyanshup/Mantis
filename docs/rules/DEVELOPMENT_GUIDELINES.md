@@ -137,9 +137,14 @@ Find code by the code map and the file names, not by opening files.
 | Flows | `node tools/uitest/flows-check.js` | the owner's flows end to end, writes stubbed |
 | Pages | `node tools/uitest/pagefn-check.js`, `detail-check.js` | each content page type behaves |
 | Smoke | `node tools/uitest/smoke.js`, `interact.js` | every tab renders, the main controls respond |
+| Rule tests | `python -m unittest discover -s tools/tests -t tools` (also in the self-test) | growth, jobs, filters and question rules; a changed rule fails a named test |
+| Structure snapshots | `python tools/snapshots.py check` / `accept` | a change to the markup of any page type shows as a diff |
+| Real browser | `python tools/guard.py full` (Playwright Chromium; `tools/uitest/README.md`) | every page, desktop and phone, light and dark: errors, contrast, sideways scroll, touch targets |
+| Safety net | `python tools/guard.py quick` / `full` / `status` | runs the above by itself (the site server: after every settled edit, and once a day); a failure shows on Health |
 
-Headless Edge does not start on this machine, so screenshots are not possible: say so, and ask the owner to look at
-the page for anything visual. jsdom has no layout, hover or animation: those need a human eye.
+The browser checks need the site running and the Playwright tool installed. Hover, animation and whether a design looks right still need the
+owner's eye; the browser can save screenshots for that (`tools/guard_browser.py --shots DIR`). jsdom has no layout, so use the browser for layout.
+When a check finds a problem that is not yours, fix it or add it to the backlog; do not raise the baseline to hide it.
 
 ## 5. How to make a change
 
@@ -189,7 +194,8 @@ more files, or any change older than a day, are uncommitted. Push only when the 
 
 ## 8. Gaps (not enforced yet)
 
-- Pixel and animation checks: need a working headless browser.
-- A phone-width layout check and a contrast check on the rendered pages.
+- Pixel comparison of screenshots: not done on purpose (dates and live data make it flaky); structure snapshots and rendered-style checks stand in for it.
+- The browser baseline (`tools/uitest/browser-baseline.json`) still allows 19 text-contrast and 554 touch-target findings; each fix lowers it.
+- The safety net runs only while the site server is up; a machine that is off runs nothing.
 - The app's older scripts (`screens-*.js`, `behaviour-*.js`) still hold mock-era code: 143 repeated CSS selectors and
   global handlers. New work goes in `feature-*.js` and `widgets-*.js`; move old code there when you next change it.
