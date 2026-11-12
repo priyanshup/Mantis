@@ -40,7 +40,7 @@ deadlines.py | 139 | Suggested deadlines for undated tasks (MANTIS-IMP-041). | p
 decisions.py | 146 | Decisions know what they rest on (MANTIS-IMP-080). | frontmatter, textcache
 edit_common.py | 63 | Shared by build_site.py and apply_edits.py: what part of an output file the owner can edit. | 
 entities.py | 126 | Batch changes to the entity register in one call (MANTIS-IMP-057). Stdlib only. | 
-entry.py | 376 | Read and write Mantis registers: one file per entry (stdlib only). | answered, textcache
+entry.py | 385 | Read and write Mantis registers: one file per entry (stdlib only). | answered, textcache
 estimates.py | 155 | Import the team's estimation sheet onto the roadmap cards (MANTIS-IMP-053). | build_site, local_config
 evaluate.py | 353 | Evaluation set: does Mantis still get known cases right? (MANTIS-IMP-077) | ask, classify, contradictions, support
 extra.py | 192 | Live data for the Today and People pages: follow-ups, suggested deadlines, meetings, away, briefs. | brief, deadlines, followups, people, schedule, steps, tasks_store
@@ -59,7 +59,7 @@ layout.py | 88 | The layout: site_config/layout.json -> window.APP_LAYOUT, plus 
 leakcheck.py | 108 | Check that files bound for the public engine repo carry no knowledge (MANTIS-IMP-036). | 
 local_config.py | 39 | Read this instance's local settings (mantis/config/settings.json). Never committed (MANTIS-IMP-036). | 
 maintain.py | 280 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, atl_client, atl_updates, backup, citations, classify, entry
-meetingnotes.py | 194 | Recurring-meeting notes without a full source and digest each time (IMP-105). | brief, schedule
+meetingnotes.py | 204 | Recurring-meeting notes without a full source and digest each time (IMP-105). | brief, schedule
 mishear.py | 56 | Mishearings: words speech-to-text gets wrong (MANTIS-IMP-051). Stdlib only. | 
 pagecheck.py | 88 | Static checks for the packages tools/pagebuild/ (page builders), tools/webserver/ (the site server) and tools/pullkit/ (the pull), run by selftest.py. | 
 peek.py | 30 | Print the short form of one or more digests: title, confidence, open items and Summary. | 
@@ -96,7 +96,7 @@ pagebuild/changes.py | 70 | The changes page. | pagebuild/frame, pagebuild/label
 pagebuild/day.py | 66 | Rules for what is yours, what needs attention today and the health line. No page of its own; the app and the tests use it. | pagebuild/labels, pagebuild/markup, pagebuild/paths, pagebuild/registry
 pagebuild/decisions.py | 25 | The decisions page. | pagebuild/paths, pagebuild/text
 pagebuild/diagrams.py | 30 | The diagrams page. | pagebuild/registry, pagebuild/text
-pagebuild/feature.py | 281 | The feature card page, and the helpers a card shares with the topic page. | atl_client, atl_store, atl_updates, pagebuild/day, pagebuild/frame, pagebuild/labels, pagebuild/loaders, pagebuild/markup
+pagebuild/feature.py | 284 | The feature card page, and the helpers a card shares with the topic page. | atl_client, atl_store, atl_updates, pagebuild/day, pagebuild/frame, pagebuild/labels, pagebuild/loaders, pagebuild/markup
 pagebuild/frame.py | 174 | The pieces of a page around its content: the shell call, copy bar, Jira and sync panels, redirects and small widgets. | edit_common, pagebuild/markup, pagebuild/paths, pagebuild/registry, pagebuild/text, site_shell
 pagebuild/labels.py | 91 | Status words, pill classes and the vocabularies the pages share. | pagebuild/text
 pagebuild/library.py | 70 | The library page, the single-document page and the search index. | pagebuild/decisions, pagebuild/diagrams, pagebuild/frame, pagebuild/labels, pagebuild/markup, pagebuild/paths, pagebuild/registry, pagebuild/text

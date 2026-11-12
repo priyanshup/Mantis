@@ -139,6 +139,12 @@ class Adding(Case):
             mn.add(session())
         self.assertEqual(path.read_text(encoding="utf-8"), "meeting_series: weekly-sync\nno front matter markers\n")
 
+    def test_open_design_points_are_handed_back_for_the_card_and_kept_out_of_the_digest(self):
+        res = mn.add(session(open_points=["Duplicate handling", "Concurrency on save"]))
+        self.assertEqual(len(res["card_points"]), 2)
+        self.assertTrue(all(res["doc"] in line and "(Weekly sync, 2026-11-12)" in line for line in res["card_points"]))
+        self.assertNotIn("Duplicate handling", self.digest())
+
     def test_the_actions_are_not_repeated_in_the_digest(self):
         mn.add(session(mine=[{"title": "Check the install"}], theirs=[{"person": "Sam Lee", "topic": "the tagging list"}]))
         self.assertNotIn("Check the install", self.digest())

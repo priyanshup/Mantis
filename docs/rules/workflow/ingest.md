@@ -45,7 +45,9 @@ Part of the workflow (index and the rules for every task: `../WORKFLOW.md`). Use
    "(transcript: MTs)" the first time, so the correction is visible. A new mishearing the owner
    confirms goes into the glossary's Mishearings table.
 6. **Assumptions, gaps, conflicts.** Decide which applies (rules: Assumptions vs. Knowledge
-   Gaps). Claim IDs, write the entries to a scratch file in the register's format, then
+   Gaps). First sort what the source leaves open: a design or scoping point the team will settle in grooming (duplicate handling, concurrency, payload fields, MVP limits)
+   is not a gap; add it to the card under **Open points for grooming**, cited, and so is any point the owner marks as a grooming topic. Garbled names and unlabelled
+   speakers are not gaps unless a fact depends on them (rules: What does not become a gap). Claim IDs, write the entries to a scratch file in the register's format, then
    `python tools/entry.py add gap <file>` (or `asm`, `cfl`). `add` refuses an entry that looks
    like a question already closed, resolved or answered, and names those entries: read them,
    and if one settles it, cite it in the digest instead of asking again; re-run with

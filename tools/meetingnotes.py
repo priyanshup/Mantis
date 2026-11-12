@@ -154,7 +154,14 @@ def add(s):
         save_takeaways(f.name)
     finally:
         Path(f.name).unlink(missing_ok=True)
-    return {"doc": doc_id, "created": created, "citation": f"{doc_id} ({meeting['name']}, {s['date']})", "lines": len(lines)}
+    return {"doc": doc_id, "created": created, "citation": f"{doc_id} ({meeting['name']}, {s['date']})", "lines": len(lines),
+            "card_points": card_points(s, doc_id)}
+
+
+def card_points(s, doc):
+    """The session's open design or scoping points as card lines, each with the citation (IMP-048): they go under "Open points for grooming" on the card, not into the gap register."""
+    cite = f"{doc} ({s.get('meeting')}, {s.get('date')})"
+    return [f"- {' '.join(str(p).split())} ({cite})" for p in s.get("open_points", []) or [] if str(p).strip()]
 
 
 def listing():
@@ -183,6 +190,9 @@ def main(argv):
             return 1
         print(f"{'Created' if res['created'] else 'Updated'} the rolling digest {res['doc']} ({res['lines']} line(s) for this session).")
         print(f"Cite its durable facts on the card as: {res['citation']}")
+        if res["card_points"]:
+            print("Open points for the card (under \"Open points for grooming\", not the gap register):")
+            print("\n".join(res["card_points"]))
         print("Next: add those facts to the card (curated part, cited), then python tools/build_map.py.")
         return 0
     print(__doc__)

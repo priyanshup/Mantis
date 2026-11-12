@@ -139,6 +139,15 @@ def cmd_add(kind, src, still_new=False):
 
     locked(write)
     print(f"Added to registers/{KINDS[kind][2]}/: {', '.join(ids)}")
+    if kind == "gap":
+        print(gap_reminder())
+
+
+def gap_reminder():
+    """What to ask before raising a gap (IMP-048, WORKFLOW_RULES.md "What does not become a gap")."""
+    return ("Reminder: a gap is for what the owner or a named person can settle by saying so, or for missing provenance that something depends on. "
+            "A design or scoping point for the team to settle in grooming (duplicate handling, concurrency, payload fields, MVP limits) goes on the card under "
+            "\"Open points for grooming\". Transcript noise (garbled names, unlabelled speakers) is not a gap unless a fact depends on it.")
 
 
 def read(rid):

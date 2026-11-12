@@ -96,6 +96,9 @@ def overview(md, slug, extra=()):
             lead = text
             continue
         hint = _hint(text)
+        if head.lower().startswith("open points"):   # how many are still open: a struck-through (~~answered~~) point is not counted (IMP-048)
+            n = sum(1 for l in text.split("\n") if re.match(r"^\s*[-*] ", l) and not re.match(r"^\s*[-*] ~~", l))
+            hint = "None open" if n == 0 else f"{n} open point{'s' if n != 1 else ''}"
         if head.lower().startswith("problem"):
             keep = []
             for line in text.split("\n"):

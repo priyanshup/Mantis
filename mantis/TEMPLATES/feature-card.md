@@ -46,6 +46,12 @@ name who) or *Unknown* (nobody knows yet). A request is not evidence of a proble
 | # | Job | MVP or later | Source |
 |---|---|---|---|
 
+## Open points for grooming
+<!-- Design and scoping points a meeting or document left open (duplicate handling, concurrency, payload fields, MVP limits): the team settles them in grooming or
+solutioning. One bullet each, cited. When settled, strike it through and say how and when: ~~Point: answer (grooming, date, source)~~. The Overview counts what is still open.
+These are not gaps: a gap is for what the owner or a named person can settle by saying so (docs/rules/WORKFLOW_RULES.md, "What does not become a gap"). -->
+- <the point> (source)
+
 ## Business rules agreed so far
 - <rule> (MANTIS-DOC-XXXX)
 

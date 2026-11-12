@@ -294,6 +294,24 @@ top of the knowledge base needs the missing detail. When that happens, create th
 entry (or raise the SME question), reference the originating `MANTIS-GAP-XXX` ID in it, and update
 the Knowledge Gap entry's status to reflect the promotion rather than deleting it.
 
+### What does not become a gap
+
+(Rule added with IMP-048.) A gap is for something the owner, or a named person, can settle by saying so,
+and for missing provenance that something depends on (who said it, which version, what a figure measures). Two kinds of
+thing are not gaps:
+
+- **Design and scoping points a meeting leaves open**: duplicate handling, concurrency, payload fields, MVP limits, edge
+  cases, how a screen should behave. The team settles these in grooming or solutioning, not by asking a person. They go
+  on the feature card under **Open points for grooming**, one bullet each, cited to the meeting or document that raised
+  them. When one is settled, strike it through and say how and when (`~~Duplicate handling: reject (grooming, 2026-11-10, <source>)~~`);
+  the card's Overview counts the points still open. A point that becomes a business rule moves to the card's rules with
+  its source. No register entry is made, and none needs closing.
+- **Transcript noise**: garbled names, unlabelled speakers, misheard words. Use `tools/mishear.py` and the glossary and
+  write the meaning with "(transcript: ...)". It becomes a gap only when a fact depends on the unreadable part.
+
+The test, in one line: *can the owner or a named person settle it by saying so?* If yes, it is a gap (or a question for
+them). If the team designs the answer in grooming, it is an open point on the card.
+
 ## Potential Resolution — Shared Lifecycle Rule
 
 Assumptions, Conflicts, and Knowledge Gaps all share the same three-state resolution pattern:
