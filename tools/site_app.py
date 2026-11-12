@@ -13,7 +13,8 @@ from pathlib import Path
 
 import layout
 import site_chrome
-import site_common as sc
+from pagebuild.paths import M
+from pagebuild.registry import FOCUS, OPEN, TOPICS, archived
 
 STAGE = {"discovery": 0, "refinement": 1, "build": 2}
 
@@ -46,29 +47,30 @@ def _story(md):
 
 
 def features_json(features):
-    follow = set(sc.FOCUS.get("following", []))
+    follow = set(FOCUS.get("following", []))
     out = []
     for f in features:
         stories = [{"key": s.get("jira") or "", "title": s["title"], **_story(s.get("md", ""))} for s in f.get("stories", [])]
         epics = [{"key": e.get("jira") or "", "title": e["title"], **_story(e.get("md", ""))} for e in f.get("epics", [])]
         out.append({"slug": f["slug"], "title": f["title"], "stage": STAGE.get(f.get("status", ""), 0), "status": f.get("status", ""), "priority": f.get("priority", "") if f.get("priority") in ("P1", "P2", "P3") else "",
                     "sources": len(f.get("docs", [])), "summary": _plain(f.get("summary", ""), 600), "jira": f.get("jira") or "", "estimate": f.get("estimate") or "",
-                    "following": f["slug"] in follow, "archived": bool(sc.archived(f["slug"])), "stories": stories, "epics": epics, "page": (f.get("page_md") or "")[:9000]})
+                    "following": f["slug"] in follow, "archived": bool(archived(f["slug"])), "stories": stories, "epics": epics, "page": (f.get("page_md") or "")[:9000],
+                    "preps": [{"title": p["title"], "updated": p["updated"], "md": p["md"][:9000]} for p in f.get("preps", [])]})
     out.sort(key=lambda x: (not x["following"], x["priority"] or "P9", x["title"].lower()))
     return out
 
 
 def topics_json():
-    follow = set(sc.FOCUS.get("following", []))
-    return sorted(({"slug": t["slug"], "title": t["title"], "sources": len(t.get("docs", [])), "following": t["slug"] in follow, "archived": bool(sc.archived(t["slug"]))} for t in sc.TOPICS),
+    follow = set(FOCUS.get("following", []))
+    return sorted(({"slug": t["slug"], "title": t["title"], "sources": len(t.get("docs", [])), "following": t["slug"] in follow, "archived": bool(archived(t["slug"]))} for t in TOPICS),
                   key=lambda x: (x["archived"], not x["following"], x["title"].lower()))
 
 
 def questions_json(features):
-    from site_day import scope_of, topic_text
-    names = {f["slug"]: f["title"] for f in features} | {t["slug"]: t["title"] for t in sc.TOPICS}
+    from pagebuild.day import scope_of, topic_text
+    names = {f["slug"]: f["title"] for f in features} | {t["slug"]: t["title"] for t in TOPICS}
     out = []
-    for o in sc.OPEN:
+    for o in OPEN:
         scope = scope_of(o)
         if scope == "tidy":
             continue
@@ -84,7 +86,7 @@ def questions_json(features):
 
 
 def recent_json(features, n=6):
-    d = sc.M / "02_digests"
+    d = M / "02_digests"
     owner = {}
     for f in features:
         for doc in f.get("docs", []):
@@ -100,15 +102,15 @@ def recent_json(features, n=6):
 
 
 def health_json():
-    p = sc.M / "knowledge" / "map" / "health.md"
+    p = M / "knowledge" / "map" / "health.md"
     if not p.exists():
         return []
     return [_plain(re.sub(r"^- \*\*Fix\*\* \([^)]*\):\s*", "", l), 140) for l in p.read_text(encoding="utf-8").splitlines() if l.startswith("- **Fix**")]
 
 
 def static_json(features, built):
-    docs = len(list((sc.M / "02_digests").glob("MANTIS-DOC-*.md")))
-    return json.dumps({"built": built, "docs": docs, "features": features_json(features), "topics": len([t for t in sc.TOPICS if not sc.archived(t["slug"])]), "topicsList": topics_json(),
+    docs = len(list((M / "02_digests").glob("MANTIS-DOC-*.md")))
+    return json.dumps({"built": built, "docs": docs, "features": features_json(features), "topics": len([t for t in TOPICS if not archived(t["slug"])]), "topicsList": topics_json(),
                        "questions": questions_json(features), "recent": recent_json(features), "health": health_json()}, ensure_ascii=False)
 
 

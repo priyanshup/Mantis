@@ -20,7 +20,7 @@ NAME = re.compile(r"[.#]([A-Za-z_][\w-]*)")
 def corpus(extra_dirs=()):
     """All text in which a class or id could be written."""
     parts = []
-    for p in [*T.glob("*.py"), *(T / "site_assets").rglob("*.js"), *(T / "site_assets").rglob("*.json"), T / "site_config" / "layout.json"]:
+    for p in [*T.glob("*.py"), *(T / "pagebuild").glob("*.py"), *(T / "site_assets").rglob("*.js"), *(T / "site_assets").rglob("*.json"), T / "site_config" / "layout.json"]:
         if p.is_file() and "vendor" not in p.parts:
             parts.append(p.read_text(encoding="utf-8", errors="ignore"))
     for d in extra_dirs:

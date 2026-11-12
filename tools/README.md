@@ -87,17 +87,14 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 
 | Tool | What it does | Needs |
 |---|---|---|
-| `build_site.py` | Build the read-only Mantis website from the Markdown files. | markdown |
+| `build_site.py` | Build the read-only Mantis website from the Markdown files. | standard library |
 | `theme.py` | The theme: site_config/theme.json -> assets/tokens.css, plus checks. | standard library |
 | `layout.py` | The layout: site_config/layout.json -> window.APP_LAYOUT, plus checks. | standard library |
 | `wiring.py` | Wiring check for the app: every control it draws must be connected to something. | standard library |
 | `site_chrome.py` | Page chrome both page shells share: head links, theme-colour meta tags and the theme switch. | standard library |
+| `pagecheck.py` | Static checks for the packages tools/pagebuild/ (page builders) and tools/webserver/ (the site server), run by selftest.py. | standard library |
+| `sitecache.py` | Incremental site build (Phase 3, task 1). | standard library |
 | `csskit.py` | A small CSS walker: list a stylesheet's rules with their positions, and rewrite it keeping only the rules a test keeps. | standard library |
-| `site_common.py` | Shared parts of the Mantis site: state loaded once per build, Markdown rendering, | markdown |
-| `site_day.py` | Site pages for the owner's day: Today, Meetings, Sources. | standard library |
-| `site_plan.py` | Site pages for planning: Features (Following, Roadmap with its Timeline view, Ideas, All), feature and topic pages, Epics & stories. | standard library |
-| `site_people.py` | Site pages about people and questions: Open items and People. | standard library |
-| `site_reference.py` | Site pages for reference and housekeeping: Library (pages, diagrams, decisions), What's new, search. Health lives on Sources (site_day.py). | standard library |
 | `site_app.py` | The front end (2026-11-11): the approved mock's own screens, run on live data. | standard library |
 | `cards.py` | Cards: the reading layer for every subject. | standard library |
 | `changes.py` | What changed, and which card summaries are behind. | standard library |
@@ -118,11 +115,14 @@ help line, so it always matches the code; edit a tool's docstring, not this file
 | `growth.py` | The owner's growth record (Growth tab): opportunities to step up, what came of them, learnings, recognition. | standard library |
 | `site_pages.py` | Page types and their bundles for the content pages. | standard library |
 | `site_shell.py` | The shell of the content pages (feature, topic, people, library, documents, changes, work): the app's header, a main area, and | standard library |
+| `skillscan.py` | Run every Claude skill through NVIDIA SkillSpector before it is trusted, and keep a record (owner rule, 2026-11-12). | standard library |
 
 ## Files that are not commands
 
 | File | Role |
 |---|---|
+| `pagebuild/` | The page builders, one module per page type, and the shared parts they import |
+| `webserver/` | The site server split by job: config, watching, inbox, focus, the request handler |
 | `site_assets/` | The site's CSS, JavaScript, logo and vendored libraries |
 | `githooks/pre-commit` | Runs `leakcheck.py` and `selftest.py --quick` before every commit (`git config core.hooksPath tools/githooks`) |
 | `classify_config.json` | Cut-offs for `classify.py` |

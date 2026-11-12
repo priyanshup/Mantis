@@ -19,6 +19,8 @@ BUDGET = 600   # lines; the long-term target is 300, tightened as files are spli
 
 def _py():
     mods = {p.stem: p for p in sorted(TOOLS.glob("*.py"))}
+    for pkg in ("pagebuild", "webserver"):   # the page builders and the site server
+        mods.update({pkg + "/" + p.stem: p for p in sorted((TOOLS / pkg).glob("*.py")) if p.stem != "__init__"})
     info = {}
     for name, p in mods.items():
         text = p.read_text(encoding="utf-8")
@@ -29,7 +31,7 @@ def _py():
             if isinstance(n, ast.Import):
                 uses |= {a.name.split(".")[0] for a in n.names}
             elif isinstance(n, ast.ImportFrom) and n.module:
-                uses.add(n.module.split(".")[0])
+                uses.add(n.module.replace(".", "/") if n.module.startswith(("pagebuild.", "webserver.")) else n.module.split(".")[0])
         info[name] = {"doc": doc[0] if doc else "", "lines": text.count("\n") + 1, "uses": sorted(u for u in uses if u in mods and u != name)}
     for name, i in info.items():
         i["used_by"] = sorted(o for o, j in info.items() if name in j["uses"])

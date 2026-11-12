@@ -383,17 +383,30 @@ if problems:
     print(f"\nLint: {len(problems)} problem(s). Run `python tools/entry.py check` for the list.")
 
 lap("lint")
-try:
-    import maintain  # health report only (no cleanup) so the site's Home and Health pages are current
-    maintain.report()
-except Exception as e:
-    print(f"Health report skipped: {e}")
+import sitecache   # a stage that only reads files is skipped when nothing it reads changed (--full forces it)
+_today = time.strftime("%Y-%m-%d")
+import skillscan   # the health report also lists skills not cleared by SkillSpector, so their state is part of its signature
+_sig = sitecache.stage_signature([ROOT / "mantis", ROOT / "docs", ROOT / "tools"], _today + "|" + ";".join(f"{r['name']}:{r['state']}" for r in skillscan.status()))   # and the date
+if sitecache.stage_unchanged("health", _sig, OUT / "health.json"):
+    print("Health report: nothing changed, kept.")
+else:
+    try:
+        import maintain  # health report only (no cleanup) so the site's Home and Health pages are current
+        maintain.report()
+        sitecache.stage_done("health", _sig)
+    except Exception as e:
+        print(f"Health report skipped: {e}")
 
-try:
-    import codemap   # docs/system/CODEMAP.md: which file does what (MANTIS-IMP-106)
-    codemap.main()
-except Exception as e:
-    print(f"Code map skipped: {e}")
+_sig = sitecache.stage_signature([ROOT / "tools"])
+if sitecache.stage_unchanged("codemap", _sig, ROOT / "docs" / "system" / "CODEMAP.md"):
+    print("Code map: nothing changed, kept.")
+else:
+    try:
+        import codemap   # docs/system/CODEMAP.md: which file does what (MANTIS-IMP-106)
+        codemap.main()
+        sitecache.stage_done("codemap", _sig)
+    except Exception as e:
+        print(f"Code map skipped: {e}")
 lap("health report and code map")
 try:
     import build_site

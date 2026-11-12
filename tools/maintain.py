@@ -199,6 +199,18 @@ def report():
         add("info", "Repeats", f"Repetition check skipped: {e}")
     add("info", "Archive", f"03_archive holds {size / 1e6:.1f} MB" + (f"; older than 90 days: {', '.join(oldest[:6])}. The owner decides what to delete." if oldest else "."))
 
+    try:   # skills the owner has not had scanned by SkillSpector, or that changed since (python tools/skillscan.py)
+        import skillscan
+        if not skillscan.installed():
+            add("warn", "Skills", "SkillSpector is not installed, so no skill can be checked. The install command is in tools/skillscan.py.")
+        else:
+            bad = skillscan.problems()
+            if bad:
+                add("warn", "Skills", f"{len(bad)} skill(s) not cleared by SkillSpector: " + "; ".join(f"{r['name']} ({r['state']})" for r in bad[:6])
+                    + ". Do not use them until `python tools/skillscan.py` is clean.")
+    except Exception as e:
+        add("info", "Skills", f"Skill check skipped: {e}")
+
     order = {"warn": 0, "todo": 1, "info": 2}
     items.sort(key=lambda i: order[i["level"]])
     MAP.mkdir(parents=True, exist_ok=True)

@@ -1,9 +1,15 @@
-"""Site pages for planning: Features (Following, Roadmap with its Timeline view, Ideas, All), feature and topic pages, Epics & stories."""
+"""The feature card page, and the helpers a card shares with the topic page."""
+import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
 import re
-from site_common import *   # noqa: F401,F403  (shared state and helpers)
+from pagebuild.day import qkey, scope_of, topic_text, yours
+from pagebuild.frame import _sections, copy_bar, empty, job_btn, shell
+from pagebuild.labels import STATUS, WORK, work_pill
+from pagebuild.loaders import jira_site, story_list
+from pagebuild.markup import plain, render
+from pagebuild.paths import M
+from pagebuild.registry import FOCUS, GRAPH, OPEN, READY, archived, on_roadmap
+from pagebuild.text import esc, front_matter, n_
 
-
-# ---------- Pages ----------
 
 FLAG = {"Problem not validated": "Problem unproven", "No measurement plan": "No metric plan"}   # two words on a row; the why is in the tooltip
 
@@ -51,7 +57,11 @@ def tile(c, feat):
 
 
 MARK = "<!-- GENERATED"
+
+
 KEYFACTS = {"Outcome wanted": "Outcome", "Cost of doing nothing": "If we wait", "Next decision": "Next decision"}
+
+
 EVIDENCE = ("Observed", "Opinion", "Unknown", "Assumed", "Inferred")
 
 
@@ -216,14 +226,12 @@ def page_feature(f, features, epics_by_id, built):
 
 
 def feature_questions(slug):
-    from site_day import scope_of, yours
     mine = [o for o in yours() if slug in o.get("features", [])]
     return mine + [o for o in OPEN if slug in o.get("features", []) and scope_of(o) == "others"]
 
 
 def questions_html(qs, base):
     """A feature's open questions, each linking to where it is answered (the Questions page)."""
-    from site_day import scope_of, qkey, topic_text
     if not qs:
         return '<p class="empty">No open questions on this feature.</p>'
     row = lambda o: (f'<a class="row" href="{base}questions.html#k={qkey(o)}"><span class="row-t">{esc(topic_text(o))}</span>'
@@ -234,12 +242,6 @@ def questions_html(qs, base):
     oth = [o for o in qs if scope_of(o) == "others"]
     return ((f'<h3 class="ag-h">For you</h3><div class="rows">' + "".join(row(o) for o in you) + "</div>" if you else "")
             + (f'<h3 class="ag-h">Waiting on others</h3><div class="rows">' + "".join(row(o) for o in oth) + "</div>" if oth else ""))
-
-
-def jira_site():
-    env = M / "config" / ".env"
-    m = re.search(r"(?m)^JIRA_URL\s*=\s*(\S+)", env.read_text(encoding="utf-8")) if env.exists() else None
-    return m.group(1).rstrip("/") if m else ""
 
 
 def jira_tickets(slug):
@@ -265,60 +267,3 @@ def tickets_html(rows, key):
                    f'<td>{esc(r.get("summary", ""))}</td><td class="nowrap muted">{esc(r.get("updated", "")[:10])}</td></tr>' for r in rows[:80])
     more = f'<p class="muted small">{len(rows) - 80} more in Jira.</p>' if len(rows) > 80 else ""
     return f'<p class="muted small nocopy">From the Jira mirror, as of the last pull. {n_(len(rows), "ticket")}.</p><div class="tbl"><table>{head}<tbody>{body}</tbody></table></div>{more}'
-
-
-def page_work(work, features, built):
-    data = [{k: x[k] for k in ("kind", "title", "status", "feature", "feature_title", "epic_title", "jira", "updated")}
-            | {"href": x["href"], "file": x["file"], "mine": x["feature"] in FOCUS["following"],
-               "own": x["file"] in FOCUS.get("archived_work", []), "archived": archived(x["feature"]) or x["file"] in FOCUS.get("archived_work", [])} for x in work]
-    feats = "".join(f'<option value="{f["slug"]}">{esc(f["title"])}</option>' for f in features if (f["epics"] or f["stories"]) and not archived(f["slug"]))
-    body = f"""<div class="crumbs"><a href="features.html">Features</a><span>›</span><span>Epics &amp; stories</span></div>
-<div class="page-h"><div><h1>Epics &amp; stories</h1><p class="lead">Everything written for Jira, by status, across all features. Includes generic epics and stories that stand alone.</p></div>
-<div class="seg" id="view"><button data-v="board" class="on">Board</button><button data-v="list">List</button></div></div>
-<div class="toolbar"><input id="q" type="search" placeholder="Filter…" aria-label="Filter epics and stories">
-<div class="chips" id="f-kind"><button data-v="all" class="on">All</button><button data-v="epic">Epics</button><button data-v="story">Stories</button></div>
-<select id="f-feature" class="sel" aria-label="Filter by feature"><option value="all">All features</option><option value="mine">Following</option><optgroup label="Feature">{feats}<option value="none">No feature</option></optgroup><option value="archived">Archived</option></select></div>
-<div id="board"></div><div id="list" hidden></div>
-<script id="work" type="application/json">{json.dumps({"items": data, "labels": {k: v[0] for k, v in WORK.items()}})}</script>"""
-    return shell("Epics & stories", body, active="features", built=built, kind="work")
-
-
-def page_loose(x, work, built):
-    """A generic epic or stand-alone story with no feature: its own page."""
-    kids = [s for s in work if s["kind"] == "story" and s.get("epic") == x["id"]] if x["kind"] == "epic" else []
-    side = (f'<aside class="side"><div class="side-h"><h2>Stories</h2></div>' +
-            "".join(f'<a class="story" href="../{s["href"]}"><span>{esc(s["title"])}</span>{work_pill(s["status"])}</a>' for s in kids) +
-            "</aside>") if kids else ""
-    where = "Generic epic" if x["kind"] == "epic" else (f"Story in epic {esc(x['epic_title'])}" if x["epic_title"] else "Stand-alone story")
-    body = f"""<div class="crumbs"><a href="../work.html">Epics &amp; stories</a><span>›</span><span>{esc(x["title"])}</span></div>
-<div class="feat-h"><h1>{esc(x["title"])}</h1><div class="meta">{work_pill(x["status"])}<span class="tag">{where}</span>
-{f'<button class="pill p-jira copy-text" data-text="{esc(x["jira"])}">Jira {esc(x["jira"])}</button>' if x["jira"] not in ("", "none") else ""}</div></div>
-<div class="feat{"" if kids else " solo"}"><div class="feat-main"><div class="tab-panel">{copy_bar("Copy " + ("epic" if x["kind"] == "epic" else "story"), x["file"])}
-<article class="doc">{render(x["md"], breaks=True, sections=False)}</article></div></div>{side}</div>"""
-    return shell(x["title"], body, base="../", active="features", built=built, kind="document")
-
-
-def page_topic(t, topics, built):
-    switch = "".join(f'<option value="{x["slug"]}.html"{" selected" if x is t else ""}>{esc(x["title"])}</option>' for x in topics if x is t or not archived(x["slug"]))
-    qs = feature_questions(t["slug"])
-    nnew = len(t.get("new_docs", []))
-    meta = ["Topic", "Archived" if archived(t["slug"]) else "",
-            f'<a href="#sources"{" class=\"warn-text\"" if nnew else ""}>{n_(len(t["docs"]), "source")}{f", {nnew} new" if nnew else ""}</a>', f'updated {esc(t["updated"])}']
-    tabs = (f'<a href="#overview" data-match="overview">Overview</a>'
-            + (f'<a href="#questions" data-match="questions">Questions <span class="n">{len(qs)}</span></a>' if qs else "")
-            + f'<a href="#sources" data-match="sources">Sources <span class="n">{len(t["docs"])}</span></a>')
-    body = f"""
-<p class="crumbs"><a href="../features.html#all">Features</a></p>
-<div class="page-h feat-h"><div><h1>{esc(t["title"])}</h1><p class="meta-line">{" · ".join(m for m in meta if m)}</p></div>
-<div class="ph-acts nocopy"><details class="pop pop-r"><summary class="btn-line" aria-label="More">⋯</summary><div class="pop-b">
-{job_btn("refresh-card", "Refresh summary", arg=t["slug"], cls="btn-line")}<select id="switch" class="sel sel-sm" aria-label="Go to another topic">{switch}</select></div></details>
-<button type="button" class="btn copy-ov">Copy summary</button></div></div>
-<div class="feat">
-<div class="feat-main"><nav class="tabs" aria-label="This topic">{tabs}</nav>
-<div class="tab-panel" id="p-overview">{overview(t["card_md"], t["slug"])}</div>
-<div class="tab-panel" id="p-questions" hidden>{questions_html(qs, "../")}</div>
-<div class="tab-panel" id="p-sources" hidden>{sources_tab(t["card_md"])}</div></div>
-<aside class="side rail">{card_tasks(t["slug"])}{confluence_pages(t["docs"], t["title"])}{side_people(t["slug"], "topic") or '<p class="empty">No people or systems named yet.</p>'}</aside>
-</div>"""
-    return shell(t["title"], body, base="../", active="features", built=built, kind="topic")
-

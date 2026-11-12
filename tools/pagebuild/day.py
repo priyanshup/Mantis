@@ -1,9 +1,12 @@
-"""Site pages for the owner's day (MANTIS-IMP-094): Today, Meetings, Sources.
-
-Static frames with the build-time parts filled in; the live parts (tasks, follow-ups, meetings and their
-agendas, the pull brief, filters) are drawn by app.js from tools/serve.py, so they never wait for a rebuild."""
-from datetime import date as _date, timedelta as _td
-from site_common import *   # noqa: F401,F403  (shared state and helpers)
+"""Rules for what is yours, what needs attention today and the health line. No page of its own; the app and the tests use it."""
+import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
+import hashlib
+import json
+import re
+from pagebuild.labels import PRIO_RANK, WORK
+from pagebuild.markup import plain
+from pagebuild.paths import M
+from pagebuild.registry import CHANGES, FOCUS, OPEN, READY, archived
 
 
 def scope_of(o):
@@ -60,4 +63,3 @@ def attention(work):
 def health():
     p = M / "knowledge" / "map" / "health.json"
     return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {"date": "", "items": []}
-

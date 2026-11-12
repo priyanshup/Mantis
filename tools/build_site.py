@@ -9,26 +9,47 @@ HTML comments are removed. Needs the `markdown` package (pip install markdown).
 Reads mantis/knowledge/map/features.json and work.json, which build_map.py writes.
 """
 import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
-import hashlib, html, json, os, re, shutil, tempfile
-from urllib.parse import quote
+import json, re
 from datetime import datetime
 from pathlib import Path
 
-import markdown
-
-import edit_common
-from site_common import *   # noqa: F401,F403  (shared state, helpers, shell)
-from site_plan import *     # noqa: F401,F403
-from site_people import *   # noqa: F401,F403
-from site_reference import *   # noqa: F401,F403
-from site_day import *   # noqa: F401,F403
+from pagebuild.changes import page_changes
+from pagebuild.feature import page_feature
+from pagebuild.frame import MOVED, redirect
+from pagebuild.library import page_library, page_single, search_index
+from pagebuild.loaders import draft_data, library_items, load, load_topics
+from pagebuild.paths import M, SITE
+from pagebuild.people import page_people, people_data
+from pagebuild.registry import ASSETS, CHANGES, DRAFTS, FOCUS, GRAPH, OPEN, READY, TOPICS
+from pagebuild.topic import page_topic
+from pagebuild.work import page_loose, page_work
 from site_app import page_app, static_json
 
 
 # ---------- Build ----------
 
-def build():
-    built = datetime.now().strftime("%d %b %Y, %H:%M")
+def build_assets(out):
+    """Scripts, styles and tokens. Cheap, so they are rebuilt on every build."""
+    # Pages are built in memory; only files whose content changed are written (MANTIS-IMP-016).
+    assets = Path(__file__).resolve().parent / "site_assets"
+    for p in assets.rglob("*"):
+        if p.is_file() and p.parent.name != "js" and "pages" not in p.relative_to(assets).parts:
+            out["assets/" + p.relative_to(assets).as_posix()] = p.read_bytes()
+    import site_pages
+    for t in site_pages.config()["types"]:   # one script and one stylesheet per page type
+        out[f"assets/pages/{t}.js"], out[f"assets/pages/{t}.css"] = site_pages.bundle_js(t), site_pages.bundle_css(t)
+    import theme
+    for problem in theme.check():   # checked on every build (MANTIS-IMP-107)
+        print("Theme:", problem)
+    out["assets/tokens.css"] = theme.css().encode("utf-8")   # the one source of colour, type, shape and motion
+    import layout, stylelint
+    for problem in layout.check():
+        print("Layout:", problem)
+    stylelint.main()   # prints one line; problems are listed under it
+
+
+def render_pages(out, built):
+    """Every page that is drawn from the knowledge. Returns the counts for the summary line."""
     mp = M / "knowledge" / "map"
     if (mp / "entities.json").exists():
         GRAPH.update(json.loads((mp / "entities.json").read_text(encoding="utf-8")))
@@ -51,23 +72,6 @@ def build():
     if fp.exists():
         FOCUS.update(json.loads(fp.read_text(encoding="utf-8")))
     items = library_items(features, work)
-    # Pages are built in memory; only files whose content changed are written (MANTIS-IMP-016).
-    out = {}
-    assets = Path(__file__).resolve().parent / "site_assets"
-    for p in assets.rglob("*"):
-        if p.is_file() and p.parent.name != "js" and "pages" not in p.relative_to(assets).parts:
-            out["assets/" + p.relative_to(assets).as_posix()] = p.read_bytes()
-    import site_pages
-    for t in site_pages.config()["types"]:   # one script and one stylesheet per page type
-        out[f"assets/pages/{t}.js"], out[f"assets/pages/{t}.css"] = site_pages.bundle_js(t), site_pages.bundle_css(t)
-    import theme
-    for problem in theme.check():   # checked on every build (MANTIS-IMP-107)
-        print("Theme:", problem)
-    out["assets/tokens.css"] = theme.css().encode("utf-8")   # the one source of colour, type, shape and motion
-    import layout, stylelint
-    for problem in layout.check():
-        print("Layout:", problem)
-    stylelint.main()   # prints one line; problems are listed under it
     w = lambda rel, s: out.__setitem__(rel, s.encode("utf-8"))
     # The six tabs are index.html alone (MANTIS-IMP-107); the old tab addresses redirect (MOVED). Then the pages the tabs lead to
     w("index.html", page_app(built))
@@ -96,14 +100,35 @@ def build():
             w(it["href"], page_single(it, built))
     for rel, to in MOVED.items():   # MANTIS-IMP-068
         w(rel, redirect(to))
-    # Write only what changed. The "Built" stamp in the footer is ignored when comparing, so a
+    return {"features": len(features), "work": len(work), "items": len(items)}
+
+
+def build():
+    import sitecache
+    built = datetime.now().strftime("%d %b %Y, %H:%M")
+    out = {}
+    build_assets(out)
+    # Incremental (sitecache.py): when no input changed, the pages already in the site folder are kept, not drawn again.
+    sig, state = sitecache.fingerprint(), sitecache.load()
+    reuse = sitecache.reusable(state, sig, SITE)
+    if reuse:
+        counts, page_files = state["counts"], state["files"]
+        for rel in page_files:
+            out[rel] = None   # None = keep the file that is there
+    else:
+        before = set(out)
+        counts = render_pages(out, built)
+        page_files = sorted(set(out) - before)
+    # Write only what changed. The "Built" stamp in the footer and in static.json is ignored when comparing, so a
     # rebuild that changes nothing writes nothing and open tabs do not reload. Two builds can
     # overlap (the server rebuilds on save while a session runs build_map.py): a file held by the
     # other build or the browser is retried briefly, then left for the next build.
     import time
-    stamp = re.compile(rb"Built [^<]*?\.</span></footer>")
+    stamp = re.compile(rb"Built [^<\"]*?(?=</span></footer>)|\"built\": \"[^\"]*\"")   # the footer stamp and static.json's built time
     written = 0
     for rel, data in out.items():
+        if data is None:
+            continue
         p = SITE / rel
         try:
             if p.exists() and stamp.sub(b"", p.read_bytes()) == stamp.sub(b"", data):
@@ -133,9 +158,12 @@ def build():
                 pass   # held by the other build or the browser; the next build removes it
     if written or removed or not (SITE / "version.txt").exists():
         (SITE / "version.txt").write_text(str(datetime.now().timestamp()), encoding="utf-8")
-    leaks = [rel for rel, data in out.items() if rel.endswith(".html") and Path(rel).name not in ("questions.html", "sources.html")
+    leaks = [rel for rel, data in out.items() if data is not None and rel.endswith(".html") and Path(rel).name not in ("questions.html", "sources.html")
              and re.search(r"\b(?:DOC|GAP|ASM|CFL|DEC|AST)-\d", re.sub(r"(?s)<template.*?</template>", "", data.decode("utf-8")))]
-    print(f"Site: {len(features)} topics, {len(work)} epics and stories, {len(items)} library items -> {SITE} ({written} file(s) changed)"
+    if not reuse:
+        sitecache.save(sig, page_files, counts)
+    print(f"Site: {counts['features']} topics, {counts['work']} epics and stories, {counts['items']} library items -> {SITE} ("
+          + (f"pages unchanged, {len(page_files)} reused; " if reuse else "pages drawn; ") + f"{written} file(s) changed)"
           + (f"  WARNING, IDs left in: {leaks}" if leaks else ""))
 
 

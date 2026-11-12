@@ -1,5 +1,15 @@
-"""Site pages about people and questions: Open items and People."""
-from site_common import *   # noqa: F401,F403  (shared state and helpers)
+"""The People page and the side panel's people list."""
+import sys; sys.dont_write_bytecode = True  # keep __pycache__ out of OneDrive
+import hashlib
+import json
+import re
+from datetime import datetime
+from pagebuild.frame import job_btn, shell
+from pagebuild.loaders import can_answer, draft_button
+from pagebuild.markup import plain
+from pagebuild.paths import M
+from pagebuild.registry import DRAFTS, OPEN
+from pagebuild.text import esc
 
 
 def page_people(built):
@@ -59,4 +69,3 @@ def auto_closed(days=30):
             topic = re.search(r"(?m)^- \*\*Topic:\*\*\s*(.+)$", t)
             out.append({"id": p.stem, "date": m.group(1), "why": m.group(2), "topic": (topic.group(1) if topic else "").strip()})
     return sorted(out, key=lambda x: x["date"], reverse=True)
-

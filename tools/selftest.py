@@ -35,12 +35,15 @@ def check(name, ok, detail=""):
 
 
 def code():
-    for p in [*sorted(T.glob("*.py")), *sorted((T / "site_assets" / "pages" / "js").glob("*.js"))]:
+    for p in [*sorted(T.glob("*.py")), *sorted((T / "pagebuild").glob("*.py")), *sorted((T / "webserver").glob("*.py")), *sorted((T / "site_assets" / "pages" / "js").glob("*.js"))]:
         bad = re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", p.read_text(encoding="utf-8"))
         if bad:   # a control character in code: the mark of a shell-quoting accident ("\b" becoming a backspace)
             line = p.read_text(encoding="utf-8")[:bad.start()].count("\n") + 1
             check("code", False, f"{p.name} line {line} contains control character {bad.group(0)!r}")
-    for p in sorted(T.glob("*.py")):
+    import pagecheck
+    for problem in pagecheck.check():   # page builders: names resolve, nothing unused, no cycles, small modules
+        check("pagebuild", False, problem)
+    for p in [*sorted(T.glob("*.py")), *sorted((T / "pagebuild").glob("*.py")), *sorted((T / "webserver").glob("*.py"))]:
         try:
             ast.parse(p.read_text(encoding="utf-8"), filename=p.name)
         except SyntaxError as e:
@@ -48,7 +51,7 @@ def code():
             continue
         if p.stem not in NO_IMPORT:
             try:
-                importlib.import_module(p.stem)
+                importlib.import_module((p.parent.name + "." if p.parent.name in ("pagebuild", "webserver") else "") + p.stem)
             except SystemExit:
                 pass
             except Exception as e:
@@ -115,6 +118,32 @@ def docs():
             check("docs", (ROOT / path).exists(), f"{f.relative_to(ROOT).as_posix()} mentions {path}, which does not exist")
     import toollist
     check("docs", toollist.current(), "tools/README.md does not list the tools on disk; run python tools/toollist.py")
+
+
+def incremental():
+    """The incremental site build (sitecache.py): reuse only when nothing changed, and rebuild on any doubt."""
+    import sitecache, tempfile
+    a, b = sitecache.fingerprint(), sitecache.fingerprint()
+    check("incremental", a == b, "the input fingerprint differs between two reads; a file that changes on every build is being counted (sitecache.SKIP_FILES)")
+    with tempfile.TemporaryDirectory() as d:
+        site = Path(d)
+        (site / "x.html").write_text("x", encoding="utf-8")
+        st = {"sig": "s", "files": ["x.html"], "counts": {}}
+        check("incremental", sitecache.reusable(st, "s", site), "same inputs and every page present must be reused")
+        check("incremental", not sitecache.reusable(st, "t", site), "changed inputs must rebuild the pages")
+        check("incremental", not sitecache.reusable({**st, "files": ["x.html", "gone.html"]}, "s", site), "a missing page must rebuild the pages")
+        check("incremental", not sitecache.reusable({}, "s", site), "no saved state must rebuild the pages")
+
+
+def skills():
+    """Every skill is scanned by SkillSpector before it is trusted (owner rule, 2026-11-12). The project's skills are checked here;
+    the user-level ones are reported on the Health page and at session start."""
+    import skillscan
+    if not skillscan.installed():
+        check("skills", False, "SkillSpector is not installed; the install command is in tools/skillscan.py")
+        return
+    for r in skillscan.problems("project"):
+        check("skills", False, f"project skill {r['name']} is {r['state']}; run python tools/skillscan.py")
 
 
 def readiness_rules():
@@ -203,7 +232,7 @@ def pull_logic():
           "a child did not find its filter through the parent chain")
     check("pull", {"status", "attachments"} <= U.NOISE and not {"status", "comments"} <= U.NOISE, "noise rule")
     check("pull", U.filter_of("S-3", parents, {"skip": {"E-2"}}) == "skip", "a skipped item did not take its children with it")
-    import site_day
+    from pagebuild import day as site_day
     scope = lambda **o: site_day.scope_of({"kind": "gap", "status": "Open", **o})
     check("pull", scope(kind="term") == "tidy" and scope(ask={"name": "A"}) == "others" and scope() == "you"
           and scope(status="Unconfirmed", kind="conflict", ask={"name": "A"}) == "you", "Questions sides")
@@ -249,7 +278,7 @@ def data():
 
 if __name__ == "__main__":
     quick = "--quick" in sys.argv
-    code(); js_css(); theme_and_style(); docs(); readiness_rules(); decision_watch(); search_index(); pull_logic(); repeats_rule()
+    code(); js_css(); theme_and_style(); docs(); incremental(); skills(); readiness_rules(); decision_watch(); search_index(); pull_logic(); repeats_rule()
     if not quick:
         tools(); data()
     if fails:

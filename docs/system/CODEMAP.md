@@ -23,14 +23,14 @@ atl_store.py | 51 | The local mirror of Jira and Confluence: one Markdown file p
 atl_updates.py | 372 | What changed in Jira and Confluence since the last pull, per filter (MANTIS-IMP-092, MANTIS-IMP-094). Stdlib only. | atl_client, atl_compare, atl_confluence, atl_convert, atl_jira, atl_store, frontmatter
 away.py | 160 | Away planner and handover (MANTIS-IMP-038). | brief, followups, people, schedule, steps, tasks_store
 brief.py | 408 | Meeting briefs (MANTIS-IMP-037): "I'm meeting Sam now, what should I discuss?" | followups, growth, people, readiness, repeats, schedule, steps, tasks_store
-build_map.py | 408 | Build Mantis's navigation map and reference graph (stdlib only, deterministic). | answered, assets, build_site, buildlock, cards, changes, codemap, decisions
-build_site.py | 146 | Build the read-only Mantis website from the Markdown files. | buildlock, edit_common, layout, site_app, site_common, site_day, site_pages, site_people
+build_map.py | 421 | Build Mantis's navigation map and reference graph (stdlib only, deterministic). | answered, assets, build_site, buildlock, cards, changes, codemap, decisions
+build_site.py | 174 | Build the read-only Mantis website from the Markdown files. | buildlock, layout, pagebuild/changes, pagebuild/feature, pagebuild/frame, pagebuild/library, pagebuild/loaders, pagebuild/paths
 buildlock.py | 57 | One build at a time (MANTIS-IMP-063): the site server, a background job and a chat session can all start one. | 
 cards.py | 204 | Cards: the reading layer for every subject (MANTIS-IMP-014). Stdlib only, deterministic. | 
 changes.py | 352 | What changed, and which card summaries are behind (MANTIS-IMP-043, MANTIS-IMP-044). Stdlib only. | followups, frontmatter, schedule, steps, textcache
 citations.py | 137 | Citation checks that code can do (MANTIS-IMP-078): do the cited sources exist and belong where they are cited? | entry, frontmatter
 classify.py | 207 | Classify a new document against the corpus before ingest (MANTIS-IMP-005). Stdlib only. | frontmatter, kgraph, local_config, textcache
-codemap.py | 80 | Write docs/system/CODEMAP.md: every tool and front-end file with its one-line purpose, size and neighbours (stdlib only). | 
+codemap.py | 82 | Write docs/system/CODEMAP.md: every tool and front-end file with its one-line purpose, size and neighbours (stdlib only). | 
 contradictions.py | 152 | Contradiction check (MANTIS-IMP-047): what to compare when a source arrives or a summary is refreshed. | classify
 csskit.py | 79 | A small CSS walker (stdlib only): list a stylesheet's rules with their positions, and rewrite it keeping only the rules a test keeps. | 
 deadlines.py | 139 | Suggested deadlines for undated tasks (MANTIS-IMP-041). | people, schedule, steps, tasks_store
@@ -40,7 +40,7 @@ entities.py | 126 | Batch changes to the entity register in one call (MANTIS-IMP
 entry.py | 368 | Read and write Mantis registers: one file per entry (stdlib only). | answered, textcache
 estimates.py | 157 | Import the team's estimation sheet onto the roadmap cards (MANTIS-IMP-053). | build_site, local_config
 evaluate.py | 353 | Evaluation set: does Mantis still get known cases right? (MANTIS-IMP-077) | ask, classify, contradictions, support
-extra.py | 193 | Live data for the Today and People pages: follow-ups, suggested deadlines, meetings, away, briefs. | brief, deadlines, followups, people, schedule, steps, tasks_store
+extra.py | 192 | Live data for the Today and People pages: follow-ups, suggested deadlines, meetings, away, briefs. | brief, deadlines, followups, people, schedule, steps, tasks_store
 extract.py | 118 | Turn inbox files into clean Markdown before Claude reads them (saves most of the reading tokens). | mishear
 followups.py | 177 | Follow-ups per person (MANTIS-IMP-020): topics to raise with someone, or things waiting on them. | people, steps
 frontmatter.py | 35 | The one front-matter reader for Mantis files (MANTIS-IMP-063): digests, cards, outputs. | 
@@ -53,8 +53,9 @@ kgraph.py | 188 | Entity knowledge graph for Mantis (MANTIS-IMP-004). Stdlib onl
 layout.py | 88 | The layout: site_config/layout.json -> window.APP_LAYOUT, plus checks (stdlib only; MANTIS-IMP-107). | 
 leakcheck.py | 108 | Check that files bound for the public engine repo carry no knowledge (MANTIS-IMP-036). | 
 local_config.py | 13 | Read this instance's local settings (mantis/config/settings.json). Never committed (MANTIS-IMP-036). | 
-maintain.py | 226 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, citations, classify, entry, local_config, prune_sources, repeats
+maintain.py | 238 | Mantis housekeeping: safe automatic cleanup plus a health report (MANTIS-IMP-015). | answered, assets, citations, classify, entry, local_config, prune_sources, repeats
 mishear.py | 56 | Mishearings: words speech-to-text gets wrong (MANTIS-IMP-051). Stdlib only. | 
+pagecheck.py | 88 | Static checks for the packages tools/pagebuild/ (page builders) and tools/webserver/ (the site server), run by selftest.py. | 
 peek.py | 30 | Print the short form of one or more digests: title, confidence, open items and Summary. | 
 people.py | 107 | People the owner works with (MANTIS-IMP-022), read from mantis/knowledge/people.md. | followups, local_config
 prune_sources.py | 147 | Free space in the source snapshots without losing evidence (MANTIS-IMP-089). Stdlib for planning; pypdf to keep text. | extract
@@ -64,18 +65,15 @@ refresh_report.py | 114 | What a card refresh changed and what it cost: curated 
 repeats.py | 102 | Repetition check: what an output says twice (MANTIS-IMP-094). Stdlib, no AI. | answered
 schedule.py | 263 | The owner's recurring meetings and away periods (MANTIS-IMP-037, MANTIS-IMP-038). | people
 search.py | 239 | Search index for questions: SQLite full-text search plus the entity graph (MANTIS-IMP-086). | ask, frontmatter
-selftest.py | 259 | Self-test for the Mantis engine (MANTIS-IMP-061). Run before every commit (the pre-commit hook does). | atl_updates, decisions, layout, pull, readiness, repeats, search, site_day
-serve.py | 491 | Serve the Mantis site at http://localhost:8000 and rebuild it when Markdown changes. | buildlock, edit_common, extra, growth, jobs, pull, tasks_store
-session_start.py | 94 | SessionStart hook: start the site and tell Claude what is waiting in the inbox. | brief, followups, people, readiness, schedule, steps, tasks_store
-site_app.py | 153 | The front end (2026-11-11): the approved mock's own screens, run on live data. | layout, site_chrome, site_common, site_day
+selftest.py | 288 | Self-test for the Mantis engine (MANTIS-IMP-061). Run before every commit (the pre-commit hook does). | atl_updates, decisions, layout, pagecheck, pull, readiness, repeats, search
+serve.py | 71 | Serve the Mantis site at http://localhost:8000 and rebuild it when Markdown changes. | jobs, webserver/config, webserver/handler, webserver/lifecycle, webserver/watching
+session_start.py | 107 | SessionStart hook: start the site and tell Claude what is waiting in the inbox. | brief, followups, people, readiness, schedule, skillscan, steps, tasks_store
+site_app.py | 155 | The front end (2026-11-11): the approved mock's own screens, run on live data. | layout, pagebuild/day, pagebuild/paths, pagebuild/registry, site_chrome
 site_chrome.py | 48 | Page chrome both page shells share: head links, theme-colour meta tags and the theme switch (stdlib only; MANTIS-IMP-107). | theme
-site_common.py | 551 | Shared parts of the Mantis site (MANTIS-IMP-064): state loaded once per build, Markdown rendering, | edit_common, frontmatter, people, site_chrome, site_shell
-site_day.py | 64 | Site pages for the owner's day (MANTIS-IMP-094): Today, Meetings, Sources. | site_common
 site_pages.py | 114 | Page types and their bundles for the content pages (stdlib only; MANTIS-IMP-107). | 
-site_people.py | 63 | Site pages about people and questions: Open items and People. | people, site_common
-site_plan.py | 325 | Site pages for planning: Features (Following, Roadmap with its Timeline view, Ideas, All), feature and topic pages, Epics & stories. | atl_client, atl_store, atl_updates, site_common, site_day
-site_reference.py | 169 | Site pages for reference and housekeeping: Library (pages, diagrams, decisions), What's new, search. Health lives on Sources (site_day.py). | people, site_common
 site_shell.py | 55 | The shell of the content pages (feature, topic, people, library, documents, changes, work): the app's header, a main area, and | layout, site_chrome
+sitecache.py | 139 | Incremental site build (Phase 3, task 1). Stdlib only. | 
+skillscan.py | 189 | Run every Claude skill through NVIDIA SkillSpector before it is trusted, and keep a record (owner rule, 2026-11-12). | 
 steps.py | 108 | Next steps on cards (MANTIS-IMP-023): read the "## Next steps" table from every card's curated part. | people, textcache
 stylelint.py | 125 | Style lint: keeps colour, type and layout in the theme, not in widgets (stdlib only; MANTIS-IMP-107). | csskit, theme
 support.py | 359 | Does the cited source support the claim? An AI verifier, fed by code (MANTIS-IMP-079). | classify, entry, frontmatter, jobs, local_config
@@ -83,9 +81,31 @@ tasks.py | 152 | Add to or read the owner's task list from the command line (Cla
 tasks_store.py | 259 | The owner's task list (MANTIS-IMP-018): storage, validation and the daily rollover. | 
 textcache.py | 92 | Cached file reads for the rebuild (MANTIS-IMP-016). Stdlib only. | 
 theme.py | 98 | The theme: site_config/theme.json -> assets/tokens.css, plus checks (stdlib only; MANTIS-IMP-107). | 
-toollist.py | 80 | Write tools/README.md, the one list of tools, from each tool's own first help line (MANTIS-IMP-062). | 
+toollist.py | 82 | Write tools/README.md, the one list of tools, from each tool's own first help line (MANTIS-IMP-062). | 
 unusedcss.py | 92 | Find (and with --apply remove) CSS rules whose class or id appears nowhere in the site (stdlib only; MANTIS-IMP-107). | csskit
 wiring.py | 72 | Wiring check for the app: every control it draws must be connected to something (stdlib only; MANTIS-IMP-110). | 
+pagebuild/changes.py | 70 | The changes page. | pagebuild/frame, pagebuild/labels, pagebuild/registry, pagebuild/text
+pagebuild/day.py | 66 | Rules for what is yours, what needs attention today and the health line. No page of its own; the app and the tests use it. | pagebuild/labels, pagebuild/markup, pagebuild/paths, pagebuild/registry
+pagebuild/decisions.py | 25 | The decisions page. | pagebuild/paths, pagebuild/text
+pagebuild/diagrams.py | 30 | The diagrams page. | pagebuild/registry, pagebuild/text
+pagebuild/feature.py | 270 | The feature card page, and the helpers a card shares with the topic page. | atl_client, atl_store, atl_updates, pagebuild/day, pagebuild/frame, pagebuild/labels, pagebuild/loaders, pagebuild/markup
+pagebuild/frame.py | 174 | The pieces of a page around its content: the shell call, copy bar, Jira and sync panels, redirects and small widgets. | edit_common, pagebuild/markup, pagebuild/paths, pagebuild/registry, pagebuild/text, site_shell
+pagebuild/labels.py | 91 | Status words, pill classes and the vocabularies the pages share. | pagebuild/text
+pagebuild/library.py | 70 | The library page, the single-document page and the search index. | pagebuild/decisions, pagebuild/diagrams, pagebuild/frame, pagebuild/labels, pagebuild/markup, pagebuild/paths, pagebuild/registry, pagebuild/text
+pagebuild/loaders.py | 144 | Reading the knowledge files into the pages' data: features, work, topics, library items, who can answer what. | pagebuild/labels, pagebuild/markup, pagebuild/paths, pagebuild/registry, pagebuild/text, people
+pagebuild/markup.py | 65 | Markdown to page HTML: renders a card or digest with its links, images and status tags, and reads a file from the knowledge folder. | pagebuild/labels, pagebuild/paths, pagebuild/registry, pagebuild/text
+pagebuild/paths.py | 15 | Where things live: the repository, the knowledge folder and the generated site folder. | 
+pagebuild/people.py | 72 | The People page and the side panel's people list. | pagebuild/frame, pagebuild/loaders, pagebuild/markup, pagebuild/paths, pagebuild/registry, pagebuild/text, people
+pagebuild/registry.py | 44 | The containers the build fills once (the graph, open items, topics, focus, drafts, changes, assets). build_site.py fills them in place, so every modul | 
+pagebuild/text.py | 57 | Markdown to clean HTML and small text helpers. Pure functions; no site state. | frontmatter
+pagebuild/topic.py | 32 | The topic card page. | pagebuild/feature, pagebuild/frame, pagebuild/registry, pagebuild/text
+pagebuild/work.py | 40 | The epic and story pages (a feature's work, and work that belongs to no feature). | pagebuild/frame, pagebuild/labels, pagebuild/markup, pagebuild/registry, pagebuild/text
+webserver/config.py | 35 | Where the server lives: the port, the folders it watches and the site it serves. | 
+webserver/focus.py | 71 | The owner's follow, archive and roadmap choices from the Features page (knowledge/focus.json). | webserver/config, webserver/watching
+webserver/handler.py | 200 | The request handler: every /api route the site calls, and the static files. | edit_common, extra, growth, jobs, pull, tasks_store, webserver/config, webserver/focus
+webserver/inbox.py | 126 | What the site posts to the inbox: answers, edited pages, dropped files and Undo of an automatic close. | jobs, webserver/config, webserver/watching
+webserver/lifecycle.py | 30 | Stop a running site by the process ID it recorded at start. | webserver/config
+webserver/watching.py | 40 | Rebuild the site when a hand edit changes a source; Claude and the site's buttons rebuild themselves. | buildlock, jobs, webserver/config
 
 ## Front end (tools/site_assets/)
 
@@ -114,17 +134,17 @@ app/live-data.js | 132 | live.js (2026-11-11): runs after the mock's app files a
 app/motion-delight.js | 34 | v12 craft and delight. Everything here is transform or opacity, under half a second, and off for reduced motion.
 app/motion-indicators-peek.js | 67 | v13: elastic indicators, rows that glide, sticky bars, reveal on scroll, peek cards, drag to dismiss, shortcuts sheet, back to top
 app/platform.js | 131 | platform.js: what every feature builds on. A feature never fetches, builds a dialog or binds a click by itself. Api requests that fail with 
-app/save-live.js | 169 | post.js (2026-11-11): after all of the mock's scripts. Saves what you change through the live APIs, and sends People, Library and the theme 
+app/save-live.js | 178 | post.js (2026-11-11): after all of the mock's scripts. Saves what you change through the live APIs, and sends People, Library and the theme 
 app/screens-base.js | 65 | Mantis redesign mock v4. Real numbers from data.js; the rest is illustrative where stated in notes.md.
 app/screens-questions-growth.js | 71 | v5 additions and overrides: ranking, stickers, message preview, answering, growth, feature reader
 app/snooze-history.js | 9 | v12: snooze to tomorrow, history with snoozed tasks, week uses all tasks
 app/start.js | 7 | start.js: runs last. Every function exists by now, so the first screen is drawn once, with the final versions. Observers that call functions
 app/tasks-add-edit-inbox.js | 44 | v6: add task, edit task, groups by drag between, inbox
-app/today-features-layout.js | 11 | v11: week back in the right column (whole week, vertical), Features as a ruled list, plainer people lines
+app/today-features-layout.js | 13 | v11: week back in the right column (whole week, vertical), Features as a ruled list, plainer people lines
 app/tooltips.js | 40 | tooltips.js: a small themed tip for icon-only controls and titled elements, on every page. It appears quickly (instantly when another tip wa
 app/ui.js | 35 | ui.js: the small component library and the layout engine. Load this first. A widget is written once, UI.widget("tab.name", ctx => innerHtml)
 app/week-view.js | 21 | v10: full week view, plain copy, sources on topics
-app/widgets-features.js | 45 | widgets-features.js: the widgets on Features (the list) and on a feature's page, and both screens. layout.json decides where each one sits.
+app/widgets-features.js | 48 | widgets-features.js: the widgets on Features (the list) and on a feature's page, and both screens. layout.json decides where each one sits.
 app/widgets-growth.js | 15 | widgets-growth.js: the widgets on Growth, and the screen. layout.json decides where each one sits.
 app/widgets-meetings-questions.js | 37 | widgets-meetings-questions.js: the widgets on Meetings and Questions, and the two screens. layout.json decides where each one sits.
 app/widgets-sources.js | 11 | widgets-sources.js: the widgets on Sources, and the screen. layout.json decides where each one sits.

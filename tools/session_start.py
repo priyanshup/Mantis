@@ -35,6 +35,19 @@ try:   # what waits is processed by the next pull, which only the owner starts (
 except Exception as e:
     notes.append(f"Inbox check failed: {e}")
 
+try:   # every skill goes through SkillSpector before it is trusted (owner rule, 2026-11-12); this only reads the record, it scans nothing
+    sys.path.insert(0, str(ROOT / "tools"))
+    import skillscan
+    if not skillscan.installed():
+        notes.append("SkillSpector is not installed, so skills cannot be checked. Tell the owner in one line; the install command is in tools/skillscan.py.")
+    else:
+        bad = skillscan.problems()
+        if bad:
+            notes.append(f"{len(bad)} Claude skill(s) are not cleared by SkillSpector ({', '.join(r['name'] + ': ' + r['state'] for r in bad[:5])}). "
+                         "Do not use them. Tell the owner in one line; python tools/skillscan.py scans them.")
+except Exception as e:
+    notes.append(f"Skill check failed: {e}")
+
 # The daily brief and today's meeting briefs are prepared in the first session of a day only; after that the owner
 # asks for them (the owner's choice, 2026-10-27). The stamp lives outside OneDrive.
 import os as _os

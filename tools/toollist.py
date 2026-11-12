@@ -19,7 +19,7 @@ GROUPS = [
     ("Look up", ["ask", "search", "peek", "graph", "readiness", "decisions"]),
     ("Housekeeping and setup", ["maintain", "session_start", "init", "leakcheck", "selftest", "toollist", "codemap", "stylelint", "unusedcss", "citations", "repeats", "evaluate", "answered", "prune_sources", "refresh_report"]),
     ("Jira and Confluence (read-only)", ["atl", "atl_client", "atl_confluence", "atl_jira", "atl_compare", "atl_convert", "atl_media", "atl_store", "atl_updates"]),
-    ("Modules (used by the commands)", ["build_site", "theme", "layout", "wiring", "site_chrome", "csskit", "site_common", "site_day", "site_plan", "site_people", "site_reference", "site_app", "site_v3", "cards", "changes", "index_gen", "kgraph", "tasks_store", "edit_common", "frontmatter",
+    ("Modules (used by the commands)", ["build_site", "theme", "layout", "wiring", "site_chrome", "pagecheck", "sitecache", "csskit", "site_app", "site_v3", "cards", "changes", "index_gen", "kgraph", "tasks_store", "edit_common", "frontmatter",
                                         "buildlock", "textcache", "extra", "local_config"]),
 ]
 PACKAGES = {"pypdf": "pypdf", "PIL": "pillow", "markdown": "markdown", "openpyxl": "openpyxl", "markdownify": "markdownify", "docx": "python-docx"}
@@ -59,6 +59,8 @@ def render():
             rows.append(f"| `{n}.py` | {d.replace('|', '/')} | {', '.join(pk) or 'standard library'} |")
             placed.add(n)
     rows += ["\n## Files that are not commands\n", "| File | Role |", "|---|---|",
+             "| `pagebuild/` | The page builders, one module per page type, and the shared parts they import |",
+             "| `webserver/` | The site server split by job: config, watching, inbox, focus, the request handler |",
              "| `site_assets/` | The site's CSS, JavaScript, logo and vendored libraries |",
              "| `githooks/pre-commit` | Runs `leakcheck.py` and `selftest.py --quick` before every commit (`git config core.hooksPath tools/githooks`) |",
              "| `classify_config.json` | Cut-offs for `classify.py` |"]
