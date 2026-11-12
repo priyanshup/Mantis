@@ -32,7 +32,10 @@ Look and layout rules are in `DESIGN.md`; this file is about how the code is org
 | App building blocks: card, head, dialog, actions, requests | `assets/app/ui.js`, `platform.js` | wiring, flows |
 | A tab's widgets | `assets/app/widgets-*.js` | `layout.py` |
 | A feature's actions (a meeting, a filter, Growth) | `assets/app/feature-*.js` | `wiring.py`, `flows-check.js` |
-| Content pages | `site_shell.py`, `assets/pages/js`, `assets/pages/css` | `site_pages.py`, `pagefn-check.js` |
+| Content pages: one Python module per page type | `tools/pagebuild/<type>.py` (feature, work, topic, people, library, decisions, diagrams, changes) | `pagecheck.py`, `site_pages.py`, `pagefn-check.js` |
+| The site server, by job | `tools/webserver/` (`config`, `watching`, `inbox`, `focus`, `lifecycle`, `handler`); `serve.py` only starts and stops it | `pagecheck.py` |
+| What the pages share | `tools/pagebuild/` `paths`, `text`, `labels`, `registry`, `markup`, `loaders`, `frame`, `day` | `pagecheck.py` |
+| The page frame, scripts and styles | `site_shell.py`, `assets/pages/js`, `assets/pages/css` | `site_pages.py`, `pagefn-check.js` |
 | The header and the theme switch, shared | `header.css`, `chrome.css`, `site_chrome.py` | |
 | What each file is for | `docs/system/CODEMAP.md` (generated) | `codemap.py --check` |
 
@@ -48,7 +51,11 @@ Find code by the code map and the file names, not by opening files.
   `document.addEventListener("click")` for one feature.
 - Page builders return a body and call `shell(kind=...)`. They do not write a header, a script tag or a style tag.
 - No `import *`. Name what you take.
-- Adding a page type is one entry in `pages.json` and one builder. If it needs more, the design has a gap: fix the gap.
+- Adding a page type is one entry in `pages.json` and one module in `tools/pagebuild/` that defines its `page_*` function and calls
+  `frame.shell(kind=...)`. It imports the shared modules by name. A page module does not import another page module, except the card
+  helpers a topic takes from `feature.py` (`pagecheck.py` lists the allowed pairs). A shared module never imports a page module.
+  If it needs more, the design has a gap: fix the gap.
+- The containers a build fills (`registry.py`) are filled in place (`OPEN[:] = ...`, `GRAPH.update(...)`), never rebound, so every module sees the same object.
 
 ### Styling
 - Colours come from `theme.json` tokens, never a literal. Spacing helpers are `u-*` classes, not `style=""`.
@@ -100,6 +107,10 @@ Find code by the code map and the file names, not by opening files.
 - Loading shows a quiet skeleton. A failure message appears only if the app has not drawn, and only after a grace period (2.5 s after an
   error, 10 s overall); a recoverable error in one script never flashes a message over a page that is about to draw. The message
   carries the error text under Details. The first successful draw marks the app ready (`window.__appReady`).
+- **Skills and plugins are scanned before they are used.** Every Claude skill (project, user, synced, plugin) goes through NVIDIA SkillSpector
+  (`python tools/skillscan.py`, local, no LLM). A skill that is new, changed, or not SAFE is not used; a CAUTION verdict needs the owner's written
+  acceptance. A candidate is scanned before it is installed (`python tools/skillscan.py <folder>`). The self-test, the Health page and the session-start
+  notice report anything unscanned. Never install a skill pack, plugin or MCP server the owner has not named.
 - Escape every value you put in HTML (`esc`). Never build HTML from user text without it.
 - Writes go through the server's origin check; the site binds to localhost. Keep knowledge, local settings and company
   detail out of the engine repo (`leakcheck.py`, `.gitignore` allow-list).
@@ -109,6 +120,12 @@ Find code by the code map and the file names, not by opening files.
 - A page loads only the modules its type needs. Do not poll faster than a person can notice; do not re-render a whole
   tab for a one-row change when a row can be updated.
 - Check build time (`map/timings.json`): a full build should stay under 15 s.
+- `build_map.py` skips the health report and the code map when nothing they read changed (`sitecache.stage_signature`). A stage that reads files
+  outside `mantis/`, `docs/` and `tools/` must add them to its signature.
+- Builds are incremental: `sitecache.py` fingerprints the inputs and `build_site.py` keeps the pages already on disk when none changed.
+  A new input folder the pages read must be under `mantis/`, `docs/`, `tools/*.py` or `tools/site_config`, or added to `sitecache.inputs()`;
+  a file that changes on every build must be listed in `sitecache.SKIP_FILES`. `python tools/build_map.py --full` forces a full redraw.
+  A page must never depend on the time or on a file outside those folders (`selftest.py` checks the fingerprint is stable).
 
 ## 4. Verification: what runs, and when
 
@@ -125,6 +142,9 @@ Headless Edge does not start on this machine, so screenshots are not possible: s
 the page for anything visual. jsdom has no layout, hover or animation: those need a human eye.
 
 ## 5. How to make a change
+
+The methods for each kind of work (requirements, architecture, test-first, test quality, test strategy, performance and security, debugging, review,
+verification) are in `ENGINEERING_PLAYBOOK.md`. Read its section before starting that kind of work.
 
 1. Say what the owner sees now and what they should see. Name the page and the control.
 2. Take a baseline (a fingerprint with `smoke.js`, the page's main HTML, the flow check).
@@ -161,6 +181,7 @@ the page for anything visual. jsdom has no layout, hover or animation: those nee
 | A day filter listed only days that had meetings, so Wed vanished and the filter could not be removed | A filter offers its whole set and toggles off |
 | A mutation observer called `scrollIntoView` on every redraw: the page and the strip jumped after load, and fought the wheel | No scroll from observers; one centring on show |
 | A "Something went wrong" message flashed over a page that then drew normally | Failure only if not ready after a grace period; flow check `boot` |
+| The footer's "Built" time was not ignored when comparing, so every build in a new minute rewrote 45 pages and reloaded open tabs | Stamp regex in `build_site.py`; `--full` twice writes 0 files |
 | The real cause of that flash: an observer started in an early script called a function defined in a later one, and the loader's own script tags triggered it | Observers and timers that call across files start in `start.js`; `interact.js` fails on any load error |
 
 ## 8. Gaps (not enforced yet)
@@ -169,4 +190,3 @@ the page for anything visual. jsdom has no layout, hover or animation: those nee
 - A phone-width layout check and a contrast check on the rendered pages.
 - The app's older scripts (`screens-*.js`, `behaviour-*.js`) still hold mock-era code: 143 repeated CSS selectors and
   global handlers. New work goes in `feature-*.js` and `widgets-*.js`; move old code there when you next change it.
-- The Python page builders are still grouped in four files (IMP-108).
