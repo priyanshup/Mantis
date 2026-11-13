@@ -140,7 +140,7 @@ pullkit/state.py | 73 | Where a pull keeps things, the pull state and the cards 
 file | lines | purpose
 ---|---|---
 app/agenda-calendar.js | 15 | v9: rest-of-the-week agenda, calendar with meeting and due dots, type-to-filter pickers
-app/app.css | 695 | The app's styles. Colours, type, radii and motion come from tokens.css (site_config/theme.json); nothing here may define a colour.
+app/app.css | 662 | The app's styles. Colours, type, radii and motion come from tokens.css (site_config/theme.json); nothing here may define a colour.
 app/behaviour-agenda.js | 17 | v9 behaviour
 app/behaviour-controls.js | 32 | v8 controls behaviour
 app/behaviour-core.js | 88 | behaviour: motion, toasts, delegated clicks, drawers, search
@@ -178,21 +178,21 @@ app/widgets-growth.js | 15 | widgets-growth.js: the widgets on Growth, and the s
 app/widgets-meetings-questions.js | 37 | widgets-meetings-questions.js: the widgets on Meetings and Questions, and the two screens. layout.json decides where each one sits.
 app/widgets-sources.js | 11 | widgets-sources.js: the widgets on Sources, and the screen. layout.json decides where each one sits.
 app/widgets-today.js | 16 | widgets-today.js: the widgets on Today. Each returns what goes inside its card; layout.json decides where it sits.
-chrome.css | 36 | chrome.css: the theme switch, the one piece of header chrome both page shells share. Colours come from theme.json (--sun-*, --moon-*). Loade
-header.css | 81 | header.css: the page header (brand, tabs, search, icons) shared by the app and the content pages. Colours come from theme.json; layout is th
+chrome.css | 31 | chrome.css: the theme switch, the one piece of header chrome both page shells share. Colours come from theme.json (--sun-*, --moon-*). Loade
+header.css | 68 | header.css: the page header (brand, tabs, search, icons) shared by the app and the content pages. Colours come from theme.json; layout is th
 pages/css/base.css | 28 | base.css: fonts, keyframes and other at-rules every page needs. Every rule starts with /*@n
 pages/css/changes.css | 41 | changes.css: rules used only by: changes. Every rule starts with /*@n
-pages/css/common.css | 646 | common.css: rules every content page uses. Every rule starts with /*@n
-pages/css/document-feature-topic.css | 16 | document-feature-topic.css: rules used only by: document, feature, topic. Every rule starts with /*@n
+pages/css/common.css | 510 | common.css: rules every content page uses. Every rule starts with /*@n
+pages/css/document-feature-topic.css | 14 | document-feature-topic.css: rules used only by: document, feature, topic. Every rule starts with /*@n
 pages/css/document-feature.css | 32 | document-feature.css: rules used only by: document, feature. Every rule starts with /*@n
-pages/css/feature-topic.css | 54 | feature-topic.css: rules used only by: feature, topic. Every rule starts with /*@n
-pages/css/feature.css | 28 | feature.css: rules used only by: feature. Every rule starts with /*@n
+pages/css/feature-topic.css | 52 | feature-topic.css: rules used only by: feature, topic. Every rule starts with /*@n
+pages/css/feature.css | 27 | feature.css: rules used only by: feature. Every rule starts with /*@n
 pages/css/library-people-work.css | 13 | library-people-work.css: rules used only by: library, people, work. Every rule starts with /*@n
 pages/css/library.css | 23 | library.css: rules used only by: library. Every rule starts with /*@n
 pages/css/people.css | 29 | people.css: rules used only by: people. Every rule starts with /*@n
-pages/css/reserve.css | 174 | reserve.css: rules for classes no page of the current data writes; kept for data-dependent output (unusedcss.py prunes what is truly dead). 
+pages/css/reserve.css | 168 | reserve.css: rules for classes no page of the current data writes; kept for data-dependent output (unusedcss.py prunes what is truly dead). 
 pages/css/topic.css | 11 | topic.css: rules used only by: topic. Every rule starts with /*@n
-pages/css/work.css | 64 | work.css: rules used only by: work. Every rule starts with /*@n
+pages/css/work.css | 63 | work.css: rules used only by: work. Every rule starts with /*@n
 pages/js/_registry.js | 14 | _registry.js: the module registry for the content pages. It loads first; every other file in this folder is one module. A module says what i
 pages/js/back-to-top.js | 19 | back-to-top: the back-to-top ring.
 pages/js/boards.js | 93 | boards: list and board machinery, and the Epics and stories board.
@@ -208,7 +208,10 @@ pages/js/jobs.js | 109 | jobs: buttons that run background jobs.
 pages/js/library-chips.js | 18 | library-chips: the Library page's chips.
 pages/js/menus.js | 12 | menus: details.pop menus close on an outside click or Esc.
 pages/js/palette.js | 90 | palette: search or ask over any page (Ctrl K).
-pages/js/people-data.js | 252 | people-data: follow-ups, briefs, deadlines and meetings, live from the server.
+pages/js/people-brief.js | 39 | people-brief: the brief and handover links shown under a person, and the viewer that opens one.
+pages/js/people-data.js | 8 | people-data: what the drawer and the palette take from the people modules, in one place.
+pages/js/people-follow.js | 42 | people-follow: follow-up rows, their buttons, and the People page's per-person lists.
+pages/js/people-live.js | 26 | people-live: the live data behind People, follow-ups and briefs (GET /api/extra), and the one way to change it.
 pages/js/people-page.js | 16 | people-page: the People page as a plain list.
 pages/js/person-card.js | 14 | person-card: a person's card stays short.
 pages/js/reload.js | 15 | reload: live reload when served.
@@ -222,4 +225,4 @@ pages/js/whats-new.js | 42 | whats-new: visits and What's new.
 
 ## Over budget (600 lines)
 
-app/app.css (695), pages/css/common.css (646)
+app/app.css (662)

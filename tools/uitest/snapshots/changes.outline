@@ -58,7 +58,7 @@ html[data-kind]
               span.muted
             span.ev-n.muted
           ol.ev-list
-            li.ev[data-kind][data-group][data-date]
+            li.ev[data-kind][data-group][data-date] *
               span.ev-a.ev-k
                 span.ev-ico
               span.ev-main

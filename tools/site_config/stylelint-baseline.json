@@ -10,15 +10,5 @@
   "site_assets/app/widgets-features.js": 1,
   "site_assets/app/widgets-growth.js": 1
  },
- "repeated_selectors": {
-  "site_assets/app/app.css": 44,
-  "site_assets/chrome.css": 8,
-  "site_assets/header.css": 13,
-  "site_assets/pages/css/common.css": 66,
-  "site_assets/pages/css/document-feature-topic.css": 2,
-  "site_assets/pages/css/feature-topic.css": 2,
-  "site_assets/pages/css/feature.css": 1,
-  "site_assets/pages/css/reserve.css": 6,
-  "site_assets/pages/css/work.css": 1
- }
+ "repeated_selectors": {}
 }

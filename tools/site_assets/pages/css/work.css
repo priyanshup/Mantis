@@ -32,7 +32,6 @@
 /*@865*/ .list-t { width: 100%; border-collapse: collapse; font-size: 14px; }
 /*@866*/ .list-t th { font-family: var(--font-mono); font-weight: 400; font-size: 12px; color: var(--muted); text-align: left; padding: 0 12px 10px 0; border-bottom: 1px solid var(--line); background: none; }
 /*@867*/ .list-t td { padding: 14px 12px 14px 0; border-bottom: 1px solid var(--line); background: none; }
-/*@868*/ .list-t tr:hover td { background: var(--fill); }
 /*@891*/ @media (max-width: 700px) { .rd-tools, .rd-tools #q { width: 100%; margin: 0; } }
 /*@915*/ .wk-business::before, .wk-both::before { background: var(--biz-edge); border-radius: 1px; }
 /*@916*/ .wk-technical::before { background: var(--tech-edge); clip-path: polygon(50% 0, 100% 100%, 0 100%); width: 9px; height: 8px; }
